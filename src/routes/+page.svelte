@@ -5,6 +5,7 @@
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import Parts from '$lib/components/Parts.svelte';
+	import Chapters from '$lib/components/Chapters.svelte';
 
 	let ready = $state(false);
 	onMount(() => {
@@ -18,6 +19,7 @@
 		{#if $userStore}
 			<Books />
 			<Parts />
+			<Chapters/>
 		{/if}
 	</div>
 {/if}

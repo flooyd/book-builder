@@ -72,7 +72,6 @@
 			body: JSON.stringify({ title: bookValue, description: descriptionValue })
 		});
 		const data = await response.json();
-		console.log(data);
 		if (response.ok) {
 			booksRefresh.update((n) => n + 1);
 			modalStore.set(null);
@@ -100,7 +99,6 @@
 			})
 		});
 		const data = await response.json();
-		console.log(data);
 		if (response.ok) {
 			booksRefresh.update((n) => n + 1);
 			modalStore.set(null);
@@ -136,7 +134,7 @@
 	};
 </script>
 
-<div class="modal">
+<div class="modal card">
 	<div class="modal-title">
 		<h1>{getModalTitle()}</h1>
 		<button onclick={() => modalStore.set(null)}>X</button>
@@ -208,11 +206,8 @@
 		transform: translate(-50%, -50%);
 		width: 75%;
 		height: fit-content;
-		background: #333;
-		border: 3px solid #007bff;
-		border-radius: 6.11px;
 		color: white;
-		padding: 16px;
+		padding: 9.89px;
 	}
 
 	.modal-title {

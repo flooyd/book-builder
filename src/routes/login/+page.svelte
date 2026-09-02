@@ -6,17 +6,17 @@
 </script>
 
 <h1>Login</h1>
-<form method="post" action="?/signInEmail" use:enhance>
+<form method="post" action="?/signInEmail" use:enhance class="card">
 	<label>
-		Email
+		<h2>Email</h2>
 		<input type="email" name="email" />
 	</label>
 	<label>
-		Password
+		<h2>Password</h2>
 		<input type="password" name="password" />
 	</label>
 	<label>
-		Name (for registration)
+		<h2>Name (for registration)</h2>
 		<input name="name" />
 	</label>
 	<button>Login</button>
@@ -33,13 +33,15 @@
 		display: flex;
 		flex-direction: column;
 		gap: 16px;
-		width: 300px;
+		width: fit-content;
+		padding: 9.89px;
+		color: white;
 	}
 
 	label {
 		display: flex;
 		flex-direction: column;
-		gap: 6.11px;
+		gap: 9.89px;
 	}
 
 	button {

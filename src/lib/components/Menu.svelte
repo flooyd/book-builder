@@ -2,7 +2,7 @@
 	import { modalStore } from "$lib/stores";
 
 </script>
-<div class="toolbar">
+<div class="toolbar card">
     <button onclick={() => modalStore.set({ type: 'create', category: 'book' })}>New Book</button>
     <button onclick={() => modalStore.set({ type: 'create', category: 'part' })}>New Part</button>
     <button onclick={() => modalStore.set({ type: 'create', category: 'chapter' })}>New Chapter</button>
@@ -12,10 +12,7 @@
 
 <style>
     .toolbar {
-        padding: 16px;
-        background-color: #333;
-        border-radius: 6.11px;
-        border: 3px solid #007bff;
+        padding: 9.89px;
         margin-top: 16px;
         margin-bottom: 16px;
         position: absolute;
