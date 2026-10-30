@@ -1,11 +1,7 @@
 import { beforeNavigate } from '$app/navigation';
+import { countWords } from '$lib/reading';
 
 type Status = 'loading' | 'load-error' | 'ready' | 'saving' | 'saved' | 'error';
-
-export function countWords(text: string) {
-	const trimmed = text.trim();
-	return trimmed ? trimmed.split(/\s+/).length : 0;
-}
 
 /**
  * The story text of a part that has no chapters, or of a chapter. POST vs PUT is decided by

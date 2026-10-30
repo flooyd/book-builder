@@ -2,9 +2,9 @@
 	import { onMount, tick } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { bookOutline, plural } from '$lib/library';
-	import { countWords } from '$lib/story-text.svelte';
 	import {
 		DEFAULT_PREFS,
+		countWords,
 		TEXT_SIZES,
 		readingTime,
 		saveReaderPrefs,

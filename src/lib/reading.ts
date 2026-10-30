@@ -1,5 +1,10 @@
 // Reading mode: story text as paragraphs, reading time, and the reader's text settings.
 
+export function countWords(text: string) {
+	const trimmed = text.trim();
+	return trimmed ? trimmed.split(/\s+/).length : 0;
+}
+
 export type Block = { kind: 'p'; text: string } | { kind: 'break' };
 
 /** A line of nothing but *, #, ~, -, • or ⁂ (e.g. "* * *" or "#") marks a scene break. */
@@ -79,9 +84,17 @@ export type ReaderData = {
 		title: string;
 		description: string;
 		hasChapters: number;
+		position: number;
 		createdAt: string;
 	}[];
-	chapters: { id: number; partId: number; title: string; description: string; createdAt: string }[];
+	chapters: {
+		id: number;
+		partId: number;
+		title: string;
+		description: string;
+		position: number;
+		createdAt: string;
+	}[];
 	/** Story text by section anchor: "part-3", "chapter-12". */
 	texts: Record<string, string>;
 	author: string;

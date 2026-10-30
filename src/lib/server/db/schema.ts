@@ -49,7 +49,11 @@ export const part = pgTable('part', {
 		.$onUpdate(() => new Date()),
 	hasChapters: integer('has_chapters').notNull().default(1),
 	//show the description as a subtitle under the title in reading mode
-	showDescription: boolean('show_description').notNull().default(false)
+	showDescription: boolean('show_description').notNull().default(false),
+	//order within the book (the outline sets it)
+	position: integer('position').notNull().default(0),
+	//writing status of a part that holds story text: idea, outlined, drafting, revising, done
+	status: text('status').notNull().default('idea')
 });
 
 export const chapter = pgTable('chapter', {
@@ -61,6 +65,10 @@ export const chapter = pgTable('chapter', {
 		.notNull(),
 	//show the description as a subtitle under the title in reading mode
 	showDescription: boolean('show_description').notNull().default(false),
+	//order within the part (the outline sets it)
+	position: integer('position').notNull().default(0),
+	//writing status: idea, outlined, drafting, revising, done
+	status: text('status').notNull().default('idea'),
 	createdAt: timestamp('created_at').notNull().defaultNow(),
 	updatedAt: timestamp('updated_at')
 		.notNull()
@@ -130,6 +138,42 @@ export const systemBook = pgTable(
 	(table) => [
 		primaryKey({ columns: [table.systemId, table.bookId] }),
 		index('system_book_book_id_idx').on(table.bookId)
+	]
+);
+
+//characters who appear in a chapter (the outline's cast)
+export const chapterCharacter = pgTable(
+	'chapter_character',
+	{
+		chapterId: integer('chapter_id')
+			.references(() => chapter.id, { onDelete: 'cascade' })
+			.notNull(),
+		characterId: integer('character_id')
+			.references(() => character.id, { onDelete: 'cascade' })
+			.notNull()
+	},
+	(table) => [
+		// Character first: with (chapter_id, character_id), drizzle-kit push keeps proposing to
+		// drop and re-add the key, even on a database it just created.
+		primaryKey({ columns: [table.characterId, table.chapterId] }),
+		index('chapter_character_chapter_id_idx').on(table.chapterId)
+	]
+);
+
+//characters who appear in a part that holds its own story text
+export const partCharacter = pgTable(
+	'part_character',
+	{
+		partId: integer('part_id')
+			.references(() => part.id, { onDelete: 'cascade' })
+			.notNull(),
+		characterId: integer('character_id')
+			.references(() => character.id, { onDelete: 'cascade' })
+			.notNull()
+	},
+	(table) => [
+		primaryKey({ columns: [table.partId, table.characterId] }),
+		index('part_character_character_id_idx').on(table.characterId)
 	]
 );
 

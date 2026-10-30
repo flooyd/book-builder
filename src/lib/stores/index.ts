@@ -25,6 +25,10 @@ export type Part = {
 	hasChapters: number;
 	/** Show the description as a subtitle in reading mode. */
 	showDescription: boolean;
+	/** Order within the book. */
+	position: number;
+	/** Writing status (see $lib/status); used by parts that hold story text. */
+	status: string;
 	createdAt: string;
 	updatedAt: string;
 };
@@ -35,6 +39,10 @@ export type Chapter = {
 	partId: number;
 	/** Show the description as a subtitle in reading mode. */
 	showDescription: boolean;
+	/** Order within the part. */
+	position: number;
+	/** Writing status (see $lib/status). */
+	status: string;
 	createdAt: string;
 	updatedAt: string;
 };

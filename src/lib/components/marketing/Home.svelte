@@ -51,11 +51,6 @@
 
 	const soon: { title: string; icon: IconName; body: string }[] = [
 		{
-			title: 'Outlining Tool',
-			icon: 'list-tree',
-			body: 'Sketch the shape of a book before the first sentence.'
-		},
-		{
 			title: 'Text Editor',
 			icon: 'pen',
 			body: 'Richer formatting for your story text, right where you write it.'

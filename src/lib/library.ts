@@ -19,17 +19,24 @@ async function getJSON<T>(url: string): Promise<T> {
 	return (await response.json()) as T;
 }
 
-/** PUT a JSON body and return the JSON response; throws an Error carrying the server's message. */
-export async function putJSON<T>(url: string, body: unknown): Promise<T> {
+/** Send a JSON body and return the JSON response; throws an Error carrying the server's message. */
+export async function sendJSON<T>(
+	method: 'POST' | 'PUT' | 'DELETE',
+	url: string,
+	body?: unknown
+): Promise<T> {
 	const response = await fetch(url, {
-		method: 'PUT',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(body)
+		method,
+		headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+		body: body === undefined ? undefined : JSON.stringify(body)
 	});
 	const data = await response.json().catch(() => null);
 	if (!response.ok) throw new Error(data?.error ?? `Request failed (${response.status}).`);
 	return data as T;
 }
+
+/** PUT a JSON body and return the JSON response; throws an Error carrying the server's message. */
+export const putJSON = <T>(url: string, body: unknown) => sendJSON<T>('PUT', url, body);
 
 let generation = 0;
 
@@ -84,8 +91,9 @@ export function initials(name: string) {
 
 // ---- Derived structure -------------------------------------------------------------------
 
-const byCreated = <T extends { id: number; createdAt: string }>(a: T, b: T) =>
-	Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id - b.id;
+/** Outline order: position (set by the outline), then oldest first. */
+const byPosition = <T extends { id: number; position: number; createdAt: string }>(a: T, b: T) =>
+	a.position - b.position || Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id - b.id;
 
 const ORDINALS = [
 	'One',
@@ -114,8 +122,8 @@ const ORDINALS = [
 export const partLabel = (n: number) => `Part ${ORDINALS[n - 1] ?? n}`;
 
 /** What ordering needs of a part or chapter (reading mode passes trimmed-down rows). */
-type OutlinePartRow = Pick<Part, 'id' | 'bookId' | 'hasChapters' | 'createdAt'>;
-type OutlineChapterRow = Pick<Chapter, 'id' | 'partId' | 'createdAt'>;
+type OutlinePartRow = Pick<Part, 'id' | 'bookId' | 'hasChapters' | 'position' | 'createdAt'>;
+type OutlineChapterRow = Pick<Chapter, 'id' | 'partId' | 'position' | 'createdAt'>;
 
 export type OutlinePart<P extends OutlinePartRow = Part, C extends OutlineChapterRow = Chapter> = {
 	part: P;
@@ -125,7 +133,7 @@ export type OutlinePart<P extends OutlinePartRow = Part, C extends OutlineChapte
 };
 
 /**
- * A book's parts in order (oldest first), with chapter numbers running continuously across the
+ * A book's parts in outline order, with chapter numbers running continuously across the
  * whole book. Story-text parts (hasChapters = 0) carry no chapters and don't take a part number.
  */
 export function bookOutline<P extends OutlinePartRow, C extends OutlineChapterRow>(
@@ -137,7 +145,7 @@ export function bookOutline<P extends OutlinePartRow, C extends OutlineChapterRo
 	let number = 0;
 	return parts
 		.filter((part) => part.bookId === bookId)
-		.sort(byCreated)
+		.sort(byPosition)
 		.map((part) => {
 			if (!part.hasChapters) return { part, label: null, chapters: [] };
 			ordinal += 1;
@@ -146,7 +154,7 @@ export function bookOutline<P extends OutlinePartRow, C extends OutlineChapterRo
 				label: partLabel(ordinal),
 				chapters: chapters
 					.filter((chapter) => chapter.partId === part.id)
-					.sort(byCreated)
+					.sort(byPosition)
 					.map((chapter) => ({ chapter, number: ++number }))
 			};
 		});

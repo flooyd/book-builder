@@ -199,7 +199,12 @@
 
 	<main class="contents-wrap">
 		<section aria-labelledby="h-contents" class="contents">
-			<h2 id="h-contents">Contents</h2>
+			<div class="contents-head">
+				<h2 id="h-contents">Contents</h2>
+				<Button href={resolve('/book/[id]/outline', { id: String(book.id) })}>
+					<Icon name="list-tree" size={16} />Outline
+				</Button>
+			</div>
 
 			<motion-stagger interval={0.04} y={12}>
 				{#each outline as entry, i (entry.part.id)}
@@ -460,8 +465,17 @@
 		min-width: 0;
 	}
 
+	.contents-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-bottom: 22px;
+	}
+
 	.contents h2 {
-		margin: 0 0 22px;
+		margin: 0;
 		font-family: var(--font-display);
 		font-weight: 400;
 		font-size: 34px;

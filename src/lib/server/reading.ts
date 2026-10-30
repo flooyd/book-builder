@@ -1,6 +1,7 @@
-import { asc, eq, inArray, or } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { book, chapter, part, storyText, user } from '$lib/server/db/schema';
+import { book, chapter, part, user } from '$lib/server/db/schema';
+import { storyTexts } from '$lib/server/outline';
 
 const iso = (date: Date) => date.toISOString();
 
@@ -18,30 +19,7 @@ export async function readableBook(found: typeof book.$inferSelect) {
 		: [];
 	const chapterIds = chapters.map((c) => c.id);
 
-	const rows = partIds.length
-		? await db
-				.select({
-					partId: storyText.partId,
-					chapterId: storyText.chapterId,
-					content: storyText.content
-				})
-				.from(storyText)
-				.where(
-					or(
-						inArray(storyText.partId, partIds),
-						chapterIds.length ? inArray(storyText.chapterId, chapterIds) : undefined
-					)
-				)
-				.orderBy(asc(storyText.createdAt))
-		: [];
-
-	// Keyed like the section anchors ("part-3", "chapter-12"); the oldest row wins, as in the
-	// editor.
-	const texts: Record<string, string> = {};
-	for (const row of rows) {
-		const key = row.chapterId ? `chapter-${row.chapterId}` : `part-${row.partId}`;
-		texts[key] ??= row.content;
-	}
+	const texts = await storyTexts(partIds, chapterIds);
 
 	const [author] = await db
 		.select({ name: user.name })
@@ -58,6 +36,7 @@ export async function readableBook(found: typeof book.$inferSelect) {
 			title: p.title,
 			description: p.showDescription ? p.description : '',
 			hasChapters: p.hasChapters,
+			position: p.position,
 			createdAt: iso(p.createdAt)
 		})),
 		chapters: chapters.map((c) => ({
@@ -65,6 +44,7 @@ export async function readableBook(found: typeof book.$inferSelect) {
 			partId: c.partId,
 			title: c.title,
 			description: c.showDescription ? c.description : '',
+			position: c.position,
 			createdAt: iso(c.createdAt)
 		})),
 		texts,

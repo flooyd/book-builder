@@ -45,7 +45,17 @@
 		'arrow-left': ['M19 12H5M12 19l-7-7 7-7'],
 		copy: ['M9 9h11v11H9z', 'M5 15H4V4h11v1'],
 		globe: [[12, 12, 9], 'M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18'],
-		lock: ['M5 11h14v10H5z', 'M8 11V7a4 4 0 0 1 8 0v4']
+		lock: ['M5 11h14v10H5z', 'M8 11V7a4 4 0 0 1 8 0v4'],
+		grip: [
+			[9, 6, 1],
+			[15, 6, 1],
+			[9, 12, 1],
+			[15, 12, 1],
+			[9, 18, 1],
+			[15, 18, 1]
+		],
+		search: [[11, 11, 7], 'm21 21-4.3-4.3'],
+		columns: ['M3 4h5v16H3zM10 4h5v10h-5zM17 4h4v13h-4z']
 	} satisfies Record<string, Shape[]>;
 
 	export type IconName = keyof typeof ICONS;

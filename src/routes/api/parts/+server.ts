@@ -2,7 +2,8 @@ import { db } from '$lib/server/db';
 import { part, book } from '$lib/server/db/schema';
 import { requireUser } from '$lib/server/auth-guard';
 import { textField } from '$lib/server/ownership';
-import { eq, asc, inArray } from 'drizzle-orm';
+import { eq, asc, inArray, sql } from 'drizzle-orm';
+import { isStatus } from '$lib/status';
 import { json, type RequestEvent } from '@sveltejs/kit';
 
 export const GET = async (event: RequestEvent) => {
@@ -54,7 +55,10 @@ export const POST = async (event: RequestEvent) => {
 			description,
 			hasChapters: Number(hasChapters) ? 1 : 0,
 			showDescription: body?.showDescription === true,
-			bookId: parsedBookId
+			status: isStatus(body?.status) ? body.status : 'idea',
+			bookId: parsedBookId,
+			// After the book's last part.
+			position: sql`(select coalesce(max(${part.position}), -1) + 1 from ${part} where ${part.bookId} = ${parsedBookId})`
 		})
 		.returning();
 
