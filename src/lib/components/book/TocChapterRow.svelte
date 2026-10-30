@@ -8,18 +8,21 @@
 		number,
 		title,
 		updatedAt,
-		latest = false
+		latest = false,
+		compact = false
 	}: {
 		href: string;
 		number: number;
 		title: string;
 		updatedAt: string;
 		latest?: boolean;
+		/** Narrow number column, for lists without part overlines beside them. */
+		compact?: boolean;
 	} = $props();
 </script>
 
 <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- callers pass a resolve()d href -->
-<a class="toc-row" class:latest {href}>
+<a class="toc-row" class:latest class:compact {href}>
 	<span class="num">{number}</span>
 	<span class="title">{title}</span>
 	<span class="leader" aria-hidden="true"></span>
@@ -102,6 +105,10 @@
 		height: 7px;
 		border-radius: 50%;
 		background: var(--bb-sky);
+	}
+
+	.compact .num {
+		width: 32px;
 	}
 
 	@media (max-width: 600px) {

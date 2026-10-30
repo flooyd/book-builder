@@ -60,7 +60,7 @@
 	<SiteHeader />
 {/if}
 
-<div class="app" class:legacy={(!!user && page.url.pathname.startsWith('/part/')) || siteChrome}>
+<div class="app" class:padded={siteChrome}>
 	{@render children()}
 	{#if $modalStore?.type === 'create'}
 		<Modal title={$modalStore.title} category={$modalStore.category} type={$modalStore.type} />
@@ -76,8 +76,8 @@
 {/if}
 
 <style>
-	/* Padding for screens not yet rebuilt; removed as each phase lands. */
-	.legacy {
+	/* Leftover signed-out pages (e.g. /demo) that don't lay themselves out. */
+	.padded {
 		padding: 16px;
 	}
 </style>

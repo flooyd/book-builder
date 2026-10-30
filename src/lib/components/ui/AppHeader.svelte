@@ -202,9 +202,9 @@
 			padding: 10px 16px;
 		}
 
+		/* Save vertical space on phones; pages repeat their context in the content. */
 		.crumbs {
-			padding-left: 0;
-			border-left: none;
+			display: none;
 		}
 
 		/* No keyboard shortcut on phones: show a plain "+ Create" toggle instead. */

@@ -54,13 +54,6 @@ export const chaptersStore = writable<Chapter[]>([]);
 /** 'loading' until the first load finishes; stays 'ready' during background refreshes. */
 export const libraryStatus = writable<'loading' | 'ready' | 'error'>('loading');
 
-// Legacy single-item stores, still used by the Book and Part screens until they are rebuilt.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const bookStore = writable<any | null>(null);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const partStore = writable<any | null>(null);
-
 // miscellaneous stores
 /** Bump to refetch the library after a create, edit or delete. */
 export const booksRefresh = writable(0);
-export const type = writable<ModalType | null>(null);
