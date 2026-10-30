@@ -5,6 +5,7 @@
 	import Wordmark from '$lib/components/ui/Wordmark.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
+	import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
 
 	let { form }: PageProps = $props();
 
@@ -17,6 +18,8 @@
 </svelte:head>
 
 <div class="login">
+	<div class="theme"><ThemeToggle /></div>
+
 	<div class="brand-panel">
 		<a class="brand" href={resolve('/')}><Wordmark size={26} /></a>
 
@@ -134,10 +137,19 @@
 
 <style>
 	.login {
+		position: relative;
 		min-height: 100vh;
 		display: flex;
 		flex-wrap: wrap;
 		background: var(--bb-night);
+	}
+
+	/* Top right of the page: over the form on wide screens, beside the wordmark on phones. */
+	.theme {
+		position: absolute;
+		z-index: 2;
+		top: 26px;
+		right: 28px;
 	}
 
 	/* Brand panel */
@@ -223,9 +235,10 @@
 		color: #e4ecff;
 	}
 
+	/* Spines are objects: fixed colors in both themes, except the plain ink one (s4). */
 	.s1 .num {
 		font-size: 12px;
-		color: var(--bb-sky);
+		color: #7cb4ff;
 	}
 
 	.s2 {
@@ -270,7 +283,7 @@
 	.s5 {
 		width: 62px;
 		height: 336px;
-		background: var(--bb-sky);
+		background: #7cb4ff;
 		box-shadow: inset 6px 0 0 rgba(0, 0, 0, 0.12);
 		font-family: var(--font-display);
 		font-size: 20px;
@@ -289,7 +302,7 @@
 		font-family: var(--font-read);
 		font-style: italic;
 		font-size: 17px;
-		color: var(--bb-sky-text);
+		color: #a9c8ff;
 	}
 
 	.floor {
@@ -391,6 +404,11 @@
 	}
 
 	@media (max-width: 760px) {
+		.theme {
+			top: 17px;
+			right: 12px;
+		}
+
 		.brand-panel {
 			gap: 28px;
 			padding: 24px 20px 32px;

@@ -478,7 +478,7 @@
 
 	.part-row:hover,
 	.recent-row:hover {
-		background: #151e45;
+		background: var(--bb-hover);
 		border-color: var(--bb-line-control);
 		color: var(--bb-text);
 	}
@@ -536,7 +536,7 @@
 		align-items: baseline;
 		gap: 4px 16px;
 		padding: 15px 18px;
-		border-bottom: 1px solid #1a2450;
+		border-bottom: 1px solid var(--bb-line-faint);
 		text-decoration: none;
 		color: var(--bb-text);
 	}

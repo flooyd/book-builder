@@ -1,48 +1,85 @@
+/* Colors are light-dark(light, dark) pairs: they follow the used color-scheme, which the theme
+   toggle sets on <html> through data-theme (no choice yet = the OS setting). A subtree can be
+   pinned to one theme with data-scheme="light" | "dark" (the Night writing surface stays dark).
+   A one-off component color can use light-dark() directly. */
 :root {
-	/* Grounds */
-	--bb-night: #0a0f24; /* page background */
-	--bb-night-deep: #080c1e; /* footer */
-	--bb-panel: #0d1431; /* header bands, login side panel, card top bars */
-	--bb-ink: #10173a; /* cards, rows, modal (was #1f1f2a) */
-	--bb-ink-2: #121935; /* chips */
-	--bb-raised: #18224d; /* hover, selected row, count chips */
+	color-scheme: light dark;
+}
+
+:root[data-theme='light'],
+[data-scheme='light'] {
+	color-scheme: light;
+}
+
+:root[data-theme='dark'],
+[data-scheme='dark'] {
+	color-scheme: dark;
+}
+
+/* Declared again on pinned subtrees: the production CSS turns light-dark() into variables, which
+   resolve where these tokens are declared rather than where they are used. */
+:root,
+[data-scheme] {
+	/* Grounds. Light is built on the paper of the writing surface. */
+	--bb-night: light-dark(#f5f0e6, #0a0f24); /* page background */
+	--bb-night-deep: light-dark(#ede6d8, #080c1e); /* footer */
+	--bb-panel: light-dark(#efe8db, #0d1431); /* header bands, login side panel, card top bars */
+	--bb-ink: light-dark(#fdfbf7, #10173a); /* cards, rows, modal (was #1f1f2a) */
+	--bb-ink-2: light-dark(#f3eee4, #121935); /* chips */
+	--bb-hover: light-dark(#efe9dd, #131b42); /* row hover, quiet icon tiles */
+	--bb-raised: light-dark(#e9e2d3, #18224d); /* hover, selected row, count chips */
 
 	/* Lines */
-	--bb-line-faint: #18214a; /* section dividers, header bottom border */
-	--bb-line-soft: #1e2852; /* card borders */
-	--bb-line: #263361; /* strong borders, dotted leaders */
-	--bb-line-control: #2c3a70; /* inputs, ghost buttons */
-	--bb-line-dashed: #34478a; /* dashed "new" / "soon" cards */
+	--bb-line-faint: light-dark(#e8e1d3, #18214a); /* section dividers, header bottom border */
+	--bb-line-soft: light-dark(#e1d9c9, #1e2852); /* card borders */
+	--bb-line-mid: light-dark(#d9d0bd, #222d5a); /* chip and showcase card borders */
+	--bb-line: light-dark(#d1c6b0, #263361); /* strong borders, dotted leaders */
+	--bb-line-control: light-dark(#b8aa8e, #2c3a70); /* inputs, ghost buttons */
+	--bb-line-dashed: light-dark(#b5a888, #34478a); /* dashed "new" / "soon" cards */
 
 	/* Blues */
 	--bb-royal: #2b63f5; /* primary buttons (was #007bff); white text passes AA */
-	--bb-royal-hover: #3a70ff;
-	--bb-sky: #7cb4ff; /* accents, links, wordmark B's, focus ring */
-	--bb-sky-hover: #b5d3ff;
-	--bb-sky-text: #a9c8ff; /* text inside info pills */
-	--bb-sky-wash: #152056; /* info pill background */
-	--bb-glint: #56ddf0; /* rare highlight; optional */
+	--bb-royal-hover: light-dark(#1f54e3, #3a70ff);
+	--bb-sky: light-dark(#2152d8, #7cb4ff); /* accents, links, wordmark B's, focus ring */
+	--bb-sky-hover: light-dark(#163d9f, #b5d3ff);
+	--bb-sky-text: light-dark(#1d46b5, #a9c8ff); /* text inside info pills */
+	--bb-sky-wash: light-dark(#e3e9f8, #152056); /* info pill background */
+	--bb-glint: light-dark(#08707f, #56ddf0); /* rare highlight; optional */
 
-	/* Paper (book pages, "Paper" writing surface) */
+	/* Paper (book pages, "Paper" writing surface): the same in both themes. */
 	--bb-paper: #f5f0e6;
 	--bb-paper-line: #e2d9c6;
 	--bb-paper-ink: #24232b;
 	--bb-paper-muted: #6b6352;
 
-	/* Text on dark */
-	--bb-text-strong: #f4f6ff; /* headings */
-	--bb-text: #eef2ff; /* body */
-	--bb-text-label: #d7def6; /* form labels, chip text */
-	--bb-text-2: #a9b3d6; /* secondary */
-	--bb-text-3: #8d98c2; /* meta (dates, counts) */
-	--bb-text-4: #7d88b3; /* faint; still 4.5:1 on --bb-ink */
+	/* Text */
+	--bb-text-strong: light-dark(#10173a, #f4f6ff); /* headings */
+	--bb-text: light-dark(#1a2148, #eef2ff); /* body */
+	--bb-text-label: light-dark(#2c3462, #d7def6); /* form labels, chip text */
+	--bb-text-read: light-dark(#283058, #d5dcf3); /* long-form reading text */
+	--bb-text-desc: light-dark(#3e4672, #b9c3e4); /* italic descriptions */
+	--bb-text-2: light-dark(#4a527d, #a9b3d6); /* secondary */
+	--bb-text-3: light-dark(#535a86, #8d98c2); /* meta (dates, counts) */
+	--bb-text-4: light-dark(#585f88, #7d88b3); /* faint; still 4.5:1 on --bb-ink and --bb-raised */
 
 	/* Status */
-	--bb-coral: #ff7a85; /* delete, errors (was #dc3545) */
-	--bb-coral-soft: #ff9aa3; /* error message text */
-	--bb-coral-line: #5a2f45;
-	--bb-amber: #f2c46b; /* "Unsaved changes" */
+	--bb-coral: light-dark(#b5293a, #ff7a85); /* delete, errors (was #dc3545) */
+	--bb-coral-soft: light-dark(#a3242f, #ff9aa3); /* error message text */
+	--bb-coral-line: light-dark(#e9c3c3, #5a2f45);
+	--bb-coral-wash: light-dark(rgba(181, 41, 58, 0.08), rgba(255, 122, 133, 0.1));
+	--bb-amber: light-dark(#8a5a00, #f2c46b); /* "Unsaved changes" */
 
+	/* Shadows. --bb-drop is the color of drop shadows: warm and soft on paper, near black at night. */
+	--bb-drop: light-dark(rgba(74, 56, 28, 0.4), rgba(0, 0, 0, 0.95));
+	--shadow-card: 0 30px 60px -40px light-dark(rgba(74, 56, 28, 0.45), rgba(0, 0, 0, 0.9));
+	--shadow-primary: 0 14px 34px -14px light-dark(rgba(43, 99, 245, 0.55), rgba(43, 99, 245, 0.9));
+	--shadow-modal:
+		0 60px 120px -40px light-dark(rgba(74, 56, 28, 0.5), rgba(0, 0, 0, 1)),
+		0 0 0 8px rgba(43, 99, 245, 0.08);
+	--focus-ring: 0 0 0 3px light-dark(rgba(43, 99, 245, 0.25), rgba(124, 180, 255, 0.22));
+}
+
+:root {
 	/* Type */
 	--font-display: 'Gloock', Georgia, serif;
 	--font-read: 'Newsreader', Georgia, serif;
@@ -55,10 +92,4 @@
 	--r-card: 20px;
 	--r-modal: 24px;
 	--r-pill: 999px;
-
-	/* Shadows */
-	--shadow-card: 0 30px 60px -40px rgba(0, 0, 0, 0.9);
-	--shadow-primary: 0 14px 34px -14px rgba(43, 99, 245, 0.9);
-	--shadow-modal: 0 60px 120px -40px rgba(0, 0, 0, 1), 0 0 0 8px rgba(43, 99, 245, 0.08);
-	--focus-ring: 0 0 0 3px rgba(124, 180, 255, 0.22);
 }

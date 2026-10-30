@@ -353,7 +353,7 @@
 		font-style: italic;
 		font-size: 22px;
 		line-height: 1.45;
-		color: #b9c3e4;
+		color: var(--bb-text-desc);
 	}
 
 	.band-foot {
@@ -412,7 +412,7 @@
 		font-style: italic;
 		font-size: 20px;
 		line-height: 1.45;
-		color: #b9c3e4;
+		color: var(--bb-text-desc);
 		resize: vertical;
 	}
 
@@ -487,7 +487,7 @@
 	}
 
 	.toc-story:hover {
-		background: #131b42;
+		background: var(--bb-hover);
 		color: var(--bb-text);
 	}
 
@@ -500,7 +500,7 @@
 		font-family: var(--font-read);
 		font-style: italic;
 		font-size: 19px;
-		color: #b9c3e4;
+		color: var(--bb-text-desc);
 	}
 
 	.leader {

@@ -134,7 +134,7 @@
 	}
 
 	.danger:hover {
-		background: rgba(255, 122, 133, 0.1);
+		background: var(--bb-coral-wash);
 		color: var(--bb-coral);
 	}
 

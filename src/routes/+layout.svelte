@@ -13,12 +13,16 @@
 	import AppHeader from '$lib/components/ui/AppHeader.svelte';
 	import CommandDock from '$lib/components/ui/CommandDock.svelte';
 	import { provideAppHeader } from '$lib/app-header.svelte';
+	import { THEME_COLOR, provideTheme } from '$lib/theme.svelte';
 	import { clearLibrary, loadLibrary } from '$lib/library';
 	import { userStore, showMenuStore, modalStore, booksRefresh } from '$lib/stores';
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
 	provideAppHeader();
+	// The cookie's choice as of this page load; after that the theme state is the source of truth.
+	// svelte-ignore state_referenced_locally
+	const theme = provideTheme(data.theme);
 
 	// Branch on layout data (available during SSR) rather than userStore, which is only set
 	// once effects run in the browser.
@@ -44,6 +48,8 @@
 	onMount(() => {
 		import('$lib/motion');
 	});
+
+	onMount(() => theme.watchSystem());
 
 	// Crossfade between pages with the View Transitions API where the browser supports it. Same-page
 	// navigations (in-page anchors) and reduced-motion users get no transition.
@@ -73,6 +79,12 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	{#if theme.chosen}
+		<meta name="theme-color" content={THEME_COLOR[theme.chosen]} />
+	{:else}
+		<meta name="theme-color" media="(prefers-color-scheme: light)" content={THEME_COLOR.light} />
+		<meta name="theme-color" media="(prefers-color-scheme: dark)" content={THEME_COLOR.dark} />
+	{/if}
 </svelte:head>
 
 <svelte:window onkeydown={handleKeyDown} />

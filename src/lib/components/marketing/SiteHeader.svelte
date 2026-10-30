@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import Wordmark from '$lib/components/ui/Wordmark.svelte';
+	import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
 
 	// On the home page the section links scroll in place; elsewhere they lead back to it.
 	let { onHome = false }: { onHome?: boolean } = $props();
@@ -31,6 +32,7 @@
 	</nav>
 
 	<div class="actions">
+		<ThemeToggle />
 		<a class="login" href={resolve('/login')}>Log in</a>
 		<a class="start" href={resolve('/login')}>Get started</a>
 	</div>
@@ -71,7 +73,7 @@
 	}
 
 	nav a:hover {
-		color: #fff;
+		color: var(--bb-text-strong);
 	}
 
 	.actions {

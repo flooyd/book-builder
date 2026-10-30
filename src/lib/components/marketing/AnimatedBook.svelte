@@ -396,7 +396,7 @@
 		);
 		transform: translateZ(-4px);
 		box-shadow:
-			0 50px 80px -24px rgba(1, 4, 16, 0.95),
+			0 50px 80px -24px var(--bb-drop),
 			0 0 0 1px rgba(124, 180, 255, 0.35);
 	}
 
@@ -638,9 +638,9 @@
 	.tag {
 		position: absolute;
 		z-index: 3;
-		background: rgba(18, 25, 53, 0.9);
-		border: 1px solid #2a3870;
-		box-shadow: 0 22px 40px -18px rgba(0, 0, 0, 0.85);
+		background: light-dark(rgba(253, 251, 247, 0.92), rgba(18, 25, 53, 0.9));
+		border: 1px solid light-dark(#d9d0bd, #2a3870);
+		box-shadow: 0 22px 40px -18px light-dark(rgba(74, 56, 28, 0.3), rgba(0, 0, 0, 0.85));
 		animation: float 7s ease-in-out infinite;
 	}
 
@@ -671,7 +671,7 @@
 		bottom: 70px;
 		padding: 10px 16px 10px 10px;
 		border-radius: 999px;
-		background: rgba(18, 25, 53, 0.92);
+		background: light-dark(rgba(253, 251, 247, 0.94), rgba(18, 25, 53, 0.92));
 		display: flex;
 		align-items: center;
 		gap: 12px;
@@ -705,7 +705,7 @@
 		width: 34px;
 		height: 34px;
 		border-radius: 9px;
-		background: #1a2550;
+		background: light-dark(#e3e9f8, #1a2550);
 		color: var(--bb-sky);
 	}
 
@@ -739,7 +739,7 @@
 		width: 26px;
 		height: 4px;
 		border-radius: 2px;
-		background: #2a3870;
+		background: light-dark(#ddd4c2, #2a3870);
 	}
 
 	.progress .on {

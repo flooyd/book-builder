@@ -2,27 +2,32 @@
 	import { onMount } from 'svelte';
 	import type { StoryTextDoc } from '$lib/story-text.svelte';
 	import { plural } from '$lib/library';
+	import { getTheme } from '$lib/theme.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 
 	// The writing surface: labelled textarea, live word count, Night / Paper toggle.
 	let { doc }: { doc: StoryTextDoc } = $props();
 
-	// Night / Paper, remembered per browser.
-	let paper = $state(false);
+	const theme = getTheme();
+
+	// Night / Paper, remembered per browser. Until the writer picks one, it matches the app theme.
+	let chosen = $state<'night' | 'paper' | null>(null);
+	const paper = $derived(chosen ? chosen === 'paper' : theme.current === 'light');
 
 	onMount(() => {
 		try {
-			paper = localStorage.getItem('bb-surface') === 'paper';
+			const stored = localStorage.getItem('bb-surface');
+			if (stored === 'night' || stored === 'paper') chosen = stored;
 		} catch {
 			// storage unavailable: keep the default
 		}
 	});
 
 	function setSurface(next: boolean) {
-		paper = next;
+		chosen = next ? 'paper' : 'night';
 		try {
-			localStorage.setItem('bb-surface', next ? 'paper' : 'night');
+			localStorage.setItem('bb-surface', chosen);
 		} catch {
 			// storage unavailable: the choice lasts for this visit
 		}
@@ -30,7 +35,7 @@
 </script>
 
 <motion-reveal y={24} delay={0.15} duration={0.7}>
-	<div class="surface" class:paper>
+	<div class="surface" class:paper data-scheme={paper ? 'light' : 'dark'}>
 		<div class="surface-head">
 			<label for="story">Story text</label>
 			<div class="surface-tools">
@@ -66,11 +71,11 @@
 {/if}
 
 <style>
-	/* Night (ink) or Paper */
+	/* Night (ink) or Paper, whatever the app theme: data-scheme pins the tokens inside. */
 	.surface {
 		--surface-bg: var(--bb-ink);
 		--surface-line: var(--bb-line-soft);
-		--surface-text: #d9e0f5;
+		--surface-text: var(--bb-text-read);
 		--surface-muted: var(--bb-text-3);
 		--surface-caret: var(--bb-sky);
 		max-width: 820px;
@@ -79,7 +84,7 @@
 		border-radius: 22px;
 		background: var(--surface-bg);
 		border: 1px solid var(--surface-line);
-		box-shadow: 0 40px 80px -50px rgba(0, 0, 0, 0.95);
+		box-shadow: 0 40px 80px -50px var(--bb-drop);
 		transition: background-color 0.2s;
 	}
 

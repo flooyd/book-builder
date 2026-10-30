@@ -36,7 +36,12 @@
 		'book-open': [
 			'M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z',
 			'M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z'
-		]
+		],
+		sun: [
+			[12, 12, 4],
+			'M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41'
+		],
+		moon: ['M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z']
 	} satisfies Record<string, Shape[]>;
 
 	export type IconName = keyof typeof ICONS;

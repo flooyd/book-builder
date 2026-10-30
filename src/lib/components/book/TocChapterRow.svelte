@@ -45,7 +45,7 @@
 	}
 
 	.toc-row:hover {
-		background: #131b42;
+		background: var(--bb-hover);
 		color: var(--bb-text);
 	}
 

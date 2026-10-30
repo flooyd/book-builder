@@ -81,7 +81,7 @@
 	}
 
 	.dialog::backdrop {
-		background: rgba(4, 7, 20, 0.72);
+		background: light-dark(rgba(60, 48, 28, 0.32), rgba(4, 7, 20, 0.72));
 		-webkit-backdrop-filter: blur(6px);
 		backdrop-filter: blur(6px);
 	}

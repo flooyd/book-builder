@@ -510,7 +510,7 @@
 	}
 
 	.tab:hover {
-		color: #fff;
+		color: var(--bb-text-strong);
 	}
 
 	.tab[aria-pressed='true'] {
@@ -533,7 +533,7 @@
 
 	.close:hover {
 		background: var(--bb-raised);
-		color: #fff;
+		color: var(--bb-text-strong);
 	}
 
 	.intro {
@@ -684,7 +684,7 @@
 	}
 
 	.opt input:focus-visible + .opt-card {
-		box-shadow: 0 0 0 3px rgba(124, 180, 255, 0.35);
+		box-shadow: 0 0 0 3px light-dark(rgba(43, 99, 245, 0.3), rgba(124, 180, 255, 0.35));
 	}
 
 	.opt-title {

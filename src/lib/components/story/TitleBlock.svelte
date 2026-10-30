@@ -168,7 +168,7 @@
 		font-family: var(--font-read);
 		font-style: italic;
 		font-size: 22px;
-		color: #b9c3e4;
+		color: var(--bb-text-desc);
 	}
 
 	.edit {
@@ -199,7 +199,7 @@
 		font-style: italic;
 		font-size: 20px;
 		line-height: 1.45;
-		color: #b9c3e4;
+		color: var(--bb-text-desc);
 		resize: vertical;
 	}
 

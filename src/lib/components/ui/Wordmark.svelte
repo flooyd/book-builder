@@ -34,8 +34,9 @@
 		fill: var(--bb-royal);
 	}
 
+	/* Fixed light sky: on paper, the theme's deeper sky would merge with the royal half. */
 	.right {
-		fill: var(--bb-sky);
+		fill: #7cb4ff;
 	}
 
 	.text {

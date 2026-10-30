@@ -1,9 +1,5 @@
 @import './tokens.css';
 
-:root {
-	color-scheme: dark;
-}
-
 body {
 	min-height: 100vh;
 	background: var(--bb-night);
@@ -32,7 +28,7 @@ button:not(:disabled) {
 }
 
 ::selection {
-	background: rgba(124, 180, 255, 0.35);
+	background: light-dark(rgba(43, 99, 245, 0.22), rgba(124, 180, 255, 0.35));
 }
 
 /* Page transitions (see onNavigate in the root layout): the old page fades out, the new one
@@ -59,6 +55,18 @@ button:not(:disabled) {
 	}
 }
 
+/* Theme switches (see $lib/theme.svelte): the new theme is revealed in a circle growing from the
+   toggle, animated from script. The header joins the page snapshot so it is revealed with it. */
+:root.theme-switching::view-transition-old(root),
+:root.theme-switching::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+
+:root.theme-switching .app-header {
+	view-transition-name: none;
+}
+
 /* motion-components hosts that wrap block content. */
 motion-reveal,
 motion-spotlight {
@@ -81,7 +89,7 @@ motion-headline [data-label] {
 	white-space: nowrap;
 }
 
-/* Text inputs, selects and textareas on dark grounds (Login and Modal mockups). */
+/* Text inputs, selects and textareas (Login and Modal mockups). */
 .bb-field {
 	width: 100%;
 	min-height: 50px;

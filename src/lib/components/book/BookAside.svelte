@@ -157,6 +157,7 @@
 
 	.avatar.paper {
 		background: var(--bb-paper);
+		box-shadow: inset 0 0 0 1px light-dark(rgba(60, 40, 10, 0.16), transparent);
 		color: #141c45;
 	}
 
@@ -195,7 +196,7 @@
 		padding: 14px;
 		border-radius: var(--r-control);
 		background: var(--bb-panel);
-		border: 1px solid #1a2450;
+		border: 1px solid var(--bb-line-soft);
 	}
 
 	.kind {

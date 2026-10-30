@@ -85,13 +85,13 @@
 	}
 
 	.rail-item:hover {
-		background: #121a40;
+		background: var(--bb-hover);
 		color: var(--bb-text);
 	}
 
 	.rail-item.current {
 		background: var(--bb-raised);
-		color: #fff;
+		color: var(--bb-text-strong);
 		font-weight: 600;
 	}
 

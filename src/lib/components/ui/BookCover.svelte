@@ -158,8 +158,9 @@
 		color: #fff;
 	}
 
+	/* A cover is an object: its colors stay put when the theme changes. */
 	.navy .over {
-		color: var(--bb-sky-text);
+		color: #a9c8ff;
 	}
 
 	.frame {
@@ -172,7 +173,7 @@
 		padding: 18px 10px 16px 16px;
 		box-shadow:
 			inset 8px 0 0 rgba(0, 0, 0, 0.25),
-			0 24px 40px -24px rgba(0, 0, 0, 0.95);
+			0 24px 40px -24px var(--bb-drop);
 	}
 
 	.navy.md .frame {
@@ -193,7 +194,7 @@
 		padding: 26px 16px 22px 26px;
 		box-shadow:
 			inset 10px 0 0 rgba(0, 0, 0, 0.25),
-			0 40px 60px -30px rgba(0, 0, 0, 0.95),
+			0 40px 60px -30px var(--bb-drop),
 			0 0 0 1px rgba(124, 180, 255, 0.25);
 	}
 
@@ -212,8 +213,9 @@
 		line-height: 0.98;
 	}
 
-	/* Paper */
+	/* Paper; on the light theme's paper ground it needs an edge. */
 	.paper {
+		--paper-edge: light-dark(rgba(60, 40, 10, 0.14), transparent);
 		background: var(--bb-paper);
 		justify-content: center;
 	}
@@ -243,7 +245,8 @@
 		padding: 16px 10px 16px 16px;
 		box-shadow:
 			inset 8px 0 0 rgba(60, 40, 10, 0.14),
-			0 24px 40px -24px rgba(0, 0, 0, 0.95);
+			inset 0 0 0 1px var(--paper-edge),
+			0 24px 40px -24px var(--bb-drop);
 	}
 
 	.paper.md .emblem {
@@ -271,7 +274,8 @@
 		padding: 26px 16px 22px 26px;
 		box-shadow:
 			inset 10px 0 0 rgba(60, 40, 10, 0.14),
-			0 40px 60px -30px rgba(0, 0, 0, 0.95);
+			inset 0 0 0 1px var(--paper-edge),
+			0 40px 60px -30px var(--bb-drop);
 	}
 
 	.paper.lg .emblem {
@@ -304,11 +308,12 @@
 	.navy.sm {
 		background: linear-gradient(90deg, #0c1748 0 6px, #1d3184 6px);
 		box-shadow: inset 0 0 0 1px rgba(124, 180, 255, 0.4);
-		color: var(--bb-sky);
+		color: #7cb4ff;
 	}
 
 	.paper.sm {
 		background: linear-gradient(90deg, var(--bb-paper-line) 0 6px, var(--bb-paper) 6px);
+		box-shadow: inset 0 0 0 1px var(--paper-edge);
 		color: var(--bb-royal);
 	}
 </style>

@@ -5,6 +5,7 @@
 	import Wordmark from './Wordmark.svelte';
 	import Kbd from './Kbd.svelte';
 	import Icon from './Icon.svelte';
+	import ThemeToggle from './ThemeToggle.svelte';
 
 	let { user }: { user: { name: string } } = $props();
 
@@ -37,6 +38,7 @@
 		</div>
 
 		<div class="end">
+			<ThemeToggle />
 			{#if header.actions}
 				{@render header.actions()}
 			{:else}
@@ -64,7 +66,7 @@
 		position: sticky;
 		top: 0;
 		z-index: 10;
-		background: rgba(10, 15, 36, 0.9);
+		background: light-dark(rgba(245, 240, 230, 0.88), rgba(10, 15, 36, 0.9));
 		-webkit-backdrop-filter: blur(10px);
 		backdrop-filter: blur(10px);
 		border-bottom: 1px solid var(--bb-line-faint);
@@ -102,7 +104,7 @@
 	.crumbs {
 		min-width: 0;
 		padding-left: 22px;
-		border-left: 1px solid #222d5a;
+		border-left: 1px solid var(--bb-line-mid);
 		font-size: 14px;
 		color: var(--bb-text-3);
 	}
@@ -193,8 +195,9 @@
 		width: 36px;
 		height: 36px;
 		border-radius: 50%;
-		background: var(--bb-paper);
-		color: #141c45;
+		/* A paper disc at night, an ink one on paper. */
+		background: light-dark(#141c45, var(--bb-paper));
+		color: light-dark(var(--bb-paper), #141c45);
 		font-family: var(--font-display);
 		font-size: 16px;
 	}

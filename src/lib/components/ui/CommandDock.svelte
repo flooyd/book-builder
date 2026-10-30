@@ -91,18 +91,18 @@
 		gap: 4px;
 		padding: 7px;
 		border-radius: 18px;
-		background: rgba(20, 28, 62, 0.96);
+		background: light-dark(rgba(253, 251, 247, 0.96), rgba(20, 28, 62, 0.96));
 		border: 1px solid var(--bb-line-control);
 		box-shadow:
-			0 30px 60px -18px rgba(0, 0, 0, 0.95),
-			0 0 0 6px rgba(10, 15, 36, 0.6);
+			0 30px 60px -18px var(--bb-drop),
+			0 0 0 6px light-dark(rgba(245, 240, 230, 0.6), rgba(10, 15, 36, 0.6));
 	}
 
 	.dock:focus {
 		outline: none;
 		box-shadow:
-			0 30px 60px -18px rgba(0, 0, 0, 0.95),
-			0 0 0 6px rgba(10, 15, 36, 0.6);
+			0 30px 60px -18px var(--bb-drop),
+			0 0 0 6px light-dark(rgba(245, 240, 230, 0.6), rgba(10, 15, 36, 0.6));
 	}
 
 	.dock-label {
@@ -135,7 +135,7 @@
 	}
 
 	.dock-item:hover {
-		background: #1f2b5c;
+		background: light-dark(#ece5d7, #1f2b5c);
 	}
 
 	.dock-item.primary {
