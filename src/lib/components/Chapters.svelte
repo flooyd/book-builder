@@ -14,11 +14,11 @@
 		return data as Chapter[];
 	};
 
-     const refreshChapters = async () => {
-        const data = await getChapters();
-        chapters = data;
-        ready = true;
-    };
+	const refreshChapters = async () => {
+		const data = await getChapters();
+		chapters = data;
+		ready = true;
+	};
 
 	onMount(async () => {
 		void refreshChapters();
@@ -26,7 +26,7 @@
 
 	$effect(() => {
 		void $booksRefresh;
-        void refreshChapters();
+		void refreshChapters();
 	});
 
 	const getChapterTitle = (chapter: Chapter) => {

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { booksStore, bookStore, partsStore, partStore, userStore } from '$lib/stores';
-	import type {Chapter} from '$lib/stores';
+	import type { Chapter } from '$lib/stores';
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
 	import { fade } from 'svelte/transition';
@@ -42,20 +42,20 @@
 	};
 
 	const getPartTitle = () => {
-		if(!$booksStore || $booksStore.length === 0) return;
+		if (!$booksStore || $booksStore.length === 0) return;
 		const partTitle = $partStore.title;
 		const separator = ' • ';
-		const bookTitle = $booksStore.find(b => b.id === $partStore.bookId).title;
-		return partTitle + separator + bookTitle
-	}
+		const bookTitle = $booksStore.find((b) => b.id === $partStore.bookId).title;
+		return partTitle + separator + bookTitle;
+	};
 
 	$effect(() => {
-		if($partStore) {
+		if ($partStore) {
 			chapters = [];
-			$bookStore = $booksStore.find(b => b.id === $partStore.bookId);
-			getChaptersByPartId($partStore.id).then(data => chapters = data);
+			$bookStore = $booksStore.find((b) => b.id === $partStore.bookId);
+			getChaptersByPartId($partStore.id).then((data) => (chapters = data));
 		}
-	})
+	});
 </script>
 
 {#if ready && $partStore}
@@ -105,7 +105,7 @@
 				<ul class="card">
 					{#each chapters as chapter, index (index)}
 						<button
-						transition:fade
+							transition:fade
 							onclick={(e) => {
 								e.preventDefault();
 							}}>{chapter.title}</button
@@ -148,7 +148,8 @@
 		gap: 9.89px;
 	}
 
-	.title h1, .part-details h2 {
+	.title h1,
+	.part-details h2 {
 		margin-bottom: 0px;
 	}
 </style>

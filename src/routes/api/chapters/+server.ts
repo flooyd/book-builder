@@ -44,7 +44,10 @@ export const POST = async (event: RequestEvent) => {
 		return json({ error: 'Part does not belong to the user' }, { status: 403 });
 	}
 
-    const newChapter = await db.insert(chapter).values({title, description, partId: parsedPartId}).returning();
+	const newChapter = await db
+		.insert(chapter)
+		.values({ title, description, partId: parsedPartId })
+		.returning();
 
-    return json(newChapter);
+	return json(newChapter);
 };

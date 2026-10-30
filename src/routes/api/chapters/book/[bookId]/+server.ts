@@ -4,8 +4,8 @@ import { eq, asc, inArray } from 'drizzle-orm';
 import { json, type RequestEvent } from '@sveltejs/kit';
 
 export const GET = async (event: RequestEvent) => {
-    const bookId = String(event.params.bookId);
-    const partIds = await db     
+	const bookId = String(event.params.bookId);
+	const partIds = await db
 		.select()
 		.from(part)
 		.where(eq(part.bookId, parseInt(bookId)))

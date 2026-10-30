@@ -151,7 +151,8 @@
 		gap: 9.89px;
 	}
 
-	.title h1, .control h2 {
+	.title h1,
+	.control h2 {
 		margin-bottom: 0px;
 	}
 

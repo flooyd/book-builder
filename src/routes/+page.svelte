@@ -19,7 +19,7 @@
 		{#if $userStore}
 			<Books />
 			<Parts />
-			<Chapters/>
+			<Chapters />
 		{/if}
 	</div>
 {/if}
