@@ -45,7 +45,7 @@
 		if (!$booksStore || $booksStore.length === 0) return;
 		const partTitle = $partStore.title;
 		const separator = ' • ';
-		const bookTitle = $booksStore.find((b) => b.id === $partStore.bookId).title;
+		const bookTitle = $booksStore.find((b) => b.id === $partStore.bookId)?.title ?? '';
 		return partTitle + separator + bookTitle;
 	};
 
@@ -85,7 +85,7 @@
 					<h1>
 						{getPartTitle()}
 					</h1>
-					{#if $partStore.userId === $userStore.id}
+					{#if $partStore.userId === $userStore?.id}
 						<button>Edit</button>
 					{/if}
 				</div>

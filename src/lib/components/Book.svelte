@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { userStore, type, bookStore, partsStore, partStore } from '$lib/stores';
-	import type { Chapter } from '$lib/stores';
+	import { userStore, type, bookStore, partStore } from '$lib/stores';
+	import type { Chapter, Part } from '$lib/stores';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 
 	let ready = $state(false);
 	let chapters = $state<Chapter[]>([]);
+	// Local: partsStore now holds the whole library and must not be narrowed to one book.
+	let parts = $state<Part[]>([]);
 
 	const getBookById = async (id: number) => {
 		const response = await fetch(`/api/book/${id}`);
@@ -42,20 +44,19 @@
 	const getChapterTitle = (chapter: Chapter) => {
 		const chapterTitle = chapter.title;
 		const separator = ' • ';
-		const part = $partsStore.find((p) => p.id === chapter.partId);
-		const partTitle = part.title;
+		const part = parts.find((p) => p.id === chapter.partId);
+		const partTitle = part?.title ?? '';
 		return chapterTitle + separator + partTitle;
 	};
 
 	onMount(() => {
-		$partsStore = [];
 		if (typeof window === 'undefined') return;
 		const id = window.location.pathname.split('/').pop();
 		if (id) {
 			getBookById(parseInt(id)).then((data) => {
 				bookStore.set(data);
-				getPartsByBookId(parseInt(id)).then((parts) => {
-					partsStore.set(parts);
+				getPartsByBookId(parseInt(id)).then((data) => {
+					parts = data;
 					ready = true;
 				});
 			});
@@ -82,7 +83,7 @@
 				{:else}
 					<div class="title">
 						<h1>{$bookStore?.title}</h1>
-						{#if $userStore?.user_id === $bookStore?.user_id}
+						{#if $userStore?.id === $bookStore?.userId}
 							<button onclick={() => type.set('edit')}>Edit</button>
 							<button class="danger" onclick={() => deleteBookById($bookStore.id)}>Delete</button>
 						{/if}
@@ -100,11 +101,11 @@
 			</div>
 		</div>
 	</div>
-	{#if $partsStore.length > 0}
+	{#if parts.length > 0}
 		<div class="parts" transition:fade>
 			<h2>Parts</h2>
 			<ul class="card">
-				{#each $partsStore as part (part.id)}
+				{#each parts as part (part.id)}
 					<button
 						transition:fade
 						onclick={(e) => {

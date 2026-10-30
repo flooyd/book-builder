@@ -6,12 +6,12 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import SiteHeader from '$lib/components/marketing/SiteHeader.svelte';
 	import SiteFooter from '$lib/components/marketing/SiteFooter.svelte';
-	import Menu from '$lib/components/Menu.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import AppHeader from '$lib/components/ui/AppHeader.svelte';
+	import CommandDock from '$lib/components/ui/CommandDock.svelte';
 	import { provideAppHeader } from '$lib/app-header.svelte';
-	import { userStore, showMenuStore, modalStore, booksRefresh, booksStore } from '$lib/stores';
-	import type { Book } from '$lib/stores';
+	import { clearLibrary, loadLibrary } from '$lib/library';
+	import { userStore, showMenuStore, modalStore, booksRefresh } from '$lib/stores';
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
@@ -30,13 +30,11 @@
 		userStore.set(user ?? null);
 	});
 
+	// Load (and reload on booksRefresh) the signed-in user's books, parts and chapters.
 	$effect(() => {
 		void $booksRefresh;
-		if (!userId) {
-			booksStore.set([]);
-			return;
-		}
-		getBooks().then((books) => booksStore.set(books));
+		if (userId) loadLibrary();
+		else clearLibrary();
 	});
 
 	const handleKeyDown = (event: KeyboardEvent) => {
@@ -45,12 +43,6 @@
 			event.preventDefault(); // Stops the browser from minimizing / opening a new tab
 			showMenuStore.update((value) => !value);
 		}
-	};
-
-	const getBooks = async () => {
-		const response = await fetch('/api/books');
-		if (!response.ok) return [];
-		return (await response.json()) as Book[];
 	};
 
 	console.log('Hello, world! Welcome to Book Builder.');
@@ -68,15 +60,16 @@
 	<SiteHeader />
 {/if}
 
-<div class="app" class:legacy={!!user || siteChrome}>
+<div class="app" class:legacy={(!!user && page.url.pathname !== '/') || siteChrome}>
 	{@render children()}
-	{#if user && $showMenuStore}
-		<Menu />
-	{/if}
 	{#if $modalStore?.type === 'create'}
 		<Modal title={$modalStore.title} category={$modalStore.category} type={$modalStore.type} />
 	{/if}
 </div>
+
+{#if user && $showMenuStore}
+	<CommandDock />
+{/if}
 
 {#if siteChrome}
 	<SiteFooter />
