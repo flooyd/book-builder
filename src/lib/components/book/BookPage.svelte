@@ -11,6 +11,7 @@
 		partsStore,
 		userStore,
 		type Book,
+		type Chapter,
 		type Part
 	} from '$lib/stores';
 	import { bookOutline, latestChapterId, plural, relativeDay } from '$lib/library';
@@ -19,7 +20,9 @@
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import Pill from '$lib/components/ui/Pill.svelte';
+	import Missing from '$lib/components/story/Missing.svelte';
 	import TocChapterRow from './TocChapterRow.svelte';
+	import BookAside from './BookAside.svelte';
 
 	let { id }: { id: number } = $props();
 
@@ -32,6 +35,7 @@
 	const chapterTarget = $derived(outline.findLast((entry) => entry.label)?.part);
 
 	const partHref = (part: Part) => resolve('/part/[id]', { id: String(part.id) });
+	const chapterHref = (chapter: Chapter) => resolve('/chapter/[id]', { id: String(chapter.id) });
 
 	// ---- Inline edit -------------------------------------------------------------------------
 	let editing = $state(false);
@@ -210,7 +214,7 @@
 					</div>
 					{#each entry.chapters as { chapter, number } (chapter.id)}
 						<TocChapterRow
-							href={partHref(entry.part)}
+							href={chapterHref(chapter)}
 							{number}
 							title={chapter.title}
 							updatedAt={chapter.updatedAt}
@@ -236,6 +240,8 @@
 				</button>
 			{/if}
 		</section>
+
+		<BookAside bookId={book.id} />
 	</main>
 
 	{#if confirmingDelete}
@@ -257,17 +263,8 @@
 			</div>
 		</Dialog>
 	{/if}
-{:else if $libraryStatus === 'ready'}
-	<main class="missing">
-		<h1>This book isn't on your shelf.</h1>
-		<p>It may have been deleted, or the link is wrong.</p>
-		<Button variant="primary" href={resolve('/')}>Back to your library</Button>
-	</main>
-{:else if $libraryStatus === 'error'}
-	<main class="missing" role="alert">
-		<h1>We couldn't load this book.</h1>
-		<Button onclick={() => booksRefresh.update((n) => n + 1)}>Try again</Button>
-	</main>
+{:else if $libraryStatus !== 'loading'}
+	<Missing noun="book" />
 {:else}
 	<div class="band" aria-busy="true">
 		<div class="band-inner"><div class="cover-skeleton"></div></div>
@@ -441,6 +438,15 @@
 		max-width: 1280px;
 		margin: 0 auto;
 		padding: 44px 32px 64px;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		gap: 40px;
+	}
+
+	.contents {
+		flex: 999 1 600px;
+		min-width: 0;
 	}
 
 	.contents h2 {
@@ -604,33 +610,13 @@
 		border-top: 1px solid var(--bb-line-soft);
 	}
 
-	/* Not found / error */
-	.missing {
-		max-width: 1280px;
-		margin: 0 auto;
-		padding: 80px 32px;
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 16px;
-	}
-
-	.missing h1 {
-		font-size: clamp(36px, 4vw, 52px);
-	}
-
-	.missing p {
-		color: var(--bb-text-2);
-	}
-
 	@media (max-width: 600px) {
 		.band-inner {
 			padding: 24px 16px 28px;
 			gap: 24px;
 		}
 
-		.contents-wrap,
-		.missing {
+		.contents-wrap {
 			padding-left: 16px;
 			padding-right: 16px;
 		}

@@ -1,3 +1,5 @@
+import { beforeNavigate } from '$app/navigation';
+
 type Status = 'loading' | 'load-error' | 'ready' | 'saving' | 'saved' | 'error';
 
 export function countWords(text: string) {
@@ -6,9 +8,9 @@ export function countWords(text: string) {
 }
 
 /**
- * The story text of a part that has no chapters. POST vs PUT is decided by whether a row exists
- * (not by whether the text is empty, which made clearing the text impossible), and nothing is
- * written until the writer saves.
+ * The story text of a part that has no chapters, or of a chapter. POST vs PUT is decided by
+ * whether a row exists (not by whether the text is empty, which made clearing the text
+ * impossible), and nothing is written until the writer saves.
  */
 export class StoryTextDoc {
 	content = $state('');
@@ -26,8 +28,8 @@ export class StoryTextDoc {
 	#loading: Promise<void> | null = null;
 	#url: string;
 
-	constructor(partId: number) {
-		this.#url = `/api/story-text/part/${partId}`;
+	constructor(target: 'part' | 'chapter', id: number) {
+		this.#url = `/api/story-text/${target}/${id}`;
 	}
 
 	load() {
@@ -81,6 +83,31 @@ export class StoryTextDoc {
 			body: JSON.stringify({ content })
 		});
 	}
+}
+
+/**
+ * Ctrl/Cmd+S saves, and leaving with unsaved text asks first. A 'leave' navigation (reload,
+ * close, external link) shows the browser's own beforeunload prompt when cancelled. Call during
+ * component initialisation.
+ */
+export function guardStoryText(doc: StoryTextDoc, enabled: () => boolean = () => true) {
+	beforeNavigate(({ type, cancel }) => {
+		if (!enabled() || !doc.dirty) return;
+		if (type === 'leave') cancel();
+		else if (!confirm('You have unsaved changes to this story text. Leave without saving?'))
+			cancel();
+	});
+
+	$effect(() => {
+		function onkeydown(event: KeyboardEvent) {
+			if (enabled() && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+				event.preventDefault();
+				doc.save();
+			}
+		}
+		window.addEventListener('keydown', onkeydown);
+		return () => window.removeEventListener('keydown', onkeydown);
+	});
 }
 
 async function errorText(response: Response) {

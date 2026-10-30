@@ -10,6 +10,7 @@
 		partsStore,
 		showMenuStore,
 		type Book,
+		type Chapter,
 		type Part
 	} from '$lib/stores';
 	import { bookOutline, plural, relativeDay } from '$lib/library';
@@ -68,6 +69,7 @@
 
 	const bookHref = (book: Book) => resolve('/book/[id]', { id: String(book.id) });
 	const partHref = (part: Part) => resolve('/part/[id]', { id: String(part.id) });
+	const chapterHref = (chapter: Chapter) => resolve('/chapter/[id]', { id: String(chapter.id) });
 
 	function retry() {
 		libraryStatus.set('loading');
@@ -178,7 +180,7 @@
 					{#if recent.length > 0}
 						<div class="recent">
 							{#each recent as item, i (item.chapter.id)}
-								<a class="recent-row" href={partHref(item.part)}>
+								<a class="recent-row" href={chapterHref(item.chapter)}>
 									<span class="num" class:latest={i === 0}>{item.number}</span>
 									<span class="recent-title">{item.chapter.title}</span>
 									<span class="recent-meta">{item.part.title} · {item.book.title}</span>

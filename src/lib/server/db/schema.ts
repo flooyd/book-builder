@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, serial, integer, text, timestamp, primaryKey, index } from 'drizzle-orm/pg-core';
 import { user } from './auth.schema';
 
 export const task = pgTable('task', {
@@ -57,8 +57,46 @@ export const character = pgTable('character', {
 	id: serial('id').primaryKey(),
 	name: text('name').notNull(),
 	description: text('description').notNull().default(''),
-	//characters can belong to multiple books or one
-	bookIds: text('book_ids').notNull().default(''),
+	userId: text('user_id')
+		.references(() => user.id, { onDelete: 'cascade' })
+		.notNull(),
+	createdAt: timestamp('created_at').notNull().defaultNow(),
+	updatedAt: timestamp('updated_at')
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date())
+});
+
+//characters can belong to multiple books or one
+export const characterBook = pgTable(
+	'character_book',
+	{
+		characterId: integer('character_id')
+			.references(() => character.id, { onDelete: 'cascade' })
+			.notNull(),
+		bookId: integer('book_id')
+			.references(() => book.id, { onDelete: 'cascade' })
+			.notNull()
+	},
+	(table) => [
+		primaryKey({ columns: [table.characterId, table.bookId] }),
+		index('character_book_book_id_idx').on(table.bookId)
+	]
+);
+
+//rules of a world: magic, law, trade...
+export const system = pgTable('system', {
+	id: serial('id').primaryKey(),
+	name: text('name').notNull(),
+	description: text('description').notNull().default(''),
+	//free-form label shown as the overline, e.g. "Magic" or "Law"
+	kind: text('kind').notNull().default(''),
+	bookId: integer('book_id')
+		.references(() => book.id, { onDelete: 'cascade' })
+		.notNull(),
+	userId: text('user_id')
+		.references(() => user.id, { onDelete: 'cascade' })
+		.notNull(),
 	createdAt: timestamp('created_at').notNull().defaultNow(),
 	updatedAt: timestamp('updated_at')
 		.notNull()

@@ -7,19 +7,22 @@
 		booksRefresh,
 		booksStore,
 		chaptersStore,
+		charactersStore,
 		modalStore,
 		partsStore,
+		systemsStore,
 		type Book,
 		type Chapter,
+		type Character,
 		type ModalCategory,
-		type Part
+		type Part,
+		type System
 	} from '$lib/stores';
 	import { bookOutline } from '$lib/library';
 	import Dialog from './Dialog.svelte';
 	import Button from './Button.svelte';
 	import Icon from './Icon.svelte';
 	import Kbd from './Kbd.svelte';
-	import Pill from './Pill.svelte';
 
 	// Copy from the mockup: heading, sub, name label, name placeholder, description placeholder, CTA.
 	const COPY: Record<ModalCategory, [string, string, string, string, string, string]> = {
@@ -73,16 +76,16 @@
 		{ id: 'system', label: 'System' }
 	];
 
-	// No API yet (Phase 8): the tabs stay so the shape is visible, but creating is disabled.
-	const SOON: ModalCategory[] = ['character', 'system'];
+	// Suggestions for a system's kind (free text; shown as its overline on the book page).
+	const KINDS = ['Magic', 'Law', 'Trade', 'Politics', 'Religion', 'Technology', 'Nature'];
 
 	// Snapshot of what opened the dialog; the layout re-mounts this component per open.
 	const opened = get(modalStore);
 	const books = get(booksStore);
+	const onlyBookId = books.length === 1 ? String(books[0].id) : '';
 
 	let category = $state<ModalCategory>(opened?.category ?? 'book');
 	const [heading, sub, nameLabel, namePlaceholder, descPlaceholder, cta] = $derived(COPY[category]);
-	const soon = $derived(SOON.includes(category));
 
 	// Parts that can take a chapter, labelled "{part} · {book}" as in the mockup.
 	const chapterParts = $derived(
@@ -111,13 +114,20 @@
 	let title = $state('');
 	let description = $state('');
 	let holds = $state<'chapters' | 'text'>('chapters');
-	let bookId = $state(
-		opened?.bookId ? String(opened.bookId) : books.length === 1 ? String(books[0].id) : ''
-	);
+	let bookId = $state(opened?.bookId ? String(opened.bookId) : onlyBookId);
 	let partId = $state(defaultPartId());
-	let appearsIn = $state<string[]>(opened?.bookId ? [String(opened.bookId)] : []);
+	let kind = $state('');
+	let appearsIn = $state<string[]>(
+		opened?.bookId ? [String(opened.bookId)] : onlyBookId ? [onlyBookId] : []
+	);
 
-	let errors = $state<{ title?: string; book?: string; part?: string; form?: string }>({});
+	let errors = $state<{
+		title?: string;
+		book?: string;
+		part?: string;
+		books?: string;
+		form?: string;
+	}>({});
 	let submitting = $state(false);
 	let titleInput = $state<HTMLInputElement>();
 
@@ -135,6 +145,9 @@
 		if (!title.trim()) next.title = `Add a ${nameLabel.toLowerCase()}.`;
 		if ((category === 'part' || category === 'system') && !bookId) next.book = 'Choose a book.';
 		if (category === 'chapter' && !partId) next.part = 'Choose a part.';
+		if (category === 'character' && appearsIn.length === 0) {
+			next.books = 'Choose at least one book.';
+		}
 		errors = next;
 		return Object.keys(next).length === 0;
 	}
@@ -153,14 +166,15 @@
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
-		if (soon || submitting || !validate()) {
+		if (submitting || !validate()) {
 			if (errors.title) titleInput?.focus();
 			return;
 		}
 		submitting = true;
 		try {
 			const fields = { title: title.trim(), description: description.trim() };
-			// Open the new book or part once the dialog has closed.
+			// Open the new item's page (or, for characters and systems, its book) once the dialog
+			// has closed.
 			let navigate: (() => Promise<void>) | null = null;
 
 			if (category === 'book') {
@@ -178,6 +192,26 @@
 			} else if (category === 'chapter') {
 				const chapter = await post<Chapter>('/api/chapters', { ...fields, partId: Number(partId) });
 				chaptersStore.update((list) => [...list, chapter]);
+			} else if (category === 'character') {
+				const character = await post<Character>('/api/characters', {
+					name: fields.title,
+					description: fields.description,
+					bookIds: appearsIn.map(Number)
+				});
+				charactersStore.update((list) => [...list, character]);
+				// Show it on the book it was created from, or the first book it appears in.
+				const shownIn = String(opened?.bookId ?? '');
+				const target = appearsIn.includes(shownIn) ? shownIn : appearsIn[0];
+				navigate = () => goto(resolve('/book/[id]', { id: target }));
+			} else if (category === 'system') {
+				const system = await post<System>('/api/systems', {
+					name: fields.title,
+					description: fields.description,
+					kind: kind.trim(),
+					bookId: Number(bookId)
+				});
+				systemsStore.update((list) => [...list, system]);
+				navigate = () => goto(resolve('/book/[id]', { id: String(system.bookId) }));
 			}
 
 			booksRefresh.update((n) => n + 1);
@@ -208,10 +242,7 @@
 	</div>
 
 	<div class="intro">
-		<div class="heading-row">
-			<h2 id="create-title">{heading}</h2>
-			{#if soon}<Pill variant="soon" size="sm">Soon</Pill>{/if}
-		</div>
+		<h2 id="create-title">{heading}</h2>
 		<p>{sub}</p>
 	</div>
 
@@ -304,6 +335,26 @@
 			</div>
 		{/if}
 
+		{#if category === 'system'}
+			<div class="field">
+				<label for="create-kind">Kind <span class="hint">Optional</span></label>
+				<input
+					bind:value={kind}
+					id="create-kind"
+					class="bb-field"
+					type="text"
+					autocomplete="off"
+					list="create-kind-options"
+					placeholder="e.g. Magic, Law, Trade"
+				/>
+				<datalist id="create-kind-options">
+					{#each KINDS as option (option)}
+						<option value={option}></option>
+					{/each}
+				</datalist>
+			</div>
+		{/if}
+
 		{#if category === 'chapter'}
 			<div class="field">
 				<label for="create-part">Part</label>
@@ -338,7 +389,7 @@
 		{/if}
 
 		{#if category === 'character'}
-			<fieldset class="appears">
+			<fieldset class="appears" aria-describedby={errors.books ? 'create-books-error' : undefined}>
 				<legend>Appears in</legend>
 				<div class="checks">
 					{#each $booksStore as book (book.id)}
@@ -346,9 +397,20 @@
 							<input type="checkbox" value={String(book.id)} bind:group={appearsIn} />{book.title}
 						</label>
 					{:else}
-						<p class="notice">Your books will be listed here.</p>
+						<p class="notice">
+							You don't have a book yet. <button
+								type="button"
+								class="link"
+								onclick={() => pick('book')}>Create one first.</button
+							>
+						</p>
 					{/each}
 				</div>
+				{#if errors.books}
+					<span id="create-books-error" class="error books-error"
+						><Icon name="alert-circle" size={15} />{errors.books}</span
+					>
+				{/if}
 			</fieldset>
 		{/if}
 
@@ -362,8 +424,8 @@
 			<span class="esc"><Kbd key="Esc" size="xs" /> to close</span>
 			<div class="footer-actions">
 				<Button variant="quiet" size="lg" onclick={close}>Cancel</Button>
-				<Button type="submit" variant="primary" size="lg" disabled={soon || submitting}>
-					{soon ? 'Coming soon' : submitting ? 'Creating…' : cta}
+				<Button type="submit" variant="primary" size="lg" disabled={submitting}>
+					{submitting ? 'Creating…' : cta}
 				</Button>
 			</div>
 		</div>
@@ -438,12 +500,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
-	}
-
-	.heading-row {
-		display: flex;
-		align-items: center;
-		gap: 12px;
 	}
 
 	h2 {
@@ -643,6 +699,10 @@
 		width: 18px;
 		height: 18px;
 		accent-color: var(--bb-royal);
+	}
+
+	.books-error {
+		margin-top: 10px;
 	}
 
 	/* Footer */
