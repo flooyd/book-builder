@@ -56,11 +56,6 @@
 			body: 'Sketch the shape of a book before the first sentence.'
 		},
 		{
-			title: 'Reading Mode',
-			icon: 'book-open',
-			body: 'Read a finished book the way your readers will.'
-		},
-		{
 			title: 'Text Editor',
 			icon: 'pen',
 			body: 'Richer formatting for your story text, right where you write it.'

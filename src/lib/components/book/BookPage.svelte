@@ -178,6 +178,9 @@
 					</div>
 					{#if !editing}
 						<div class="actions">
+							<Button href={resolve('/book/[id]/read', { id: String(book.id) })}>
+								<Icon name="book-open" size={16} />Read
+							</Button>
 							{#if isOwner}
 								<Button onclick={() => startEdit(book)}><Icon name="pen" size={16} />Edit</Button>
 								<Button variant="danger" onclick={() => (confirmingDelete = true)}>

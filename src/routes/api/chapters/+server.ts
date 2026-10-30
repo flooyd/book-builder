@@ -56,7 +56,12 @@ export const POST = async (event: RequestEvent) => {
 
 	const newChapter = await db
 		.insert(chapter)
-		.values({ title, description, partId: parsedPartId })
+		.values({
+			title,
+			description,
+			showDescription: body?.showDescription === true,
+			partId: parsedPartId
+		})
 		.returning();
 
 	return json(newChapter);

@@ -53,6 +53,7 @@ export const POST = async (event: RequestEvent) => {
 			title,
 			description,
 			hasChapters: Number(hasChapters) ? 1 : 0,
+			showDescription: body?.showDescription === true,
 			bookId: parsedBookId
 		})
 		.returning();

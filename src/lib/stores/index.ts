@@ -10,6 +10,8 @@ export type Book = {
 	title: string;
 	description: string;
 	userId: string;
+	/** Random id in the public /read/<shareId> link; null while the book is private. */
+	shareId: string | null;
 	createdAt: string;
 	updatedAt: string;
 };
@@ -21,6 +23,8 @@ export type Part = {
 	userId: string;
 	/** 1 = holds chapters, 0 = holds its own story text. */
 	hasChapters: number;
+	/** Show the description as a subtitle in reading mode. */
+	showDescription: boolean;
 	createdAt: string;
 	updatedAt: string;
 };
@@ -29,6 +33,8 @@ export type Chapter = {
 	title: string;
 	description: string;
 	partId: number;
+	/** Show the description as a subtitle in reading mode. */
+	showDescription: boolean;
 	createdAt: string;
 	updatedAt: string;
 };

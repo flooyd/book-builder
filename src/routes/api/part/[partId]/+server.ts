@@ -20,7 +20,7 @@ export const GET = async (event: RequestEvent) => {
 	return json(partData);
 };
 
-// update a part's title and/or description; returns the updated row
+// update a part's title, description and/or showDescription; returns the updated row
 export const PUT = async (event: RequestEvent) => {
 	const user = requireUser(event);
 	const id = Number(event.params.partId);
@@ -35,8 +35,9 @@ export const PUT = async (event: RequestEvent) => {
 		return json({ error: 'Title is required' }, { status: 400 });
 	}
 
-	const changes: { title: string; description?: string } = { title };
+	const changes: { title: string; description?: string; showDescription?: boolean } = { title };
 	if (typeof body?.description === 'string') changes.description = body.description.trim();
+	if (typeof body?.showDescription === 'boolean') changes.showDescription = body.showDescription;
 
 	const [updated] = await db
 		.update(part)

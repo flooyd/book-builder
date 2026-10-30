@@ -67,8 +67,12 @@
 		if (chapter) doc.load();
 	});
 
-	async function saveDetails(title: string, description: string) {
-		const updated = await putJSON<Chapter>(`/api/chapter/${id}`, { title, description });
+	async function saveDetails(title: string, description: string, showDescription: boolean) {
+		const updated = await putJSON<Chapter>(`/api/chapter/${id}`, {
+			title,
+			description,
+			showDescription
+		});
 		chaptersStore.update((chapters) => chapters.map((c) => (c.id === updated.id ? updated : c)));
 	}
 
@@ -97,7 +101,9 @@
 		<TitleBlock
 			title={chapter.title}
 			description={chapter.description}
+			showDescription={chapter.showDescription}
 			descriptionPlaceholder="What happens here?"
+			readHref="{resolve('/book/[id]/read', { id: String(book.id) })}#chapter-{chapter.id}"
 			canEdit={isOwner}
 			onsave={saveDetails}
 		>

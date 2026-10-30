@@ -68,8 +68,8 @@
 		if (holdsText) doc.load();
 	});
 
-	async function saveDetails(title: string, description: string) {
-		const updated = await putJSON<Part>(`/api/part/${id}`, { title, description });
+	async function saveDetails(title: string, description: string, showDescription: boolean) {
+		const updated = await putJSON<Part>(`/api/part/${id}`, { title, description, showDescription });
 		partsStore.update((parts) => parts.map((p) => (p.id === updated.id ? updated : p)));
 	}
 
@@ -97,7 +97,9 @@
 		<TitleBlock
 			title={part.title}
 			description={part.description}
+			showDescription={part.showDescription}
 			descriptionPlaceholder="A line about this part"
+			readHref="{resolve('/book/[id]/read', { id: String(book.id) })}#part-{part.id}"
 			canEdit={isOwner}
 			onsave={saveDetails}
 		>

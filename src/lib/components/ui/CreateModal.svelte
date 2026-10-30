@@ -129,6 +129,8 @@
 
 	let title = $state(editing?.name ?? '');
 	let description = $state(editing?.description ?? '');
+	// Parts and chapters: show the description as a subtitle in reading mode.
+	let showDescription = $state(false);
 	let holds = $state<'chapters' | 'text'>('chapters');
 	let bookId = $state(opened?.bookId ? String(opened.bookId) : onlyBookId);
 	let partId = $state(defaultPartId());
@@ -214,12 +216,17 @@
 				const part = await post<Part>('/api/parts', {
 					...fields,
 					bookId: Number(bookId),
-					hasChapters: holds === 'chapters' ? 1 : 0
+					hasChapters: holds === 'chapters' ? 1 : 0,
+					showDescription
 				});
 				partsStore.update((list) => [...list, part]);
 				navigate = () => goto(resolve('/part/[id]', { id: String(part.id) }));
 			} else if (category === 'chapter') {
-				const chapter = await post<Chapter>('/api/chapters', { ...fields, partId: Number(partId) });
+				const chapter = await post<Chapter>('/api/chapters', {
+					...fields,
+					showDescription,
+					partId: Number(partId)
+				});
 				chaptersStore.update((list) => [...list, chapter]);
 			} else if (category === 'character') {
 				const character = await post<Character>('/api/characters', {
@@ -311,6 +318,12 @@
 				class="bb-field description"
 				rows="3"
 				placeholder={descPlaceholder}></textarea>
+			{#if category === 'part' || category === 'chapter'}
+				<label class="show">
+					<input type="checkbox" bind:checked={showDescription} />
+					Show it under the title in reading mode
+				</label>
+			{/if}
 		</div>
 
 		{#if category === 'part'}
@@ -737,6 +750,27 @@
 	}
 
 	.check input {
+		width: 18px;
+		height: 18px;
+		accent-color: var(--bb-royal);
+	}
+
+	.field > .show {
+		justify-content: flex-start;
+	}
+
+	.show {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-height: 44px;
+		font-weight: 400;
+		color: var(--bb-text-label);
+		cursor: pointer;
+	}
+
+	.show input {
+		flex: none;
 		width: 18px;
 		height: 18px;
 		accent-color: var(--bb-royal);

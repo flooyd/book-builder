@@ -41,7 +41,11 @@
 			[12, 12, 4],
 			'M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41'
 		],
-		moon: ['M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z']
+		moon: ['M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z'],
+		'arrow-left': ['M19 12H5M12 19l-7-7 7-7'],
+		copy: ['M9 9h11v11H9z', 'M5 15H4V4h11v1'],
+		globe: [[12, 12, 9], 'M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18'],
+		lock: ['M5 11h14v10H5z', 'M8 11V7a4 4 0 0 1 8 0v4']
 	} satisfies Record<string, Shape[]>;
 
 	export type IconName = keyof typeof ICONS;

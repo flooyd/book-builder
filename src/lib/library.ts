@@ -113,18 +113,26 @@ const ORDINALS = [
 /** "Part One", "Part Two" … for the nth (1-based) chapter-holding part. */
 export const partLabel = (n: number) => `Part ${ORDINALS[n - 1] ?? n}`;
 
-export type OutlinePart = {
-	part: Part;
+/** What ordering needs of a part or chapter (reading mode passes trimmed-down rows). */
+type OutlinePartRow = Pick<Part, 'id' | 'bookId' | 'hasChapters' | 'createdAt'>;
+type OutlineChapterRow = Pick<Chapter, 'id' | 'partId' | 'createdAt'>;
+
+export type OutlinePart<P extends OutlinePartRow = Part, C extends OutlineChapterRow = Chapter> = {
+	part: P;
 	/** "Part One" etc. for parts that hold chapters; null for story-text parts. */
 	label: string | null;
-	chapters: { chapter: Chapter; number: number }[];
+	chapters: { chapter: C; number: number }[];
 };
 
 /**
  * A book's parts in order (oldest first), with chapter numbers running continuously across the
  * whole book. Story-text parts (hasChapters = 0) carry no chapters and don't take a part number.
  */
-export function bookOutline(bookId: number, parts: Part[], chapters: Chapter[]): OutlinePart[] {
+export function bookOutline<P extends OutlinePartRow, C extends OutlineChapterRow>(
+	bookId: number,
+	parts: P[],
+	chapters: C[]
+): OutlinePart<P, C>[] {
 	let ordinal = 0;
 	let number = 0;
 	return parts

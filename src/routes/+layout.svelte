@@ -29,8 +29,14 @@
 	const user = $derived(data.user);
 	const userId = $derived(data.user?.id);
 
+	// Reading mode (the owner's and the public link) draws its own bar, signed in or not.
+	const reading = $derived(
+		page.route.id === '/book/[id]/read' || page.route.id === '/read/[shareId]'
+	);
 	// Signed-out pages that draw their own header and footer.
-	const ownsChrome = $derived(page.url.pathname === '/' || page.url.pathname === '/login');
+	const ownsChrome = $derived(
+		reading || page.url.pathname === '/' || page.url.pathname === '/login'
+	);
 	const siteChrome = $derived(!user && !ownsChrome);
 
 	$effect(() => {
@@ -67,7 +73,7 @@
 	});
 
 	const handleKeyDown = (event: KeyboardEvent) => {
-		if (!user) return;
+		if (!user || reading) return;
 		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'm') {
 			event.preventDefault(); // Stops the browser from minimizing / opening a new tab
 			showMenuStore.update((value) => !value);
@@ -89,7 +95,7 @@
 
 <svelte:window onkeydown={handleKeyDown} />
 
-{#if user}
+{#if user && !reading}
 	<AppHeader {user} />
 {:else if siteChrome}
 	<SiteHeader />
@@ -99,7 +105,7 @@
 	{@render children()}
 </div>
 
-{#if user && $showMenuStore}
+{#if user && $showMenuStore && !reading}
 	<CommandDock />
 {/if}
 

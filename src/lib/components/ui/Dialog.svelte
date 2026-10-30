@@ -32,7 +32,9 @@
 		return () => {
 			cancelAnimationFrame(frame);
 			if (dialog.open) dialog.close();
-			if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
+			// Without scrolling: reading mode's contents jump somewhere else before closing.
+			if (opener instanceof HTMLElement && opener.isConnected)
+				opener.focus({ preventScroll: true });
 		};
 	});
 

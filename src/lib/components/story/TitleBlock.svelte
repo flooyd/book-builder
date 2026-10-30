@@ -8,7 +8,9 @@
 		overline,
 		title,
 		description,
+		showDescription,
 		descriptionPlaceholder,
+		readHref,
 		canEdit,
 		onsave,
 		children
@@ -16,16 +18,21 @@
 		overline: Snippet;
 		title: string;
 		description: string;
+		/** Whether reading mode shows the description as a subtitle under the title. */
+		showDescription: boolean;
 		descriptionPlaceholder: string;
+		/** Opens this part or chapter in reading mode. */
+		readHref: string;
 		canEdit: boolean;
 		/** Persist the edit; throw an Error with a message to show it inline. */
-		onsave: (title: string, description: string) => Promise<void>;
+		onsave: (title: string, description: string, showDescription: boolean) => Promise<void>;
 		children?: Snippet;
 	} = $props();
 
 	let editing = $state(false);
 	let draftTitle = $state('');
 	let draftDescription = $state('');
+	let draftShow = $state(false);
 	let saving = $state(false);
 	let error = $state('');
 	let titleInput = $state<HTMLInputElement>();
@@ -33,6 +40,7 @@
 	async function startEdit() {
 		draftTitle = title;
 		draftDescription = description;
+		draftShow = showDescription;
 		error = '';
 		editing = true;
 		await tick();
@@ -49,7 +57,7 @@
 		saving = true;
 		error = '';
 		try {
-			await onsave(draftTitle, draftDescription);
+			await onsave(draftTitle, draftDescription, draftShow);
 			editing = false;
 		} catch (err) {
 			error = err instanceof Error ? err.message : "Couldn't save.";
@@ -87,6 +95,10 @@
 				rows="2"
 				placeholder={descriptionPlaceholder}
 				onkeydown={cancelOnEscape}></textarea>
+			<label class="show">
+				<input type="checkbox" bind:checked={draftShow} />
+				Show the description under the title in reading mode
+			</label>
 			{#if error}
 				<p id="details-error" class="error" role="alert">
 					<Icon name="alert-circle" size={16} />{error}
@@ -105,12 +117,18 @@
 			{#key title}
 				<h1><motion-headline by="words" interval={0.07}>{title}</motion-headline></h1>
 			{/key}
-			{#if canEdit}
-				<Button onclick={startEdit}><Icon name="pen" size={15} />Edit details</Button>
-			{/if}
+			<div class="title-actions">
+				<Button href={readHref}><Icon name="book-open" size={15} />Read</Button>
+				{#if canEdit}
+					<Button onclick={startEdit}><Icon name="pen" size={15} />Edit details</Button>
+				{/if}
+			</div>
 		</div>
 		{#if description}
 			<p class="description">{description}</p>
+			{#if showDescription}
+				<p class="shown"><Icon name="book-open" size={14} />Shown as a subtitle in reading mode</p>
+			{/if}
 		{/if}
 	{/if}
 
@@ -151,6 +169,12 @@
 		align-items: flex-end;
 		justify-content: space-between;
 		gap: 16px;
+	}
+
+	.title-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
 	}
 
 	h1 {
@@ -212,6 +236,32 @@
 
 	.edit-title[aria-invalid='true'] {
 		border-color: var(--bb-coral);
+	}
+
+	.shown {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-top: -4px;
+		font-size: 13px;
+		color: var(--bb-text-3);
+	}
+
+	.show {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-height: 44px;
+		font-size: 15px;
+		color: var(--bb-text-label);
+		cursor: pointer;
+	}
+
+	.show input {
+		flex: none;
+		width: 18px;
+		height: 18px;
+		accent-color: var(--bb-royal);
 	}
 
 	.edit-actions {

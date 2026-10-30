@@ -1,4 +1,13 @@
-import { pgTable, serial, integer, text, timestamp, primaryKey, index } from 'drizzle-orm/pg-core';
+import {
+	pgTable,
+	serial,
+	integer,
+	text,
+	boolean,
+	timestamp,
+	primaryKey,
+	index
+} from 'drizzle-orm/pg-core';
 import { user } from './auth.schema';
 
 export const task = pgTable('task', {
@@ -14,6 +23,8 @@ export const book = pgTable('book', {
 	userId: text('user_id')
 		.references(() => user.id, { onDelete: 'cascade' })
 		.notNull(),
+	//random id in the book's public /read/<shareId> link; null while the book is private
+	shareId: text('share_id').unique(),
 	createdAt: timestamp('created_at').notNull().defaultNow(),
 	updatedAt: timestamp('updated_at')
 		.notNull()
@@ -36,7 +47,9 @@ export const part = pgTable('part', {
 		.notNull()
 		.defaultNow()
 		.$onUpdate(() => new Date()),
-	hasChapters: integer('has_chapters').notNull().default(1)
+	hasChapters: integer('has_chapters').notNull().default(1),
+	//show the description as a subtitle under the title in reading mode
+	showDescription: boolean('show_description').notNull().default(false)
 });
 
 export const chapter = pgTable('chapter', {
@@ -46,6 +59,8 @@ export const chapter = pgTable('chapter', {
 	partId: integer('part_id')
 		.references(() => part.id, { onDelete: 'cascade' })
 		.notNull(),
+	//show the description as a subtitle under the title in reading mode
+	showDescription: boolean('show_description').notNull().default(false),
 	createdAt: timestamp('created_at').notNull().defaultNow(),
 	updatedAt: timestamp('updated_at')
 		.notNull()
