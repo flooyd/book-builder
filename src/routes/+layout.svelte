@@ -2,8 +2,10 @@
 	import '$lib/styles/global.css';
 	import type { Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
+	import { page } from '$app/state';
 	import favicon from '$lib/assets/favicon.svg';
-	import Nav from '$lib/components/Nav.svelte';
+	import SiteHeader from '$lib/components/marketing/SiteHeader.svelte';
+	import SiteFooter from '$lib/components/marketing/SiteFooter.svelte';
 	import Menu from '$lib/components/Menu.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import AppHeader from '$lib/components/ui/AppHeader.svelte';
@@ -19,6 +21,10 @@
 	// once effects run in the browser.
 	const user = $derived(data.user);
 	const userId = $derived(data.user?.id);
+
+	// Signed-out pages that draw their own header and footer.
+	const ownsChrome = $derived(page.url.pathname === '/');
+	const siteChrome = $derived(!user && !ownsChrome);
 
 	$effect(() => {
 		userStore.set(user ?? null);
@@ -58,11 +64,11 @@
 
 {#if user}
 	<AppHeader {user} />
-{:else}
-	<Nav />
+{:else if siteChrome}
+	<SiteHeader />
 {/if}
 
-<div class="app">
+<div class="app" class:legacy={!!user || siteChrome}>
 	{@render children()}
 	{#if user && $showMenuStore}
 		<Menu />
@@ -72,8 +78,13 @@
 	{/if}
 </div>
 
+{#if siteChrome}
+	<SiteFooter />
+{/if}
+
 <style>
-	.app {
+	/* Padding for screens not yet rebuilt; removed as each phase lands. */
+	.legacy {
 		padding: 16px;
 	}
 </style>
