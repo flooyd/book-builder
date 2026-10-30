@@ -26,24 +26,26 @@
 
 <nav aria-label={label} class="rail">
 	<span class="rail-label">{label}</span>
-	{#each items as item (item.key)}
-		<!-- Callers pass resolve()d hrefs. -->
-		<!-- eslint-disable svelte/no-navigation-without-resolve -->
-		<a
-			class="rail-item"
-			class:current={item.current}
-			href={item.href}
-			aria-current={item.current ? 'page' : undefined}
-		>
-			<!-- eslint-enable svelte/no-navigation-without-resolve -->
-			{#if item.current}<span class="dot" aria-hidden="true"></span>{/if}
-			{#if item.number !== undefined}<span class="rail-num">{item.number}</span>{/if}
-			<span class="rail-name">{item.name}</span>
-			{#if !item.current && item.count !== undefined}
-				<span class="rail-count" aria-label={item.countLabel}>{item.count}</span>
-			{/if}
-		</a>
-	{/each}
+	<motion-stagger interval={0.04} y={10}>
+		{#each items as item (item.key)}
+			<!-- Callers pass resolve()d hrefs. -->
+			<!-- eslint-disable svelte/no-navigation-without-resolve -->
+			<a
+				class="rail-item"
+				class:current={item.current}
+				href={item.href}
+				aria-current={item.current ? 'page' : undefined}
+			>
+				<!-- eslint-enable svelte/no-navigation-without-resolve -->
+				{#if item.current}<span class="dot" aria-hidden="true"></span>{/if}
+				{#if item.number !== undefined}<span class="rail-num">{item.number}</span>{/if}
+				<span class="rail-name">{item.name}</span>
+				{#if !item.current && item.count !== undefined}
+					<span class="rail-count" aria-label={item.countLabel}>{item.count}</span>
+				{/if}
+			</a>
+		{/each}
+	</motion-stagger>
 	<button type="button" class="rail-new" onclick={onnew}>
 		<Icon name="plus" size={14} strokeWidth={2.4} />{newLabel}
 	</button>

@@ -15,7 +15,11 @@
 	{:else if doc.dirty}
 		<span class="unsaved"><span class="dot" aria-hidden="true"></span>Unsaved changes</span>
 	{:else if doc.status === 'saved'}
-		<span class="ok"><Icon name="check-circle" size={15} />Saved</span>
+		<span class="ok"
+			><motion-icon animation="draw pop" trigger="mount" duration={0.5}
+				><Icon name="check-circle" size={15} /></motion-icon
+			>Saved</span
+		>
 	{/if}
 </span>
 <Button
@@ -61,6 +65,11 @@
 
 	.ok {
 		color: var(--bb-sky-text);
+	}
+
+	/* The check draws itself each time "Saved" appears. */
+	.ok motion-icon {
+		--mc-icon-size: 15px;
 	}
 
 	.failed {

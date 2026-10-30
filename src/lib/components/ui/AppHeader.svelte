@@ -59,6 +59,8 @@
 
 <style>
 	.app-header {
+		/* Stays in place during page transitions instead of crossfading with the page. */
+		view-transition-name: app-header;
 		position: sticky;
 		top: 0;
 		z-index: 10;

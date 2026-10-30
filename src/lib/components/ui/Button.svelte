@@ -34,18 +34,32 @@
 	}: Props = $props();
 
 	const classes = $derived(['btn', variant, size, { block, glow }, className]);
+	const disabled = $derived(href === undefined && !!(rest as HTMLButtonAttributes).disabled);
 </script>
 
-{#if href !== undefined}
-	<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- callers pass resolve()d or external URLs -->
-	<a {href} class={classes} {...rest as HTMLAnchorAttributes}>{@render children()}</a>
-{:else}
-	<button type="button" class={classes} {...rest as HTMLButtonAttributes}
-		>{@render children()}</button
-	>
-{/if}
+<!-- motion-press gives the tactile shrink-and-spring on click. -->
+<motion-press class={['press', { block }]} scale={0.96} disabled={disabled || undefined}>
+	{#if href !== undefined}
+		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- callers pass resolve()d or external URLs -->
+		<a {href} class={classes} {...rest as HTMLAnchorAttributes}>{@render children()}</a>
+	{:else}
+		<button type="button" class={classes} {...rest as HTMLButtonAttributes}
+			>{@render children()}</button
+		>
+	{/if}
+</motion-press>
 
 <style>
+	.press {
+		display: inline-flex;
+		vertical-align: middle;
+	}
+
+	.press.block {
+		display: flex;
+		width: 100%;
+	}
+
 	.btn {
 		display: inline-flex;
 		align-items: center;

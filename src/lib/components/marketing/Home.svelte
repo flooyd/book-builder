@@ -83,42 +83,46 @@
 
 	<section class="hero">
 		<div class="hero-copy">
-			<p class="badge"><span class="badge-dot"></span>Free and open source</p>
-			<h1 class="hero-title">
-				Build worlds.<br /><span class="bind"
-					><em>Bind</em><svg
-						aria-hidden="true"
-						viewBox="0 0 200 24"
-						preserveAspectRatio="none"
-						class="swash"><path d="M4 16C46 6 118 3 196 11" /></svg
-					></span
-				>
-				them<br />into books.
-			</h1>
-			<p class="lede">
-				Book Builder is a free, open-source workshop for long-form stories. Shape your book into
-				parts and chapters, keep its characters and systems close at hand, and share what you've
-				written with readers.
-			</p>
-			<div class="cta-row">
-				<Button variant="primary" size="xl" glow href={resolve('/login')}>
-					Get started for free<Icon name="arrow-right" size={18} />
-				</Button>
-				<Button size="xl" href={GITHUB}>
-					<Icon name="git-branch" size={18} strokeWidth={1.8} />View on GitHub
-				</Button>
-			</div>
-			<div class="home-for">
-				<span class="home-for-label">One home for</span>
-				{#each homeFor as item (item.label)}
-					<span class="chip"><Icon name={item.icon} size={15} />{item.label}</span>
-				{/each}
-			</div>
+			<motion-stagger interval={0.09} y={18} duration={0.7}>
+				<p class="badge"><span class="badge-dot"></span>Free and open source</p>
+				<h1 class="hero-title">
+					Build worlds.<br /><span class="bind"
+						><em>Bind</em><svg
+							aria-hidden="true"
+							viewBox="0 0 200 24"
+							preserveAspectRatio="none"
+							class="swash"><path d="M4 16C46 6 118 3 196 11" pathLength="1" /></svg
+						></span
+					>
+					them<br />into books.
+				</h1>
+				<p class="lede">
+					Book Builder is a free, open-source workshop for long-form stories. Shape your book into
+					parts and chapters, keep its characters and systems close at hand, and share what you've
+					written with readers.
+				</p>
+				<div class="cta-row">
+					<motion-magnetic strength={0.2}>
+						<Button variant="primary" size="xl" glow href={resolve('/login')}>
+							Get started for free<Icon name="arrow-right" size={18} />
+						</Button>
+					</motion-magnetic>
+					<Button size="xl" href={GITHUB}>
+						<Icon name="git-branch" size={18} strokeWidth={1.8} />View on GitHub
+					</Button>
+				</div>
+				<div class="home-for">
+					<span class="home-for-label">One home for</span>
+					{#each homeFor as item (item.label)}
+						<span class="chip"><Icon name={item.icon} size={15} />{item.label}</span>
+					{/each}
+				</div>
+			</motion-stagger>
 		</div>
 
-		<div class="hero-art">
+		<motion-reveal class="hero-art" delay={0.3} y={28} duration={0.9}>
 			<AnimatedBook />
-		</div>
+		</motion-reveal>
 	</section>
 
 	<div class="marquee" aria-hidden="true">
@@ -142,63 +146,73 @@
 		<div class="section-head">
 			<div class="section-head-main">
 				<p class="overline">01 — How it's organized</p>
-				<h2 class="section-title">Every piece of your story has a shelf.</h2>
+				<h2 class="section-title">
+					<motion-headline by="words">Every piece of your story has a shelf.</motion-headline>
+				</h2>
 			</div>
-			<p class="section-aside">
+			<motion-reveal class="section-aside" delay={0.25}>
 				A book breaks into parts, a part into chapters — or a part holds its own story text, the way
 				a prologue does. Characters and systems live right beside them.
-			</p>
+			</motion-reveal>
 		</div>
 
 		<div class="features">
-			<div class="tree-card">
-				<div class="tree-book">
-					<div class="tree-cover" aria-hidden="true">IX</div>
-					<div class="tree-book-text">
-						<span class="tree-over">Book</span>
-						<span class="tree-title">The War of Nine</span>
+			<motion-tilt class="tree-tilt" max={3} scale={1.01} gloss={true}>
+				<div class="tree-card">
+					<div class="tree-book">
+						<div class="tree-cover" aria-hidden="true">IX</div>
+						<div class="tree-book-text">
+							<span class="tree-over">Book</span>
+							<span class="tree-title">The War of Nine</span>
+						</div>
+					</div>
+					<div class="tree-rows">
+						<div class="tree-row">
+							<Icon name="layers" size={16} class="tree-icon" />
+							<span class="tree-name">Prologue</span>
+							<span class="tree-pill">Story text</span>
+						</div>
+						<div class="tree-row">
+							<Icon name="chevron-down" size={16} class="tree-icon" />
+							<span class="tree-name">Part One <span class="tree-sub">— The Ninth Bell</span></span>
+							<span class="tree-meta">3 chapters</span>
+						</div>
+						<div class="tree-chapter">
+							<span class="tree-num">1</span><span>Salt and Iron</span>
+						</div>
+						<div class="tree-chapter current">
+							<span class="tree-num">2</span><span class="grow">A Map Drawn in Ash</span><span
+								class="tree-dot"
+							></span>
+						</div>
+						<div class="tree-chapter"><span class="tree-num">3</span><span>The Crossing</span></div>
+						<div class="tree-row">
+							<Icon name="chevron-right" size={16} class="tree-icon" />
+							<span class="tree-name">Part Two <span class="tree-sub">— The Ashen Coast</span></span
+							>
+							<span class="tree-meta">4 chapters</span>
+						</div>
+					</div>
+					<div class="tree-foot">
+						<span class="tree-count"><span>6</span> Characters</span>
+						<span class="tree-count"><span>2</span> Systems</span>
 					</div>
 				</div>
-				<div class="tree-rows">
-					<div class="tree-row">
-						<Icon name="layers" size={16} class="tree-icon" />
-						<span class="tree-name">Prologue</span>
-						<span class="tree-pill">Story text</span>
-					</div>
-					<div class="tree-row">
-						<Icon name="chevron-down" size={16} class="tree-icon" />
-						<span class="tree-name">Part One <span class="tree-sub">— The Ninth Bell</span></span>
-						<span class="tree-meta">3 chapters</span>
-					</div>
-					<div class="tree-chapter"><span class="tree-num">1</span><span>Salt and Iron</span></div>
-					<div class="tree-chapter current">
-						<span class="tree-num">2</span><span class="grow">A Map Drawn in Ash</span><span
-							class="tree-dot"
-						></span>
-					</div>
-					<div class="tree-chapter"><span class="tree-num">3</span><span>The Crossing</span></div>
-					<div class="tree-row">
-						<Icon name="chevron-right" size={16} class="tree-icon" />
-						<span class="tree-name">Part Two <span class="tree-sub">— The Ashen Coast</span></span>
-						<span class="tree-meta">4 chapters</span>
-					</div>
-				</div>
-				<div class="tree-foot">
-					<span class="tree-count"><span>6</span> Characters</span>
-					<span class="tree-count"><span>2</span> Systems</span>
-				</div>
-			</div>
+			</motion-tilt>
 
 			<div class="feature-grid">
-				{#each features as feature (feature.title)}
-					<div class="feature">
-						<span class="feature-icon"
-							><Icon name={feature.icon} size={22} strokeWidth={1.8} /></span
-						>
-						<h3>{feature.title}</h3>
-						<p>{feature.body}</p>
-					</div>
-				{/each}
+				<motion-stagger interval={0.08}>
+					{#each features as feature (feature.title)}
+						<!-- A soft glow follows the pointer across each card. -->
+						<motion-spotlight class="feature" size={320}>
+							<span class="feature-icon"
+								><Icon name={feature.icon} size={22} strokeWidth={1.8} /></span
+							>
+							<h3>{feature.title}</h3>
+							<p>{feature.body}</p>
+						</motion-spotlight>
+					{/each}
+				</motion-stagger>
 			</div>
 		</div>
 	</section>
@@ -206,93 +220,116 @@
 	<section id="example" class="section example">
 		<div class="example-copy">
 			<p class="overline">02 — Example of a Part</p>
-			<h2 class="section-title">Write where the story lives.</h2>
+			<h2 class="section-title">
+				<motion-headline by="words">Write where the story lives.</motion-headline>
+			</h2>
 			<p class="example-lede">
 				Open a part and its story text is right there, set in a typeface made for long reading —
 				nothing between you and the page.
 			</p>
 			<div class="checks">
-				<span class="check"
-					><span class="check-dot"><Icon name="check" size={13} strokeWidth={3} /></span>Parts
-					without chapters hold their own story text</span
-				>
-				<span class="check"
-					><span class="check-dot"><Icon name="check" size={13} strokeWidth={3} /></span>Edit titles
-					and descriptions in place</span
-				>
-				<span class="check"
-					><span class="check-dot"><Icon name="check" size={13} strokeWidth={3} /></span>Share
-					finished books with readers</span
-				>
+				<motion-stagger interval={0.1} delay={0.2}>
+					<span class="check"
+						><span class="check-dot"><Icon name="check" size={13} strokeWidth={3} /></span>Parts
+						without chapters hold their own story text</span
+					>
+					<span class="check"
+						><span class="check-dot"><Icon name="check" size={13} strokeWidth={3} /></span>Edit
+						titles and descriptions in place</span
+					>
+					<span class="check"
+						><span class="check-dot"><Icon name="check" size={13} strokeWidth={3} /></span>Share
+						finished books with readers</span
+					>
+				</motion-stagger>
 			</div>
 		</div>
 
-		<div class="preview">
-			<div class="preview-bar">
-				<span class="preview-crumbs"
-					>The War of Nine <span class="sep">/</span> <span class="here">Prologue</span></span
-				>
-				<span class="preview-saved"><Icon name="check-circle" size={15} />Saved</span>
-			</div>
-			<div class="preview-body">
-				<h3 class="preview-title">
-					Prologue <span class="bullet">•</span> <span class="muted">The War of Nine</span>
-				</h3>
-				<p class="preview-desc">Prologue to The War of Nine</p>
-				<p class="preview-pill">
-					<Icon name="pen" size={14} />No chapters — this part holds its own story text
-				</p>
-				<div class="preview-text">
-					<p>
-						Lorem ipsum dolor sit amet consectetur adipiscing elit non dolor quidem imperdiet est
-						quod voluptatum non quidem proident excepteur dolor pariatur eos do provident esse harum
-						imperdiet dolore expedita.
+		<motion-reveal class="preview-reveal" y={40} delay={0.1} duration={0.8}>
+			<div class="preview">
+				<div class="preview-bar">
+					<span class="preview-crumbs"
+						>The War of Nine <span class="sep">/</span> <span class="here">Prologue</span></span
+					>
+					<span class="preview-saved"><Icon name="check-circle" size={15} />Saved</span>
+				</div>
+				<div class="preview-body">
+					<h3 class="preview-title">
+						Prologue <span class="bullet">•</span> <span class="muted">The War of Nine</span>
+					</h3>
+					<p class="preview-desc">Prologue to The War of Nine</p>
+					<p class="preview-pill">
+						<Icon name="pen" size={14} />No chapters — this part holds its own story text
 					</p>
-					<p>
-						Deleniti vero est autem distinctio enim est quas elit temporibus pariatur deleniti
-						fugiat non autem sunt est facere accusamus culpa vero ullamco similique est in
-						temporibus amet possimus duis excepteur<span class="caret"></span>
-					</p>
+					<div class="preview-text">
+						<p>
+							Lorem ipsum dolor sit amet consectetur adipiscing elit non dolor quidem imperdiet est
+							quod voluptatum non quidem proident excepteur dolor pariatur eos do provident esse
+							harum imperdiet dolore expedita.
+						</p>
+						<p>
+							Deleniti vero est autem distinctio enim est quas elit temporibus pariatur deleniti
+							fugiat non autem sunt est facere accusamus culpa vero ullamco similique est in
+							temporibus amet possimus duis excepteur<span class="caret"></span>
+						</p>
+					</div>
 				</div>
 			</div>
-		</div>
+		</motion-reveal>
 	</section>
 
 	<section id="soon" class="section">
 		<p class="overline">03 — On the shelf next</p>
-		<h2 class="section-title soon-title">Coming soon.</h2>
+		<h2 class="section-title soon-title">
+			<motion-headline by="words">Coming soon.</motion-headline>
+		</h2>
 		<div class="soon-grid">
-			{#each soon as item (item.title)}
-				<div class="soon-card">
-					<div class="soon-top">
-						<span class="soon-icon"><Icon name={item.icon} size={22} strokeWidth={1.8} /></span>
-						<span class="soon-tag">Soon</span>
+			<motion-stagger interval={0.1}>
+				{#each soon as item (item.title)}
+					<div class="soon-card">
+						<div class="soon-top">
+							<span class="soon-icon"><Icon name={item.icon} size={22} strokeWidth={1.8} /></span>
+							<span class="soon-tag">Soon</span>
+						</div>
+						<h3>{item.title}</h3>
+						<p>{item.body}</p>
 					</div>
-					<h3>{item.title}</h3>
-					<p>{item.body}</p>
-				</div>
-			{/each}
+				{/each}
+			</motion-stagger>
 		</div>
 	</section>
 
 	<section class="closing">
-		<div class="closing-rule" aria-hidden="true">
-			<span></span>
-			<svg width="34" height="34" viewBox="0 0 32 32"
-				><path d="M3 7.5c4.4-2.2 8.6-2 12.2.9V27c-3.6-2.9-7.8-3.1-12.2-.9z" fill="#2B63F5" /><path
-					d="M29 7.5c-4.4-2.2-8.6-2-12.2.9V27c3.6-2.9 7.8-3.1 12.2-.9z"
-					fill="#7CB4FF"
-				/></svg
-			>
-			<span></span>
-		</div>
-		<h2 class="closing-title">Every saga starts<br />as a <em>single page.</em></h2>
-		<p class="closing-lede">
-			Build books and share them with others. Free to use, open source, and yours to shape.
-		</p>
-		<Button variant="primary" size="xl" glow href={resolve('/login')}>
-			Get started for free<Icon name="arrow-right" size={18} />
-		</Button>
+		<motion-stagger interval={0.12} y={20} duration={0.7}>
+			<div class="closing-rule" aria-hidden="true">
+				<span></span>
+				<svg width="34" height="34" viewBox="0 0 32 32"
+					><path d="M3 7.5c4.4-2.2 8.6-2 12.2.9V27c-3.6-2.9-7.8-3.1-12.2-.9z" fill="#2B63F5" /><path
+						d="M29 7.5c-4.4-2.2-8.6-2-12.2.9V27c3.6-2.9 7.8-3.1 12.2-.9z"
+						fill="#7CB4FF"
+					/></svg
+				>
+				<span></span>
+			</div>
+			<h2 class="closing-title">
+				Every saga starts<br />as a
+				<em
+					><motion-underline shape="wave" delay={0.5} duration={0.9}>single page.</motion-underline
+					></em
+				>
+			</h2>
+			<p class="closing-lede">
+				Build books and share them with others. Free to use, open source, and yours to shape.
+			</p>
+			<!-- Plain wrapper: the cascade animates it, the magnetic pull animates its child. -->
+			<div>
+				<motion-magnetic strength={0.2}>
+					<Button variant="primary" size="xl" glow href={resolve('/login')}>
+						Get started for free<Icon name="arrow-right" size={18} />
+					</Button>
+				</motion-magnetic>
+			</div>
+		</motion-stagger>
 	</section>
 
 	<SiteFooter />
@@ -396,11 +433,21 @@
 		overflow: visible;
 	}
 
+	/* The swash under "Bind" draws itself once the headline is in. */
 	.swash path {
 		fill: none;
 		stroke: var(--bb-sky);
 		stroke-width: 5;
 		stroke-linecap: round;
+		stroke-dasharray: 1;
+		stroke-dashoffset: 1;
+		animation: swash-draw 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.9s forwards;
+	}
+
+	@keyframes swash-draw {
+		to {
+			stroke-dashoffset: 0;
+		}
 	}
 
 	.lede {
@@ -564,10 +611,15 @@
 		align-items: stretch;
 	}
 
-	/* Tree card */
-	.tree-card {
+	/* Tree card, tilting gently toward the pointer. */
+	.tree-tilt {
 		flex: 1 1 440px;
 		min-width: 0;
+		display: block;
+		border-radius: 22px;
+	}
+
+	.tree-card {
 		padding: 26px;
 		border-radius: 22px;
 		background: var(--bb-ink);
@@ -745,6 +797,7 @@
 	}
 
 	.feature {
+		--mc-spotlight-color: rgba(124, 180, 255, 0.12);
 		background: #0e1534;
 		border: 1px solid var(--bb-line-soft);
 	}
@@ -835,9 +888,12 @@
 		color: var(--bb-sky);
 	}
 
-	.preview {
+	.preview-reveal {
 		flex: 1 1 620px;
 		min-width: 0;
+	}
+
+	.preview {
 		border-radius: 22px;
 		background: var(--bb-ink);
 		border: 1px solid var(--bb-line);
@@ -1027,6 +1083,8 @@
 	}
 
 	.closing-title em {
+		--mc-mark-color: var(--bb-sky);
+		--mc-mark-thickness: 3px;
 		font-family: var(--font-read);
 		font-style: italic;
 		color: var(--bb-sky);
@@ -1072,8 +1130,13 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		.marquee-track,
-		.caret {
+		.caret,
+		.swash path {
 			animation: none;
+		}
+
+		.swash path {
+			stroke-dashoffset: 0;
 		}
 	}
 </style>

@@ -29,32 +29,36 @@
 	}
 </script>
 
-<div class="surface" class:paper>
-	<div class="surface-head">
-		<label for="story">Story text</label>
-		<div class="surface-tools">
-			<span class="words">{plural(doc.words, 'word')}</span>
-			<div class="toggle" role="group" aria-label="Writing surface">
-				<button type="button" aria-pressed={!paper} onclick={() => setSurface(false)}>Night</button>
-				<button type="button" aria-pressed={paper} onclick={() => setSurface(true)}>Paper</button>
+<motion-reveal y={24} delay={0.15} duration={0.7}>
+	<div class="surface" class:paper>
+		<div class="surface-head">
+			<label for="story">Story text</label>
+			<div class="surface-tools">
+				<span class="words">{plural(doc.words, 'word')}</span>
+				<div class="toggle" role="group" aria-label="Writing surface">
+					<button type="button" aria-pressed={!paper} onclick={() => setSurface(false)}
+						>Night</button
+					>
+					<button type="button" aria-pressed={paper} onclick={() => setSurface(true)}>Paper</button>
+				</div>
 			</div>
 		</div>
+		{#if doc.status === 'load-error'}
+			<div class="load-error" role="alert">
+				<p>{doc.error}</p>
+				<Button onclick={() => doc.load()}>Try again</Button>
+			</div>
+		{:else}
+			<textarea
+				id="story"
+				class="story"
+				bind:value={doc.content}
+				readonly={doc.status === 'loading'}
+				aria-busy={doc.status === 'loading'}
+				placeholder={doc.status === 'loading' ? 'Loading…' : 'Write your story here…'}></textarea>
+		{/if}
 	</div>
-	{#if doc.status === 'load-error'}
-		<div class="load-error" role="alert">
-			<p>{doc.error}</p>
-			<Button onclick={() => doc.load()}>Try again</Button>
-		</div>
-	{:else}
-		<textarea
-			id="story"
-			class="story"
-			bind:value={doc.content}
-			readonly={doc.status === 'loading'}
-			aria-busy={doc.status === 'loading'}
-			placeholder={doc.status === 'loading' ? 'Loading…' : 'Write your story here…'}></textarea>
-	{/if}
-</div>
+</motion-reveal>
 {#if doc.status === 'error'}
 	<p class="save-error" role="alert">
 		<Icon name="alert-circle" size={16} />{doc.error} Your text is still here; try saving again.

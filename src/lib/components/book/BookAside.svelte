@@ -32,71 +32,73 @@
 </script>
 
 <aside class="aside">
-	<section aria-labelledby="h-characters" class="panel">
-		<div class="panel-head">
-			<h2 id="h-characters">Characters</h2>
-			<span class="count">{characters.length}</span>
-		</div>
-		{#each characters as character (character.id)}
-			<div class="person">
-				<span class={['avatar', tone(character)]} aria-hidden="true"
-					>{initials(character.name)}</span
-				>
-				<span class="person-text">
-					<span class="person-name">{character.name}</span>
-					<span class="person-meta">{alsoIn(character.bookIds) ?? bookTitle(bookId)}</span>
-				</span>
+	<motion-stagger interval={0.12} delay={0.2}>
+		<section aria-labelledby="h-characters" class="panel">
+			<div class="panel-head">
+				<h2 id="h-characters">Characters</h2>
+				<span class="count">{characters.length}</span>
 			</div>
-		{:else}
-			<p class="empty">No characters yet.</p>
-		{/each}
-		<button
-			type="button"
-			class="panel-link"
-			onclick={() => modalStore.set({ type: 'create', category: 'character', bookId })}
-		>
-			<Icon name="plus" size={15} strokeWidth={2.2} />New character
-		</button>
-	</section>
-
-	<section aria-labelledby="h-systems" class="panel">
-		<div class="panel-head">
-			<h2 id="h-systems">Systems</h2>
-			<span class="count">{systems.length}</span>
-		</div>
-		{#each systems as system (system.id)}
-			<div class="system">
-				<div class="system-head">
-					<span class="kind">{system.kind || 'System'}</span>
-					<button
-						type="button"
-						class="edit"
-						aria-label="Edit {system.name}"
-						onclick={() =>
-							modalStore.set({ type: 'edit', category: 'system', systemId: system.id, bookId })}
+			{#each characters as character (character.id)}
+				<div class="person">
+					<span class={['avatar', tone(character)]} aria-hidden="true"
+						>{initials(character.name)}</span
 					>
-						<Icon name="pen" size={15} />
-					</button>
+					<span class="person-text">
+						<span class="person-name">{character.name}</span>
+						<span class="person-meta">{alsoIn(character.bookIds) ?? bookTitle(bookId)}</span>
+					</span>
 				</div>
-				<span class="system-name">{system.name}</span>
-				{#if system.description}
-					<span class="system-desc">{system.description}</span>
-				{/if}
-				{#if alsoIn(system.bookIds)}
-					<span class="system-meta">{alsoIn(system.bookIds)}</span>
-				{/if}
+			{:else}
+				<p class="empty">No characters yet.</p>
+			{/each}
+			<button
+				type="button"
+				class="panel-link"
+				onclick={() => modalStore.set({ type: 'create', category: 'character', bookId })}
+			>
+				<Icon name="plus" size={15} strokeWidth={2.2} />New character
+			</button>
+		</section>
+
+		<section aria-labelledby="h-systems" class="panel">
+			<div class="panel-head">
+				<h2 id="h-systems">Systems</h2>
+				<span class="count">{systems.length}</span>
 			</div>
-		{:else}
-			<p class="empty">No systems yet.</p>
-		{/each}
-		<button
-			type="button"
-			class="panel-link"
-			onclick={() => modalStore.set({ type: 'create', category: 'system', bookId })}
-		>
-			<Icon name="plus" size={15} strokeWidth={2.2} />New system
-		</button>
-	</section>
+			{#each systems as system (system.id)}
+				<div class="system">
+					<div class="system-head">
+						<span class="kind">{system.kind || 'System'}</span>
+						<button
+							type="button"
+							class="edit"
+							aria-label="Edit {system.name}"
+							onclick={() =>
+								modalStore.set({ type: 'edit', category: 'system', systemId: system.id, bookId })}
+						>
+							<Icon name="pen" size={15} />
+						</button>
+					</div>
+					<span class="system-name">{system.name}</span>
+					{#if system.description}
+						<span class="system-desc">{system.description}</span>
+					{/if}
+					{#if alsoIn(system.bookIds)}
+						<span class="system-meta">{alsoIn(system.bookIds)}</span>
+					{/if}
+				</div>
+			{:else}
+				<p class="empty">No systems yet.</p>
+			{/each}
+			<button
+				type="button"
+				class="panel-link"
+				onclick={() => modalStore.set({ type: 'create', category: 'system', bookId })}
+			>
+				<Icon name="plus" size={15} strokeWidth={2.2} />New system
+			</button>
+		</section>
+	</motion-stagger>
 </aside>
 
 <style>

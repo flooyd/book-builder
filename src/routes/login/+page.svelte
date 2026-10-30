@@ -20,20 +20,28 @@
 	<div class="brand-panel">
 		<a class="brand" href={resolve('/')}><Wordmark size={26} /></a>
 
-		<div class="pitch">
+		<motion-reveal class="pitch" y={20} duration={0.8}>
 			<p class="pitch-title">Pick up where <em>the last page</em> left off.</p>
 			<p class="pitch-sub">
 				Your books, parts, chapters, characters and systems — exactly where you shelved them.
 			</p>
-		</div>
+		</motion-reveal>
 
+		<!-- The books drop onto the shelf one by one. Each spine sits in a plain wrapper so the drop
+		     doesn't overwrite the spines' own rotate/lean transforms. -->
 		<div class="shelf" aria-hidden="true">
-			<div class="spine s1"><span>The War of Nine</span><span class="num">I</span></div>
-			<div class="spine s2">Prologue</div>
-			<div class="spine s3"><span>The Ashen Coast</span><span class="num">II</span></div>
-			<div class="spine s4">Notes</div>
-			<div class="spine s5">Tidecraft</div>
-			<div class="spine s6">Characters</div>
+			<motion-stagger y={-70} interval={0.09} duration={0.8} delay={0.2}>
+				<div>
+					<div class="spine s1"><span>The War of Nine</span><span class="num">I</span></div>
+				</div>
+				<div><div class="spine s2">Prologue</div></div>
+				<div>
+					<div class="spine s3"><span>The Ashen Coast</span><span class="num">II</span></div>
+				</div>
+				<div><div class="spine s4">Notes</div></div>
+				<div><div class="spine s5">Tidecraft</div></div>
+				<div><div class="spine s6">Characters</div></div>
+			</motion-stagger>
 			<div class="floor"></div>
 		</div>
 	</div>
@@ -50,68 +58,76 @@
 				};
 			}}
 		>
-			<div class="intro">
-				<h1>Welcome back.</h1>
-				<p>Log in to your library, or create an account to start your first book.</p>
-			</div>
+			<motion-stagger interval={0.06} delay={0.1}>
+				<div class="intro">
+					<h1>Welcome back.</h1>
+					<p>Log in to your library, or create an account to start your first book.</p>
+				</div>
 
-			<div class="field">
-				<label for="email">Email</label>
-				<input
-					class="bb-field"
-					id="email"
-					type="email"
-					name="email"
-					autocomplete="email"
-					required
-					value={form?.email ?? ''}
-				/>
-			</div>
+				<div class="field">
+					<label for="email">Email</label>
+					<input
+						class="bb-field"
+						id="email"
+						type="email"
+						name="email"
+						autocomplete="email"
+						required
+						value={form?.email ?? ''}
+					/>
+				</div>
 
-			<div class="field">
-				<label for="password">Password</label>
-				<input
-					class="bb-field"
-					id="password"
-					type="password"
-					name="password"
-					autocomplete="current-password"
-					required
-					aria-invalid={error ? 'true' : undefined}
-					aria-describedby={error ? 'login-error' : undefined}
-				/>
-				{#if error}
-					<span id="login-error" class="error" role="alert">
-						<Icon name="alert-circle" size={16} />{error}
-					</span>
-				{/if}
-			</div>
+				<div class="field">
+					<label for="password">Password</label>
+					<input
+						class="bb-field"
+						id="password"
+						type="password"
+						name="password"
+						autocomplete="current-password"
+						required
+						aria-invalid={error ? 'true' : undefined}
+						aria-describedby={error ? 'login-error' : undefined}
+					/>
+					{#if error}
+						<span id="login-error" class="error" role="alert">
+							<Icon name="alert-circle" size={16} />{error}
+						</span>
+					{/if}
+				</div>
 
-			<div class="field">
-				<label for="name">Name <span class="hint">Only needed to register</span></label>
-				<input
-					class="bb-field"
-					id="name"
-					type="text"
-					name="name"
-					autocomplete="name"
-					placeholder="How readers will see you"
-				/>
-			</div>
+				<div class="field">
+					<label for="name">Name <span class="hint">Only needed to register</span></label>
+					<input
+						class="bb-field"
+						id="name"
+						type="text"
+						name="name"
+						autocomplete="name"
+						placeholder="How readers will see you"
+					/>
+				</div>
 
-			<Button type="submit" variant="primary" size="lg" block glow disabled={submitting}>
-				Log in<Icon name="arrow-right" size={18} />
-			</Button>
+				<!-- Buttons get a plain wrapper so the cascade and their press spring animate different
+			     elements. -->
+				<div>
+					<Button type="submit" variant="primary" size="lg" block glow disabled={submitting}>
+						Log in<Icon name="arrow-right" size={18} />
+					</Button>
+				</div>
 
-			<div class="divider"><span></span>New to Book Builder?<span></span></div>
+				<div class="divider"><span></span>New to Book Builder?<span></span></div>
 
-			<Button type="submit" formaction="?/signUpEmail" size="lg" block disabled={submitting}>
-				Create an account
-			</Button>
+				<div>
+					<Button type="submit" formaction="?/signUpEmail" size="lg" block disabled={submitting}>
+						Create an account
+					</Button>
+				</div>
 
-			<p class="foot">
-				Free and open source · <a href="https://github.com/flooyd/book-builder">View on GitHub</a>
-			</p>
+				<p class="foot">
+					Free and open source · <a href="https://github.com/flooyd/book-builder">View on GitHub</a>
+				</p>
+			</motion-stagger>
 		</form>
 	</div>
 </div>

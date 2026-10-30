@@ -101,7 +101,10 @@
 		</form>
 	{:else}
 		<div class="title-row">
-			<h1>{title}</h1>
+			<!-- Re-created when the title changes: the headline splits its text once. -->
+			{#key title}
+				<h1><motion-headline by="words" interval={0.07}>{title}</motion-headline></h1>
+			{/key}
 			{#if canEdit}
 				<Button onclick={startEdit}><Icon name="pen" size={15} />Edit details</Button>
 			{/if}

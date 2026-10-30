@@ -62,10 +62,24 @@
 	);
 
 	const counts = $derived([
-		{ n: $booksStore.length, label: $booksStore.length === 1 ? 'book' : 'books' },
-		{ n: $partsStore.length, label: $partsStore.length === 1 ? 'part' : 'parts' },
-		{ n: $chaptersStore.length, label: $chaptersStore.length === 1 ? 'chapter' : 'chapters' }
+		{ key: 'books', n: $booksStore.length, label: $booksStore.length === 1 ? 'book' : 'books' },
+		{ key: 'parts', n: $partsStore.length, label: $partsStore.length === 1 ? 'part' : 'parts' },
+		{
+			key: 'chapters',
+			n: $chaptersStore.length,
+			label: $chaptersStore.length === 1 ? 'chapter' : 'chapters'
+		}
 	]);
+
+	// motion-counter counts once; the template re-creates it when a count changes, so it springs
+	// from the number shown before rather than from 0.
+	// Deliberately not reactive: it only remembers the last number shown.
+	const shown: Record<string, number> = {};
+	function countFrom(key: string, n: number) {
+		const from = shown[key] ?? 0;
+		shown[key] = n;
+		return from;
+	}
 
 	const bookHref = (book: Book) => resolve('/book/[id]', { id: String(book.id) });
 	const partHref = (part: Part) => resolve('/part/[id]', { id: String(part.id) });
@@ -85,12 +99,20 @@
 	<div class="head">
 		<div class="head-text">
 			<span class="overline">Your library</span>
-			<h1>Welcome back.</h1>
+			<h1><motion-headline by="chars" interval={0.025}>Welcome back.</motion-headline></h1>
 		</div>
 		{#if $libraryStatus === 'ready'}
 			<div class="counts">
-				{#each counts as count (count.label)}
-					<span class="count"><span class="n">{count.n}</span>{count.label}</span>
+				{#each counts as count (count.key)}
+					<span class="count"
+						><span class="n"
+							>{#key count.n}<motion-counter
+									from={countFrom(count.key, count.n)}
+									to={count.n}
+									duration={1.2}>{count.n}</motion-counter
+								>{/key}</span
+						>{count.label}</span
+					>
 				{/each}
 			</div>
 		{/if}
@@ -113,31 +135,33 @@
 		<section aria-labelledby="h-books" class="books">
 			<h2 id="h-books" class="label">Books</h2>
 			<div class="book-grid" class:empty={library.length === 0}>
-				{#each library as { book, outline, chapterCount } (book.id)}
-					<a class="book-card" href={bookHref(book)}>
-						<BookCover id={book.id} title={book.title} author={userName} />
-						<span class="book-text">
-							<span class="book-title">{book.title}</span>
-							{#if book.description}
-								<span class="book-desc">{book.description}</span>
-							{/if}
-							<span class="book-meta">
-								<Pill variant="count" size="sm">{plural(outline.length, 'part')}</Pill>
-								<Pill variant="count" size="sm">{plural(chapterCount, 'chapter')}</Pill>
-								<span class="updated">Updated {relativeDay(book.updatedAt)}</span>
+				<motion-stagger interval={0.08} y={20}>
+					{#each library as { book, outline, chapterCount } (book.id)}
+						<a class="book-card" href={bookHref(book)}>
+							<BookCover id={book.id} title={book.title} author={userName} tilt />
+							<span class="book-text">
+								<span class="book-title">{book.title}</span>
+								{#if book.description}
+									<span class="book-desc">{book.description}</span>
+								{/if}
+								<span class="book-meta">
+									<Pill variant="count" size="sm">{plural(outline.length, 'part')}</Pill>
+									<Pill variant="count" size="sm">{plural(chapterCount, 'chapter')}</Pill>
+									<span class="updated">Updated {relativeDay(book.updatedAt)}</span>
+								</span>
 							</span>
-						</span>
-					</a>
-				{/each}
-				<button
-					type="button"
-					class="new-book"
-					onclick={() => modalStore.set({ type: 'create', category: 'book' })}
-				>
-					<span class="plus"><Icon name="plus" size={22} strokeWidth={2.2} /></span>
-					<span class="new-title">Start a new book</span>
-					<span class="new-sub">A title is all it takes</span>
-				</button>
+						</a>
+					{/each}
+					<button
+						type="button"
+						class="new-book"
+						onclick={() => modalStore.set({ type: 'create', category: 'book' })}
+					>
+						<span class="plus"><Icon name="plus" size={22} strokeWidth={2.2} /></span>
+						<span class="new-title">Start a new book</span>
+						<span class="new-sub">A title is all it takes</span>
+					</button>
+				</motion-stagger>
 			</div>
 		</section>
 
@@ -145,47 +169,51 @@
 			<div class="lists">
 				<section aria-labelledby="h-parts" class="list">
 					<h2 id="h-parts" class="label">Parts</h2>
-					{#each partRows as row (row.part.id)}
-						<a class="part-row" href={partHref(row.part)}>
-							<span class="part-icon">
-								<Icon name={row.label ? 'layers' : 'pen'} size={18} strokeWidth={1.9} />
-							</span>
-							<span class="part-text">
-								<span class="part-title">
-									{#if row.label}{row.label} <em>{row.part.title}</em>{:else}{row.part.title}{/if}
+					<motion-stagger interval={0.05} delay={0.15}>
+						{#each partRows as row (row.part.id)}
+							<a class="part-row" href={partHref(row.part)}>
+								<span class="part-icon">
+									<Icon name={row.label ? 'layers' : 'pen'} size={18} strokeWidth={1.9} />
 								</span>
-								<span class="part-book">{row.book.title}</span>
-							</span>
-							{#if row.label}
-								<span class="part-count">{plural(row.chapters.length, 'chapter')}</span>
-							{:else}
-								<Pill size="sm">No chapters</Pill>
-							{/if}
-						</a>
-					{:else}
-						<div class="empty-row">
-							<span>No parts yet. Parts hold chapters, or a single run of story text.</span>
-							<Button
-								variant="quiet"
-								onclick={() => modalStore.set({ type: 'create', category: 'part' })}
-							>
-								<Icon name="plus" size={16} />New part
-							</Button>
-						</div>
-					{/each}
+								<span class="part-text">
+									<span class="part-title">
+										{#if row.label}{row.label} <em>{row.part.title}</em>{:else}{row.part.title}{/if}
+									</span>
+									<span class="part-book">{row.book.title}</span>
+								</span>
+								{#if row.label}
+									<span class="part-count">{plural(row.chapters.length, 'chapter')}</span>
+								{:else}
+									<Pill size="sm">No chapters</Pill>
+								{/if}
+							</a>
+						{:else}
+							<div class="empty-row">
+								<span>No parts yet. Parts hold chapters, or a single run of story text.</span>
+								<Button
+									variant="quiet"
+									onclick={() => modalStore.set({ type: 'create', category: 'part' })}
+								>
+									<Icon name="plus" size={16} />New part
+								</Button>
+							</div>
+						{/each}
+					</motion-stagger>
 				</section>
 
 				<section aria-labelledby="h-chapters" class="list">
 					<h2 id="h-chapters" class="label">Recent chapters</h2>
 					{#if recent.length > 0}
 						<div class="recent">
-							{#each recent as item, i (item.chapter.id)}
-								<a class="recent-row" href={chapterHref(item.chapter)}>
-									<span class="num" class:latest={i === 0}>{item.number}</span>
-									<span class="recent-title">{item.chapter.title}</span>
-									<span class="recent-meta">{item.part.title} · {item.book.title}</span>
-								</a>
-							{/each}
+							<motion-stagger interval={0.05} delay={0.25}>
+								{#each recent as item, i (item.chapter.id)}
+									<a class="recent-row" href={chapterHref(item.chapter)}>
+										<span class="num" class:latest={i === 0}>{item.number}</span>
+										<span class="recent-title">{item.chapter.title}</span>
+										<span class="recent-meta">{item.part.title} · {item.book.title}</span>
+									</a>
+								{/each}
+							</motion-stagger>
 						</div>
 					{:else}
 						<div class="empty-row">

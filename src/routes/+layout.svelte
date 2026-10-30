@@ -1,7 +1,10 @@
 <script lang="ts">
 	import '$lib/styles/global.css';
-	import type { Snippet } from 'svelte';
+	// Hides content that motion-components will animate in until its elements are defined.
+	import 'motion-components/preload.css';
+	import { onMount, type Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
+	import { onNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import favicon from '$lib/assets/favicon.svg';
 	import SiteHeader from '$lib/components/marketing/SiteHeader.svelte';
@@ -35,6 +38,26 @@
 		void $booksRefresh;
 		if (userId) loadLibrary();
 		else clearLibrary();
+	});
+
+	// Define the motion elements once hydration is done (see $lib/motion).
+	onMount(() => {
+		import('$lib/motion');
+	});
+
+	// Crossfade between pages with the View Transitions API where the browser supports it. Same-page
+	// navigations (in-page anchors) and reduced-motion users get no transition.
+	onNavigate((navigation) => {
+		if (!document.startViewTransition) return;
+		if (navigation.from?.url.pathname === navigation.to?.url.pathname) return;
+		if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
 	});
 
 	const handleKeyDown = (event: KeyboardEvent) => {

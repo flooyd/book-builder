@@ -5,8 +5,16 @@
 		id,
 		title,
 		author = '',
-		size = 'md'
-	}: { id: number; title: string; author?: string; size?: 'sm' | 'md' | 'lg' } = $props();
+		size = 'md',
+		tilt = false
+	}: {
+		id: number;
+		title: string;
+		author?: string;
+		size?: 'sm' | 'md' | 'lg';
+		/** Tilt toward the pointer with a moving gloss, like a real book in the hand. */
+		tilt?: boolean;
+	} = $props();
 
 	function hash(text: string) {
 		let h = 0;
@@ -29,36 +37,61 @@
 	const scale = $derived(title.length > 30 ? 0.7 : title.length > 16 ? 0.84 : 1);
 </script>
 
-<div class={['cover', size, variant]} aria-hidden="true" style:--title-scale={scale}>
-	{#if size === 'sm'}
-		<span class="mono">{initials}</span>
-	{:else if variant === 'navy'}
-		<span class="frame"></span>
-		<span class="over">{author}</span>
-		<span class="title">{title}</span>
-		{#if size === 'lg'}
-			<svg width="52" height="10" viewBox="0 0 52 10"
-				><path d="M0 5h19M33 5h19" stroke="#7CB4FF" stroke-width="1" /><path
-					d="M26 0l5 5-5 5-5-5z"
-					fill="#7CB4FF"
-				/></svg
-			>
+{#if tilt}
+	<motion-tilt class={['tilt', size]} max={size === 'lg' ? 9 : 12} scale={1.03} gloss={true}>
+		{@render cover()}
+	</motion-tilt>
+{:else}
+	{@render cover()}
+{/if}
+
+{#snippet cover()}
+	<div class={['cover', size, variant]} aria-hidden="true" style:--title-scale={scale}>
+		{#if size === 'sm'}
+			<span class="mono">{initials}</span>
+		{:else if variant === 'navy'}
+			<span class="frame"></span>
+			<span class="over">{author}</span>
+			<span class="title">{title}</span>
+			{#if size === 'lg'}
+				<svg width="52" height="10" viewBox="0 0 52 10"
+					><path d="M0 5h19M33 5h19" stroke="#7CB4FF" stroke-width="1" /><path
+						d="M26 0l5 5-5 5-5-5z"
+						fill="#7CB4FF"
+					/></svg
+				>
+			{:else}
+				<svg width="34" height="8" viewBox="0 0 34 8"
+					><path d="M0 4h12M22 4h12" stroke="#7CB4FF" stroke-width="0.8" /><path
+						d="M17 0l4 4-4 4-4-4z"
+						fill="#7CB4FF"
+					/></svg
+				>
+			{/if}
 		{:else}
-			<svg width="34" height="8" viewBox="0 0 34 8"
-				><path d="M0 4h12M22 4h12" stroke="#7CB4FF" stroke-width="0.8" /><path
-					d="M17 0l4 4-4 4-4-4z"
-					fill="#7CB4FF"
-				/></svg
-			>
+			<span class="emblem"><span></span></span>
+			<span class="title">{title}</span>
+			<span class="over">{author}</span>
 		{/if}
-	{:else}
-		<span class="emblem"><span></span></span>
-		<span class="title">{title}</span>
-		<span class="over">{author}</span>
-	{/if}
-</div>
+	</div>
+{/snippet}
 
 <style>
+	/* motion-tilt mirrors the host's radius onto its gloss, so match the cover's corners. */
+	.tilt {
+		flex: none;
+	}
+
+	/* In a stretching row (dashboard cards), keep the hover area the size of the cover. */
+	.tilt.md {
+		align-self: flex-start;
+		border-radius: 3px 8px 8px 3px;
+	}
+
+	.tilt.lg {
+		border-radius: 4px 12px 12px 4px;
+	}
+
 	.cover {
 		position: relative;
 		flex: none;

@@ -17,7 +17,20 @@
 	onMount(() => {
 		const opener = document.activeElement;
 		dialog.showModal();
+		// Controls inside custom elements (a Button's motion-press wrapper) only render once Lit has
+		// filled in the element's slot, so the native initial focus falls back to the dialog itself.
+		// A frame later they exist: focus the first one, unless the owner already moved focus
+		// (CreateModal focuses its title field).
+		const frame = requestAnimationFrame(() => {
+			if (document.activeElement !== dialog) return;
+			dialog
+				.querySelector<HTMLElement>(
+					'[autofocus], button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'
+				)
+				?.focus();
+		});
 		return () => {
+			cancelAnimationFrame(frame);
 			if (dialog.open) dialog.close();
 			if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
 		};
@@ -85,5 +98,34 @@
 		background: var(--bb-ink);
 		border: 1px solid var(--bb-line-control);
 		box-shadow: var(--shadow-modal);
+	}
+
+	/* Opening: the backdrop fades in and the panel springs up into place. */
+	.dialog[open]::backdrop {
+		animation: backdrop-in 0.24s ease-out both;
+	}
+
+	.dialog[open] .panel {
+		animation: panel-in 0.42s cubic-bezier(0.18, 0.9, 0.32, 1.12) both;
+	}
+
+	@keyframes backdrop-in {
+		from {
+			opacity: 0;
+		}
+	}
+
+	@keyframes panel-in {
+		from {
+			opacity: 0;
+			transform: translateY(14px) scale(0.97);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.dialog[open]::backdrop,
+		.dialog[open] .panel {
+			animation: none;
+		}
 	}
 </style>

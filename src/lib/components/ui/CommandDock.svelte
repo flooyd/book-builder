@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { fly } from 'svelte/transition';
+	import { backOut } from 'svelte/easing';
 	import { modalStore, type ModalCategory } from '$lib/stores';
 	import Icon, { type IconName } from './Icon.svelte';
 	import Kbd from './Kbd.svelte';
@@ -10,6 +12,12 @@
 		{ category: 'character', label: 'Character', icon: 'users' },
 		{ category: 'system', label: 'System', icon: 'share-2' }
 	];
+
+	// Flies up when opened (Ctrl/Cmd+M); no movement for reduced-motion users.
+	const reduced =
+		typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	const flyIn = { y: 32, duration: reduced ? 0 : 420, easing: backOut };
+	const flyOut = { y: 24, duration: reduced ? 0 : 180 };
 
 	// Toolbar pattern: one tab stop, arrow keys move between items.
 	let active = $state(0);
@@ -35,20 +43,30 @@
 </script>
 
 <div class="dock-wrap">
-	<div class="dock" role="toolbar" aria-label="Create" tabindex={-1} {onkeydown}>
+	<div
+		class="dock"
+		role="toolbar"
+		aria-label="Create"
+		tabindex={-1}
+		{onkeydown}
+		in:fly={flyIn}
+		out:fly={flyOut}
+	>
 		<span class="dock-label">New<Kbd mod key="M" size="xs" tone="sunken" /></span>
 		{#each items as item, i (item.category)}
-			<button
-				type="button"
-				class="dock-item"
-				class:primary={i === 0}
-				tabindex={i === active ? 0 : -1}
-				bind:this={buttons[i]}
-				onfocus={() => (active = i)}
-				onclick={() => modalStore.set({ type: 'create', category: item.category })}
-			>
-				<Icon name={item.icon} size={16} />{item.label}
-			</button>
+			<motion-press scale={0.92}>
+				<button
+					type="button"
+					class="dock-item"
+					class:primary={i === 0}
+					tabindex={i === active ? 0 : -1}
+					bind:this={buttons[i]}
+					onfocus={() => (active = i)}
+					onclick={() => modalStore.set({ type: 'create', category: item.category })}
+				>
+					<Icon name={item.icon} size={16} />{item.label}
+				</button>
+			</motion-press>
 		{/each}
 	</div>
 </div>

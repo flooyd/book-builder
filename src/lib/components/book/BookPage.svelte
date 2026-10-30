@@ -116,7 +116,7 @@
 {#if book}
 	<div class="band">
 		<div class="band-inner">
-			<BookCover id={book.id} title={book.title} author={$userStore?.name} size="lg" />
+			<BookCover id={book.id} title={book.title} author={$userStore?.name} size="lg" tilt />
 
 			<div class="band-text">
 				<nav aria-label="Breadcrumb" class="crumbs">
@@ -161,7 +161,10 @@
 						</div>
 					</form>
 				{:else}
-					<h1>{book.title}</h1>
+					<!-- Re-created when the title changes: the headline splits its text once. -->
+					{#key book.title}
+						<h1><motion-headline by="words" interval={0.07}>{book.title}</motion-headline></h1>
+					{/key}
 					{#if book.description}
 						<p class="description">{book.description}</p>
 					{/if}
@@ -195,40 +198,42 @@
 		<section aria-labelledby="h-contents" class="contents">
 			<h2 id="h-contents">Contents</h2>
 
-			{#each outline as entry, i (entry.part.id)}
-				{#if i > 0}<div class="divider" aria-hidden="true"></div>{/if}
+			<motion-stagger interval={0.04} y={12}>
+				{#each outline as entry, i (entry.part.id)}
+					{#if i > 0}<div class="divider" aria-hidden="true"></div>{/if}
 
-				{#if !entry.label}
-					<a class="toc-story" href={partHref(entry.part)}>
-						<span class="overline">{entry.part.title}</span>
-						{#if entry.part.description}
-							<span class="story-desc">{entry.part.description}</span>
-						{/if}
-						<span class="leader" aria-hidden="true"></span>
-						<Pill size="sm">Story text</Pill>
-					</a>
-				{:else}
-					<div class="part-head">
-						<span class="overline">{entry.label}</span>
-						<a class="part-title" href={partHref(entry.part)}>{entry.part.title}</a>
-					</div>
-					{#each entry.chapters as { chapter, number } (chapter.id)}
-						<TocChapterRow
-							href={chapterHref(chapter)}
-							{number}
-							title={chapter.title}
-							updatedAt={chapter.updatedAt}
-							latest={chapter.id === latestId}
-						/>
+					{#if !entry.label}
+						<a class="toc-story" href={partHref(entry.part)}>
+							<span class="overline">{entry.part.title}</span>
+							{#if entry.part.description}
+								<span class="story-desc">{entry.part.description}</span>
+							{/if}
+							<span class="leader" aria-hidden="true"></span>
+							<Pill size="sm">Story text</Pill>
+						</a>
 					{:else}
-						<p class="no-chapters">No chapters yet.</p>
-					{/each}
-				{/if}
-			{:else}
-				<p class="empty">
-					This book has no parts yet. Parts hold chapters, or a single run of story text.
-				</p>
-			{/each}
+						<div class="part-head">
+							<span class="overline">{entry.label}</span>
+							<a class="part-title" href={partHref(entry.part)}>{entry.part.title}</a>
+						</div>
+						{#each entry.chapters as { chapter, number } (chapter.id)}
+							<TocChapterRow
+								href={chapterHref(chapter)}
+								{number}
+								title={chapter.title}
+								updatedAt={chapter.updatedAt}
+								latest={chapter.id === latestId}
+							/>
+						{:else}
+							<p class="no-chapters">No chapters yet.</p>
+						{/each}
+					{/if}
+				{:else}
+					<p class="empty">
+						This book has no parts yet. Parts hold chapters, or a single run of story text.
+					</p>
+				{/each}
+			</motion-stagger>
 
 			{#if chapterTarget}
 				<button type="button" class="add" onclick={() => newChapter(chapterTarget.id)}>
