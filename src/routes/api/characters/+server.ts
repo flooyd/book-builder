@@ -1,8 +1,8 @@
 import { db } from '$lib/server/db';
-import { book, character, characterBook } from '$lib/server/db/schema';
+import { character, characterBook } from '$lib/server/db/schema';
 import { requireUser } from '$lib/server/auth-guard';
-import { textField } from '$lib/server/ownership';
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { ownedBookIds, textField } from '$lib/server/ownership';
+import { asc, eq, inArray } from 'drizzle-orm';
 import { json, type RequestEvent } from '@sveltejs/kit';
 
 // The user's characters, each with the ids of the books they appear in.
@@ -35,24 +35,14 @@ export const POST = async (event: RequestEvent) => {
 	const body = await event.request.json().catch(() => null);
 	const name = textField(body?.name);
 	const description = textField(body?.description);
-	const bookIds: number[] = Array.isArray(body?.bookIds)
-		? [...new Set<number>(body.bookIds.map(Number))]
-		: [];
 
 	if (!name) {
 		return json({ error: 'Name is required' }, { status: 400 });
 	}
-	if (bookIds.length === 0 || !bookIds.every((id) => Number.isInteger(id))) {
-		return json({ error: 'Choose at least one book' }, { status: 400 });
-	}
 
-	const owned = await db
-		.select({ id: book.id })
-		.from(book)
-		.where(and(inArray(book.id, bookIds), eq(book.userId, user.id)));
-	if (owned.length !== bookIds.length) {
-		return json({ error: 'Book does not belong to the user' }, { status: 403 });
-	}
+	const books = await ownedBookIds(user.id, body?.bookIds);
+	if ('error' in books) return books.error;
+	const { bookIds } = books;
 
 	const created = await db.transaction(async (tx) => {
 		const [row] = await tx

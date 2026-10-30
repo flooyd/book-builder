@@ -18,7 +18,7 @@
 		type Part,
 		type System
 	} from '$lib/stores';
-	import { bookOutline } from '$lib/library';
+	import { bookOutline, putJSON } from '$lib/library';
 	import Dialog from './Dialog.svelte';
 	import Button from './Button.svelte';
 	import Icon from './Icon.svelte';
@@ -79,13 +79,29 @@
 	// Suggestions for a system's kind (free text; shown as its overline on the book page).
 	const KINDS = ['Magic', 'Law', 'Trade', 'Politics', 'Religion', 'Technology', 'Nature'];
 
+	const EDIT_SYSTEM_COPY: (typeof COPY)[ModalCategory] = [
+		'Edit system',
+		'Change its details, or the books it applies to.',
+		'Name',
+		'e.g. Tidecraft',
+		'The rules, costs and limits',
+		'Save system'
+	];
+
 	// Snapshot of what opened the dialog; the layout re-mounts this component per open.
 	const opened = get(modalStore);
 	const books = get(booksStore);
 	const onlyBookId = books.length === 1 ? String(books[0].id) : '';
+	// Editing an existing system (type 'edit') reuses the System form without the tabs.
+	const editing =
+		opened?.type === 'edit' && opened.category === 'system'
+			? get(systemsStore).find((s) => s.id === opened.systemId)
+			: undefined;
 
-	let category = $state<ModalCategory>(opened?.category ?? 'book');
-	const [heading, sub, nameLabel, namePlaceholder, descPlaceholder, cta] = $derived(COPY[category]);
+	let category = $state<ModalCategory>(editing ? 'system' : (opened?.category ?? 'book'));
+	const [heading, sub, nameLabel, namePlaceholder, descPlaceholder, cta] = $derived(
+		editing ? EDIT_SYSTEM_COPY : COPY[category]
+	);
 
 	// Parts that can take a chapter, labelled "{part} · {book}" as in the mockup.
 	const chapterParts = $derived(
@@ -111,15 +127,28 @@
 		return '';
 	}
 
-	let title = $state('');
-	let description = $state('');
+	let title = $state(editing?.name ?? '');
+	let description = $state(editing?.description ?? '');
 	let holds = $state<'chapters' | 'text'>('chapters');
 	let bookId = $state(opened?.bookId ? String(opened.bookId) : onlyBookId);
 	let partId = $state(defaultPartId());
-	let kind = $state('');
-	let appearsIn = $state<string[]>(
-		opened?.bookId ? [String(opened.bookId)] : onlyBookId ? [onlyBookId] : []
+	let kind = $state(editing?.kind ?? '');
+	// Books chosen for a character ("Appears in") or a system ("Used in").
+	let selectedBooks = $state<string[]>(
+		editing
+			? editing.bookIds.map(String)
+			: opened?.bookId
+				? [String(opened.bookId)]
+				: onlyBookId
+					? [onlyBookId]
+					: []
 	);
+
+	/** The book to show a new character or system on: the one it was created from, else the first. */
+	function bookToShow() {
+		const from = String(opened?.bookId ?? '');
+		return selectedBooks.includes(from) ? from : selectedBooks[0];
+	}
 
 	let errors = $state<{
 		title?: string;
@@ -143,9 +172,9 @@
 	function validate() {
 		const next: typeof errors = {};
 		if (!title.trim()) next.title = `Add a ${nameLabel.toLowerCase()}.`;
-		if ((category === 'part' || category === 'system') && !bookId) next.book = 'Choose a book.';
+		if (category === 'part' && !bookId) next.book = 'Choose a book.';
 		if (category === 'chapter' && !partId) next.part = 'Choose a part.';
-		if (category === 'character' && appearsIn.length === 0) {
+		if ((category === 'character' || category === 'system') && selectedBooks.length === 0) {
 			next.books = 'Choose at least one book.';
 		}
 		errors = next;
@@ -196,22 +225,27 @@
 				const character = await post<Character>('/api/characters', {
 					name: fields.title,
 					description: fields.description,
-					bookIds: appearsIn.map(Number)
+					bookIds: selectedBooks.map(Number)
 				});
 				charactersStore.update((list) => [...list, character]);
-				// Show it on the book it was created from, or the first book it appears in.
-				const shownIn = String(opened?.bookId ?? '');
-				const target = appearsIn.includes(shownIn) ? shownIn : appearsIn[0];
+				const target = bookToShow();
 				navigate = () => goto(resolve('/book/[id]', { id: target }));
 			} else if (category === 'system') {
-				const system = await post<System>('/api/systems', {
+				const payload = {
 					name: fields.title,
 					description: fields.description,
 					kind: kind.trim(),
-					bookId: Number(bookId)
-				});
-				systemsStore.update((list) => [...list, system]);
-				navigate = () => goto(resolve('/book/[id]', { id: String(system.bookId) }));
+					bookIds: selectedBooks.map(Number)
+				};
+				if (editing) {
+					const system = await putJSON<System>(`/api/systems/${editing.id}`, payload);
+					systemsStore.update((list) => list.map((s) => (s.id === system.id ? system : s)));
+				} else {
+					const system = await post<System>('/api/systems', payload);
+					systemsStore.update((list) => [...list, system]);
+					const target = bookToShow();
+					navigate = () => goto(resolve('/book/[id]', { id: target }));
+				}
 			}
 
 			booksRefresh.update((n) => n + 1);
@@ -226,16 +260,18 @@
 
 <Dialog labelledby="create-title" onclose={close}>
 	<div class="top">
-		<div class="tabs" role="group" aria-label="What to create">
-			{#each TABS as tab (tab.id)}
-				<button
-					type="button"
-					class="tab"
-					aria-pressed={category === tab.id}
-					onclick={() => pick(tab.id)}>{tab.label}</button
-				>
-			{/each}
-		</div>
+		{#if !editing}
+			<div class="tabs" role="group" aria-label="What to create">
+				{#each TABS as tab (tab.id)}
+					<button
+						type="button"
+						class="tab"
+						aria-pressed={category === tab.id}
+						onclick={() => pick(tab.id)}>{tab.label}</button
+					>
+				{/each}
+			</div>
+		{/if}
 		<button type="button" class="close" aria-label="Close" onclick={close}>
 			<Icon name="x" size={20} />
 		</button>
@@ -302,7 +338,7 @@
 			</fieldset>
 		{/if}
 
-		{#if category === 'part' || category === 'system'}
+		{#if category === 'part'}
 			<div class="field">
 				<label for="create-book">Book</label>
 				{#if $booksStore.length > 0}
@@ -388,13 +424,17 @@
 			</div>
 		{/if}
 
-		{#if category === 'character'}
+		{#if category === 'character' || category === 'system'}
 			<fieldset class="appears" aria-describedby={errors.books ? 'create-books-error' : undefined}>
-				<legend>Appears in</legend>
+				<legend>{category === 'character' ? 'Appears in' : 'Used in'}</legend>
 				<div class="checks">
 					{#each $booksStore as book (book.id)}
 						<label class="check">
-							<input type="checkbox" value={String(book.id)} bind:group={appearsIn} />{book.title}
+							<input
+								type="checkbox"
+								value={String(book.id)}
+								bind:group={selectedBooks}
+							/>{book.title}
 						</label>
 					{:else}
 						<p class="notice">
@@ -480,6 +520,7 @@
 
 	.close {
 		flex: none;
+		margin-left: auto;
 		display: grid;
 		place-items: center;
 		width: 44px;

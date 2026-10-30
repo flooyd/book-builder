@@ -49,7 +49,8 @@ export type System = {
 	description: string;
 	/** Free-form label such as "Magic" or "Law"; may be empty. */
 	kind: string;
-	bookId: number;
+	/** Books the system applies to (from the system_book link table). */
+	bookIds: number[];
 	userId: string;
 	createdAt: string;
 	updatedAt: string;
@@ -60,9 +61,11 @@ export const userStore = writable<User | null>(null);
 export const modalStore = writable<{
 	type: ModalType;
 	category: ModalCategory;
-	/** Preselects the book (Part, System) or part (Chapter) in the create dialog. */
+	/** Preselects the book (Part, Character, System) or part (Chapter) in the create dialog. */
 	bookId?: number;
 	partId?: number;
+	/** With type 'edit' and category 'system': the system to edit. */
+	systemId?: number;
 } | null>(null);
 export const showMenuStore = writable<boolean>(false);
 

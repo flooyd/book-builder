@@ -1,4 +1,5 @@
-import { and, eq } from 'drizzle-orm';
+import { json } from '@sveltejs/kit';
+import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { book, chapter, part } from '$lib/server/db/schema';
 
@@ -35,3 +36,28 @@ export async function findOwnedChapter(userId: string, chapterId: number) {
 
 /** A trimmed string field from a JSON body; '' when missing or not a string. */
 export const textField = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+
+/**
+ * The `bookIds` of a character or system: at least one, all owned by the user. Returns the
+ * de-duplicated ids, or an error response to send back.
+ */
+export async function ownedBookIds(
+	userId: string,
+	value: unknown
+): Promise<{ bookIds: number[] } | { error: Response }> {
+	const bookIds = Array.isArray(value) ? [...new Set<number>(value.map(Number))] : [];
+
+	if (bookIds.length === 0 || !bookIds.every((id) => Number.isInteger(id))) {
+		return { error: json({ error: 'Choose at least one book' }, { status: 400 }) };
+	}
+
+	const owned = await db
+		.select({ id: book.id })
+		.from(book)
+		.where(and(inArray(book.id, bookIds), eq(book.userId, userId)));
+	if (owned.length !== bookIds.length) {
+		return { error: json({ error: 'Book does not belong to the user' }, { status: 403 }) };
+	}
+
+	return { bookIds };
+}

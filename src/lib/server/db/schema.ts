@@ -91,9 +91,6 @@ export const system = pgTable('system', {
 	description: text('description').notNull().default(''),
 	//free-form label shown as the overline, e.g. "Magic" or "Law"
 	kind: text('kind').notNull().default(''),
-	bookId: integer('book_id')
-		.references(() => book.id, { onDelete: 'cascade' })
-		.notNull(),
 	userId: text('user_id')
 		.references(() => user.id, { onDelete: 'cascade' })
 		.notNull(),
@@ -103,6 +100,23 @@ export const system = pgTable('system', {
 		.defaultNow()
 		.$onUpdate(() => new Date())
 });
+
+//systems can apply to multiple books or one
+export const systemBook = pgTable(
+	'system_book',
+	{
+		systemId: integer('system_id')
+			.references(() => system.id, { onDelete: 'cascade' })
+			.notNull(),
+		bookId: integer('book_id')
+			.references(() => book.id, { onDelete: 'cascade' })
+			.notNull()
+	},
+	(table) => [
+		primaryKey({ columns: [table.systemId, table.bookId] }),
+		index('system_book_book_id_idx').on(table.bookId)
+	]
+);
 
 export const storyText = pgTable('story_text', {
 	id: serial('id').primaryKey(),

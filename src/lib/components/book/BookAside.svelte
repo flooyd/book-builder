@@ -13,16 +13,17 @@
 	let { bookId }: { bookId: number } = $props();
 
 	const characters = $derived($charactersStore.filter((c) => c.bookIds.includes(bookId)));
-	const systems = $derived($systemsStore.filter((s) => s.bookId === bookId));
+	const systems = $derived($systemsStore.filter((s) => s.bookIds.includes(bookId)));
 
 	const bookTitle = (id: number) => $booksStore.find((b) => b.id === id)?.title;
 
-	function whereElse(character: Character) {
-		const others = character.bookIds
+	/** "Also in X, Y" for items shared with other books, otherwise null. */
+	function alsoIn(bookIds: number[]) {
+		const others = bookIds
 			.filter((id) => id !== bookId)
 			.map(bookTitle)
 			.filter(Boolean);
-		return others.length > 0 ? `Also in ${others.join(', ')}` : bookTitle(bookId);
+		return others.length > 0 ? `Also in ${others.join(', ')}` : null;
 	}
 
 	// Monogram colours vary per character, as in the mockup.
@@ -43,7 +44,7 @@
 				>
 				<span class="person-text">
 					<span class="person-name">{character.name}</span>
-					<span class="person-meta">{whereElse(character)}</span>
+					<span class="person-meta">{alsoIn(character.bookIds) ?? bookTitle(bookId)}</span>
 				</span>
 			</div>
 		{:else}
@@ -65,10 +66,24 @@
 		</div>
 		{#each systems as system (system.id)}
 			<div class="system">
-				<span class="kind">{system.kind || 'System'}</span>
+				<div class="system-head">
+					<span class="kind">{system.kind || 'System'}</span>
+					<button
+						type="button"
+						class="edit"
+						aria-label="Edit {system.name}"
+						onclick={() =>
+							modalStore.set({ type: 'edit', category: 'system', systemId: system.id, bookId })}
+					>
+						<Icon name="pen" size={15} />
+					</button>
+				</div>
 				<span class="system-name">{system.name}</span>
 				{#if system.description}
 					<span class="system-desc">{system.description}</span>
+				{/if}
+				{#if alsoIn(system.bookIds)}
+					<span class="system-meta">{alsoIn(system.bookIds)}</span>
 				{/if}
 			</div>
 		{:else}
@@ -200,6 +215,37 @@
 		font-style: italic;
 		font-size: 15.5px;
 		color: var(--bb-text-2);
+	}
+
+	.system-meta {
+		margin-top: 2px;
+		font-size: 13px;
+		color: var(--bb-text-3);
+	}
+
+	.system-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+	}
+
+	/* 44px hit area that doesn't push the card's layout around. */
+	.edit {
+		display: grid;
+		place-items: center;
+		width: 44px;
+		height: 44px;
+		margin: -12px -10px -12px 0;
+		border: none;
+		border-radius: 10px;
+		background: transparent;
+		color: var(--bb-text-3);
+	}
+
+	.edit:hover {
+		background: var(--bb-raised);
+		color: var(--bb-text);
 	}
 
 	.empty {

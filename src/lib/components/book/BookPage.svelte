@@ -248,7 +248,10 @@
 		<Dialog labelledby="delete-title" width={460} onclose={() => (confirmingDelete = false)}>
 			<div class="confirm">
 				<h2 id="delete-title">Delete <em>{book.title}</em>?</h2>
-				<p>This removes its parts, chapters and story text.</p>
+				<p>
+					This removes its parts, chapters and story text, and any characters or systems that appear
+					only in this book.
+				</p>
 				{#if deleteError}
 					<p class="error" role="alert"><Icon name="alert-circle" size={16} />{deleteError}</p>
 				{/if}

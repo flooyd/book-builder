@@ -68,7 +68,7 @@
 	<CommandDock />
 {/if}
 
-{#if user && $modalStore?.type === 'create'}
+{#if user && ($modalStore?.type === 'create' || $modalStore?.type === 'edit')}
 	<CreateModal />
 {/if}
 
