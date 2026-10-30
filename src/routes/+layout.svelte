@@ -23,7 +23,7 @@
 	const userId = $derived(data.user?.id);
 
 	// Signed-out pages that draw their own header and footer.
-	const ownsChrome = $derived(page.url.pathname === '/');
+	const ownsChrome = $derived(page.url.pathname === '/' || page.url.pathname === '/login');
 	const siteChrome = $derived(!user && !ownsChrome);
 
 	$effect(() => {
