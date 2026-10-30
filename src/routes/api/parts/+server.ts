@@ -1,6 +1,7 @@
 import { db } from '$lib/server/db';
 import { part, book } from '$lib/server/db/schema';
 import { requireUser } from '$lib/server/auth-guard';
+import { textField } from '$lib/server/ownership';
 import { eq, asc, inArray } from 'drizzle-orm';
 import { json, type RequestEvent } from '@sveltejs/kit';
 
@@ -22,8 +23,15 @@ export const GET = async (event: RequestEvent) => {
 
 export const POST = async (event: RequestEvent) => {
 	const user = requireUser(event);
-	const { title, description, hasChapters, bookId } = await event.request.json();
-	const parsedBookId = Number(bookId);
+	const body = await event.request.json().catch(() => null);
+	const title = textField(body?.title);
+	const description = textField(body?.description);
+	const hasChapters = body?.hasChapters;
+	const parsedBookId = Number(body?.bookId);
+
+	if (!title) {
+		return json({ error: 'Title is required' }, { status: 400 });
+	}
 
 	if (!Number.isInteger(parsedBookId)) {
 		return json({ error: 'Invalid book id' }, { status: 400 });

@@ -1,17 +1,23 @@
 import { requireUser } from '$lib/server/auth-guard';
 import { db } from '$lib/server/db';
 import { part } from '$lib/server/db/schema';
+import { findOwnedPart } from '$lib/server/ownership';
 import { and, eq } from 'drizzle-orm';
 import { json, type RequestEvent } from '@sveltejs/kit';
 
 export const GET = async (event: RequestEvent) => {
-	const partId = String(event.params.partId);
-	const partData = await db
-		.select()
-		.from(part)
-		.where(eq(part.id, parseInt(partId)))
-		.limit(1);
-	return json(partData[0]);
+	const user = requireUser(event);
+	const id = Number(event.params.partId);
+
+	if (!Number.isInteger(id)) {
+		return json({ error: 'Invalid part id' }, { status: 400 });
+	}
+
+	const partData = await findOwnedPart(user.id, id);
+	if (!partData) {
+		return json({ error: 'Part not found' }, { status: 404 });
+	}
+	return json(partData);
 };
 
 // update a part's title and/or description; returns the updated row
