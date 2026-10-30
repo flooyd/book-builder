@@ -38,6 +38,9 @@ export const userStore = writable<User | null>(null);
 export const modalStore = writable<{
 	type: ModalType;
 	category: ModalCategory;
+	/** Preselects the book (Part, System) or part (Chapter) in the create dialog. */
+	bookId?: number;
+	partId?: number;
 	title?: string;
 	part?: string;
 	chapter?: string;

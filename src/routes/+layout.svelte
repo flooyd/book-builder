@@ -60,7 +60,7 @@
 	<SiteHeader />
 {/if}
 
-<div class="app" class:legacy={(!!user && page.url.pathname !== '/') || siteChrome}>
+<div class="app" class:legacy={(!!user && page.url.pathname.startsWith('/part/')) || siteChrome}>
 	{@render children()}
 	{#if $modalStore?.type === 'create'}
 		<Modal title={$modalStore.title} category={$modalStore.category} type={$modalStore.type} />
