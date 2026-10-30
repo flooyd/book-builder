@@ -41,9 +41,6 @@ export const modalStore = writable<{
 	/** Preselects the book (Part, System) or part (Chapter) in the create dialog. */
 	bookId?: number;
 	partId?: number;
-	title?: string;
-	part?: string;
-	chapter?: string;
 } | null>(null);
 export const showMenuStore = writable<boolean>(false);
 

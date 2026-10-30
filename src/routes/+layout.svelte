@@ -6,7 +6,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import SiteHeader from '$lib/components/marketing/SiteHeader.svelte';
 	import SiteFooter from '$lib/components/marketing/SiteFooter.svelte';
-	import Modal from '$lib/components/Modal.svelte';
+	import CreateModal from '$lib/components/ui/CreateModal.svelte';
 	import AppHeader from '$lib/components/ui/AppHeader.svelte';
 	import CommandDock from '$lib/components/ui/CommandDock.svelte';
 	import { provideAppHeader } from '$lib/app-header.svelte';
@@ -62,13 +62,14 @@
 
 <div class="app" class:padded={siteChrome}>
 	{@render children()}
-	{#if $modalStore?.type === 'create'}
-		<Modal title={$modalStore.title} category={$modalStore.category} type={$modalStore.type} />
-	{/if}
 </div>
 
 {#if user && $showMenuStore}
 	<CommandDock />
+{/if}
+
+{#if user && $modalStore?.type === 'create'}
+	<CreateModal />
 {/if}
 
 {#if siteChrome}
