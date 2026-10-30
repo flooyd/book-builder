@@ -3,10 +3,14 @@ import {
 	booksStore,
 	partsStore,
 	chaptersStore,
+	charactersStore,
+	systemsStore,
 	libraryStatus,
 	type Book,
 	type Chapter,
-	type Part
+	type Character,
+	type Part,
+	type System
 } from '$lib/stores';
 
 async function getJSON<T>(url: string): Promise<T> {
@@ -15,21 +19,41 @@ async function getJSON<T>(url: string): Promise<T> {
 	return (await response.json()) as T;
 }
 
+/** PUT a JSON body and return the JSON response; throws an Error carrying the server's message. */
+export async function putJSON<T>(url: string, body: unknown): Promise<T> {
+	const response = await fetch(url, {
+		method: 'PUT',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(body)
+	});
+	const data = await response.json().catch(() => null);
+	if (!response.ok) throw new Error(data?.error ?? `Request failed (${response.status}).`);
+	return data as T;
+}
+
 let generation = 0;
 
-/** Fetch the signed-in user's books, parts and chapters into the stores. */
+/** Fetch the signed-in user's books, parts, chapters, characters and systems into the stores. */
 export async function loadLibrary() {
 	const run = ++generation;
+	// Characters and systems are extras: if they fail to load, the rest of the library still works.
+	const extras = Promise.allSettled([
+		getJSON<Character[]>('/api/characters'),
+		getJSON<System[]>('/api/systems')
+	]);
 	try {
 		const [books, parts, chapters] = await Promise.all([
 			getJSON<Book[]>('/api/books'),
 			getJSON<Part[]>('/api/parts'),
 			getJSON<Chapter[]>('/api/chapters')
 		]);
+		const [characters, systems] = await extras;
 		if (run !== generation) return; // superseded by a newer load or a sign-out
 		booksStore.set(books);
 		partsStore.set(parts);
 		chaptersStore.set(chapters);
+		if (characters.status === 'fulfilled') charactersStore.set(characters.value);
+		if (systems.status === 'fulfilled') systemsStore.set(systems.value);
 		libraryStatus.set('ready');
 	} catch {
 		if (run !== generation) return;
@@ -43,7 +67,19 @@ export function clearLibrary() {
 	booksStore.set([]);
 	partsStore.set([]);
 	chaptersStore.set([]);
+	charactersStore.set([]);
+	systemsStore.set([]);
 	libraryStatus.set('loading');
+}
+
+/** Up to two initials for a monogram, e.g. "Maren Toll" -> "MT". */
+export function initials(name: string) {
+	const words = name.split(/\s+/).filter((word) => word && !/^(the|a|an|of)$/i.test(word));
+	return (
+		(words.length > 1 ? words[0][0] + words[words.length - 1][0] : (words[0] ?? name).charAt(0))
+			.toUpperCase()
+			.trim() || '?'
+	);
 }
 
 // ---- Derived structure -------------------------------------------------------------------
