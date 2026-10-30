@@ -5,8 +5,6 @@
 		title,
 		part,
 		chapter,
-		character,
-		system,
 		description,
 		category,
 		type
@@ -16,8 +14,6 @@
 		title?: string;
 		part?: string;
 		chapter?: string;
-		character?: string;
-		system?: string;
 		description?: string;
 	} = $props();
 
@@ -29,9 +25,7 @@
 	let partValue = $state(part ?? '');
 	// svelte-ignore state_referenced_locally
 	let partDescriptionValue = $state(description ?? '');
-	// svelte-ignore state_referenced_locally
 	let partHasChaptersValue = $state(true);
-	// svelte-ignore state_referenced_locally
 	let partBookValue = $state<number | ''>('');
 	// svelte-ignore state_referenced_locally
 	let chapterValue = $state(chapter ?? '');
@@ -39,18 +33,12 @@
 	let chapterDescriptionValue = $state(chapter ?? '');
 	// svelte-ignore state_referenced_locally
 	let chapterPartValue = $state(chapter ?? '');
-	// svelte-ignore state_referenced_locally
-	let characterValue = $state(character ?? '');
-	// svelte-ignore state_referenced_locally
-	let systemValue = $state(system ?? '');
 
 	$effect(() => {
 		bookValue = title ?? '';
 		descriptionValue = description ?? '';
 		partValue = part ?? '';
 		chapterValue = chapter ?? '';
-		characterValue = character ?? '';
-		systemValue = system ?? '';
 	});
 
 	const getModalTitle = () => {
@@ -208,6 +196,10 @@
 		height: fit-content;
 		color: white;
 		padding: 9.89px;
+		background: var(--bb-ink);
+		border: 1px solid var(--bb-line-control);
+		border-radius: var(--r-card);
+		z-index: 30;
 	}
 
 	.modal-title {

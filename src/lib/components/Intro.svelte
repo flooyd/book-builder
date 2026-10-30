@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	/* eslint-disable svelte/no-navigation-without-resolve */
 	import { userStore } from '$lib/stores';
 </script>
 

@@ -1,3 +1,5 @@
+// Data stores stay loosely typed until the screens that read them are rebuilt (Phase 4).
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { writable } from 'svelte/store';
 
 export type ModalType = 'create' | 'edit' | 'delete';

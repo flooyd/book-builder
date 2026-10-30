@@ -27,5 +27,9 @@
 		text-align: center;
 		display: flex;
 		gap: 9.89px;
+		background: var(--bb-ink);
+		border: 1px solid var(--bb-line-control);
+		border-radius: 18px;
+		z-index: 20;
 	}
 </style>
