@@ -12,8 +12,10 @@ export default defineConfig({
 			},
 
 			// Deployed on Vercel. Stay on the 6.x adapter line: 7.x requires SvelteKit 3.
-			// See https://svelte.dev/docs/kit/adapter-vercel for options (runtime, regions, etc.).
-			adapter: adapter(),
+			// The runtime is pinned so the build doesn't depend on Vercel's build-image Node version
+			// (the adapter only infers runtimes for Node 20, 22 and 24).
+			// See https://svelte.dev/docs/kit/adapter-vercel for other options (regions, etc.).
+			adapter: adapter({ runtime: 'nodejs24.x' }),
 
 			typescript: {
 				config: (config) => {
