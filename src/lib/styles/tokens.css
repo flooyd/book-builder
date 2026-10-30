@@ -1,0 +1,64 @@
+:root {
+	/* Grounds */
+	--bb-night: #0a0f24; /* page background */
+	--bb-night-deep: #080c1e; /* footer */
+	--bb-panel: #0d1431; /* header bands, login side panel, card top bars */
+	--bb-ink: #10173a; /* cards, rows, modal (was #1f1f2a) */
+	--bb-ink-2: #121935; /* chips */
+	--bb-raised: #18224d; /* hover, selected row, count chips */
+
+	/* Lines */
+	--bb-line-faint: #18214a; /* section dividers, header bottom border */
+	--bb-line-soft: #1e2852; /* card borders */
+	--bb-line: #263361; /* strong borders, dotted leaders */
+	--bb-line-control: #2c3a70; /* inputs, ghost buttons */
+	--bb-line-dashed: #34478a; /* dashed "new" / "soon" cards */
+
+	/* Blues */
+	--bb-royal: #2b63f5; /* primary buttons (was #007bff); white text passes AA */
+	--bb-royal-hover: #3a70ff;
+	--bb-sky: #7cb4ff; /* accents, links, wordmark B's, focus ring */
+	--bb-sky-hover: #b5d3ff;
+	--bb-sky-text: #a9c8ff; /* text inside info pills */
+	--bb-sky-wash: #152056; /* info pill background */
+	--bb-glint: #56ddf0; /* rare highlight; optional */
+
+	/* Paper (book pages, "Paper" writing surface) */
+	--bb-paper: #f5f0e6;
+	--bb-paper-line: #e2d9c6;
+	--bb-paper-ink: #24232b;
+	--bb-paper-muted: #6b6352;
+
+	/* Text on dark */
+	--bb-text-strong: #f4f6ff; /* headings */
+	--bb-text: #eef2ff; /* body */
+	--bb-text-label: #d7def6; /* form labels, chip text */
+	--bb-text-2: #a9b3d6; /* secondary */
+	--bb-text-3: #8d98c2; /* meta (dates, counts) */
+	--bb-text-4: #7d88b3; /* faint; still 4.5:1 on --bb-ink */
+
+	/* Status */
+	--bb-coral: #ff7a85; /* delete, errors (was #dc3545) */
+	--bb-coral-soft: #ff9aa3; /* error message text */
+	--bb-coral-line: #5a2f45;
+	--bb-amber: #f2c46b; /* "Unsaved changes" */
+
+	/* Type */
+	--font-display: 'Gloock', Georgia, serif;
+	--font-read: 'Newsreader', Georgia, serif;
+	--font-ui: 'Schibsted Grotesk', system-ui, sans-serif;
+
+	/* Radii */
+	--r-chip: 8px;
+	--r-control: 12px; /* buttons, inputs */
+	--r-row: 14px;
+	--r-card: 20px;
+	--r-modal: 24px;
+	--r-pill: 999px;
+
+	/* Shadows */
+	--shadow-card: 0 30px 60px -40px rgba(0, 0, 0, 0.9);
+	--shadow-primary: 0 14px 34px -14px rgba(43, 99, 245, 0.9);
+	--shadow-modal: 0 60px 120px -40px rgba(0, 0, 0, 1), 0 0 0 8px rgba(43, 99, 245, 0.08);
+	--focus-ring: 0 0 0 3px rgba(124, 180, 255, 0.22);
+}

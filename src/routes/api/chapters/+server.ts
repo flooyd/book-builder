@@ -1,6 +1,7 @@
 import { db } from '$lib/server/db';
 import { part, book, chapter } from '$lib/server/db/schema';
 import { requireUser } from '$lib/server/auth-guard';
+import { textField } from '$lib/server/ownership';
 import { eq, asc, inArray } from 'drizzle-orm';
 import { json, type RequestEvent } from '@sveltejs/kit';
 
@@ -28,23 +29,35 @@ export const GET = async (event: RequestEvent) => {
 
 export const POST = async (event: RequestEvent) => {
 	const user = requireUser(event);
-	const { title, description, partId } = await event.request.json();
-	const parsedPartId = Number(partId);
+	const body = await event.request.json().catch(() => null);
+	const title = textField(body?.title);
+	const description = textField(body?.description);
+	const parsedPartId = Number(body?.partId);
+
+	if (!title) {
+		return json({ error: 'Title is required' }, { status: 400 });
+	}
 
 	if (!Number.isInteger(parsedPartId)) {
 		return json({ error: 'Invalid part id' }, { status: 400 });
 	}
 
-	const partExists = await db
+	const target = await db
 		.select()
 		.from(part)
 		.where(eq(part.id, parsedPartId))
-		.then((parts) => parts.length > 0 && parts[0].userId === user.id);
-	if (!partExists) {
+		.then((parts) => parts[0]);
+	if (!target || target.userId !== user.id) {
 		return json({ error: 'Part does not belong to the user' }, { status: 403 });
 	}
+	if (!target.hasChapters) {
+		return json({ error: 'This part holds story text, not chapters' }, { status: 400 });
+	}
 
-    const newChapter = await db.insert(chapter).values({title, description, partId: parsedPartId}).returning();
+	const newChapter = await db
+		.insert(chapter)
+		.values({ title, description, partId: parsedPartId })
+		.returning();
 
-    return json(newChapter);
+	return json(newChapter);
 };

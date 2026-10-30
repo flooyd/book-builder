@@ -1,5 +1,11 @@
 <script lang="ts">
-    import Book from '$lib/components/Book.svelte';
+	import { page } from '$app/state';
+	import BookPage from '$lib/components/book/BookPage.svelte';
+
+	const id = $derived(Number(page.params.id));
 </script>
 
-<Book/>
+<!-- Re-mount per book so edit state doesn't carry over between books. -->
+{#key id}
+	<BookPage {id} />
+{/key}

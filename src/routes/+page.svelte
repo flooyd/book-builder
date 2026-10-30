@@ -1,25 +1,13 @@
 <script lang="ts">
-	import { userStore } from '$lib/stores';
-	import Intro from '$lib/components/Intro.svelte';
-	import Books from '$lib/components/Books.svelte';
-	import { onMount } from 'svelte';
-	import { fade } from 'svelte/transition';
-	import Parts from '$lib/components/Parts.svelte';
-	import Chapters from '$lib/components/Chapters.svelte';
+	import type { PageProps } from './$types';
+	import Home from '$lib/components/marketing/Home.svelte';
+	import Dashboard from '$lib/components/library/Dashboard.svelte';
 
-	let ready = $state(false);
-	onMount(() => {
-		ready = true;
-	});
+	let { data }: PageProps = $props();
 </script>
 
-{#if ready}
-	<div transition:fade>
-		<Intro />
-		{#if $userStore}
-			<Books />
-			<Parts />
-			<Chapters/>
-		{/if}
-	</div>
+{#if data.user}
+	<Dashboard userName={data.user.name} />
+{:else}
+	<Home />
 {/if}
