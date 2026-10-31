@@ -12,39 +12,34 @@
 				<div class="cover"></div>
 
 				<div class="pg pg-l">
-					<div class="rh">The War of Nine</div>
+					<div class="rh">The Glass Armada</div>
 					<div class="pb">
 						<p>
-							Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-							incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
-							exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure
-							dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+							The Meridian came out of the lane with her running lights dark and her hull still
+							ringing from the jump. Below her turned Kesh, a drowned moon under a skin of frozen
+							sea, and above it, where no beacon had any right to be, something was still calling.
 						</p>
 						<p>
-							Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-							mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit
-							voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab
-							illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
+							Juno Halley had flown salvage for eleven years. She knew the sound of a dead ship, the
+							slow tick of cooling metal, the hush of air with nowhere left to go. This was not
+							that. This was a voice, patient and precise, repeating the same seven notes.
 						</p>
 						<p>
-							“Nemo enim ipsam voluptatem,” quia voluptas sit aspernatur aut odit aut fugit, sed
-							quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro
-							quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed
-							quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat
-							voluptatem.
+							“Tell me that's an echo,” she said, and Ade did not answer, which was its own kind of
+							answer. On the long screen the signal climbed and fell like breath, and the stars
+							behind it seemed, for one unsteady moment, to lean in and listen.
 						</p>
 					</div>
 					<div class="pn">2</div>
 				</div>
 
 				<div class="pg pg-r">
-					<div class="rh">The Ninth Bell</div>
+					<div class="rh">The Drowned Moon</div>
 					<div class="pb">
 						<p>
-							Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe
-							eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum
-							rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias
-							consequatur aut perferendis doloribus asperiores repellat.
+							The Lantern Gate had been closed for three centuries. Every chart in the Armada said
+							so, every pilot's song ended at its edge, and every child on Vesper Station knew the
+							story of the ships that had sailed through and come back singing.
 						</p>
 						<div class="orn" style:margin="12px 0">
 							<svg width="40" height="8" viewBox="0 0 40 8"
@@ -55,11 +50,9 @@
 							>
 						</div>
 						<p>
-							Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus
-							id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor
-							repellendus. Similique sunt in culpa qui officia deserunt mollitia animi, id est
-							laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio, at
-							vero eos et accusamus et iusto odio dignissimos ducimus.
+							Juno had never believed the story. She believed in fuel margins and hull integrity and
+							the plain arithmetic of distance. But when the gate began to glow, faint as breath on
+							glass, she found she was holding very still, as if the light might notice her.
 						</p>
 					</div>
 					<div class="pn">11</div>
@@ -67,41 +60,35 @@
 
 				<div class="leaf l4">
 					<div class="pg pg-r face">
-						<div class="rh">The Ninth Bell</div>
+						<div class="rh">The Drowned Moon</div>
 						<div class="pb">
 							<p>
-								Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil
-								molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?
-								At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis
-								praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias
-								excepturi sint occaecati cupiditate non provident.
+								Ade ran the numbers twice and then a third time, lips moving, the way he did when he
+								did not trust the answer. The beacon was not on the moon. It was inside it, under
+								eleven kilometres of ice, and it had been built by someone who expected to be found.
 							</p>
-							<p>“Similique sunt in culpa.”</p>
+							<p>“So we leave.”</p>
 							<p>
-								Qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem
-								rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est
-								eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere
-								possimus, omnis voluptas assumenda est, omnis dolor repellendus temporibus autem
-								quibusdam.
+								Nobody moved. Outside, the drowned moon turned its white face toward them, slow and
+								incurious, and somewhere beneath the ice the seven notes began again, closer now, as
+								if the voice had heard them talking and wanted to be part of it.
 							</p>
 						</div>
 						<div class="pn">9</div>
 					</div>
 					<div class="pg pg-l face back">
-						<div class="rh">The War of Nine</div>
+						<div class="rh">The Glass Armada</div>
 						<div class="pb">
 							<p>
-								Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit
-								laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure
-								reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel
-								illum qui dolorem eum fugiat quo voluptas nulla pariatur.
+								There were rules for this. Juno had written half of them herself, in the years after
+								Tamsin, when the crew needed something firmer than her word. Never answer a signal
+								you cannot name. Never follow a light into the dark. Never trust a map made by the
+								dead.
 							</p>
 							<p>
-								Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-								incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
-								exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute
-								irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-								pariatur, excepteur sint occaecat cupidatat non proident.
+								She broke the first rule before breakfast. By the second watch she had broken the
+								second, and the third lay open on the chart table between them: a map of dead stars,
+								drawn in a hand that was not quite human, and still faintly warm.
 							</p>
 						</div>
 						<div class="pn">10</div>
@@ -110,40 +97,34 @@
 
 				<div class="leaf l3">
 					<div class="pg pg-r face">
-						<div class="rh">The Ninth Bell</div>
+						<div class="rh">The Drowned Moon</div>
 						<div class="pb">
 							<p>
-								Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium
-								doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore
-								veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam
-								voluptatem quia voluptas sit aspernatur aut odit aut fugit.
+								The map should not have worked. Half its stars had burned out before the Armada was
+								built, and the rest had wandered so far that no pilot alive could have sung a course
+								between them. Yet when Ade laid it over the live sky, every line held.
 							</p>
 							<p>
-								Sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque
-								porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci
-								velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam
-								aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem
-								ullam corporis suscipit laboriosam.
+								Every one of them pointed inward, toward the gate, and the gate, as if it had been
+								waiting for exactly this, began to open. The light that came through was older than
+								the station, older than the fleet, and it sounded like a choir heard through water.
 							</p>
-							<p>“Nisi ut aliquid ex ea commodi consequatur?”</p>
+							<p>“Did you do that?”</p>
 						</div>
 						<div class="pn">7</div>
 					</div>
 					<div class="pg pg-l face back">
-						<div class="rh">The War of Nine</div>
+						<div class="rh">The Glass Armada</div>
 						<div class="pb">
 							<p>
-								Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe
-								eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum
-								rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias
-								consequatur aut perferendis doloribus asperiores repellat.
+								“I didn't do anything,” Ade said. “I put a map on a screen.” His voice was steady.
+								His hands were not. Juno watched the gate widen by degrees, slow as a tide, and felt
+								the old fear rise in her, the one she had spent eleven years outrunning.
 							</p>
 							<p>
-								Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo
-								minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis
-								dolor repellendus. At vero eos et accusamus et iusto odio dignissimos ducimus qui
-								blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas
-								molestias excepturi.
+								She thought of Tamsin, and of the ship that had come back singing. Then she thought
+								of the crew, and the fuel, and the long way home, and found that none of it mattered
+								quite as much as she had always told herself it did.
 							</p>
 						</div>
 						<div class="pn">8</div>
@@ -153,7 +134,7 @@
 				<div class="leaf l2">
 					<div class="pg pg-r face">
 						<div class="ck">Part One</div>
-						<div class="ct">The Ninth Bell</div>
+						<div class="ct">The Drowned Moon</div>
 						<div class="orn">
 							<svg width="70" height="8" viewBox="0 0 70 8"
 								><path d="M0 4h27M43 4h27" stroke="#9C8F74" stroke-width="0.8" /><path
@@ -164,37 +145,30 @@
 						</div>
 						<div class="pb">
 							<p class="dc">
-								Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-								incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
-								exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute
-								irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-								pariatur.
+								Salvage law was older than the Armada and simpler than its pilots liked to admit. A
+								ship that stopped singing belonged to whoever found it. Juno had built a life on
+								that one sentence, and on the quiet hours it bought her between wrecks.
 							</p>
 							<p>
-								Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-								mollit anim id est laborum sed ut perspiciatis.
+								The beacon did not care about salvage law. It had been waiting a long time for
+								someone to come.
 							</p>
 						</div>
 						<div class="pn">5</div>
 					</div>
 					<div class="pg pg-l face back">
-						<div class="rh">The War of Nine</div>
+						<div class="rh">The Glass Armada</div>
 						<div class="pb">
 							<p>
-								Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur,
-								adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore
-								magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum
-								exercitationem ullam corporis suscipit laboriosam.
+								It reached them on the edge of Kesh space, eleven hours out from Vesper, a thread of
+								sound so faint that the hull had to be listening for it. Ade caught it first. He
+								always did. He had the kind of ear that heard engines dying a week before they died.
 							</p>
+							<p>“That isn't a distress call,” Juno said, though no one had asked her.</p>
 							<p>
-								“Quis autem vel eum iure,” reprehenderit qui in ea voluptate velit esse quam nihil
-								molestiae consequatur.
-							</p>
-							<p>
-								Vel illum qui dolorem eum fugiat quo voluptas nulla pariatur? At vero eos et
-								accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum
-								deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati
-								cupiditate non provident, similique sunt in culpa.
+								On the long screen the signal turned over and over, seven notes, never the same
+								twice and never quite different, like a word in a language that had been waiting a
+								very long time for someone to answer it.
 							</p>
 						</div>
 						<div class="pn">6</div>
@@ -206,38 +180,35 @@
 						<div class="rh">Prologue</div>
 						<div class="pb">
 							<p>
-								Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-								fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa
-								qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste
-								natus error sit voluptatem accusantium doloremque laudantium.
+								Three hundred years before the Meridian, a fleet of glass ships sailed out from the
+								inner worlds to find the edge of the sky. They navigated by song, each pilot singing
+								her ship from star to star, and for a hundred years the songs came back.
 							</p>
 							<p>
-								Totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto
-								beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit
-								aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione
-								voluptatem sequi nesciunt.
+								Then one season they did not. The last message from the Glass Armada was seven
+								notes, sent from somewhere past the Lantern Gate, and after that there was nothing
+								at all.
 							</p>
 							<p>
-								Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur,
-								adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore
-								magnam aliquam quaerat voluptatem.
+								The inner worlds mourned, and then forgot. The gate was sealed. The songs became
+								stories. And far out in the cold, on a drowned moon nobody visited, something went
+								on singing to itself.
 							</p>
 						</div>
 						<div class="pn">3</div>
 					</div>
 					<div class="pg pg-l face back">
-						<div class="rh">The War of Nine</div>
+						<div class="rh">The Glass Armada</div>
 						<div class="pb">
 							<p>
-								At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis
-								praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias
-								excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui
-								officia deserunt mollitia animi, id est laborum et dolorum fuga.
+								It sang for three centuries. It sang through the fall of the inner worlds and the
+								rise of the free stations, through wars no one now remembered and treaties no one
+								now kept. It sang to empty space, patient and precise.
 							</p>
 							<p>
-								Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum
-								soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime
-								placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus.
+								Then, one ordinary morning, a salvage ship came out of the lane with her running
+								lights dark, and something under the ice of Kesh stopped singing, and began, very
+								carefully, to listen.
 							</p>
 							<div class="orn" style:margin="14px 0 0">
 								<svg width="40" height="8" viewBox="0 0 40 8"
@@ -278,16 +249,16 @@
 
 		<div class="tag t2">
 			<span class="tag-over">Chapter · Part One</span>
-			<span class="tag-title">Salt and Iron</span>
+			<span class="tag-title">Salvage Rights</span>
 			<span class="progress">
 				<span class="on"></span><span class="on"></span><span></span><span></span>
 			</span>
 		</div>
 
 		<div class="tag t3">
-			<span class="monogram">MT</span>
+			<span class="monogram">JH</span>
 			<span class="person">
-				<span class="person-name">Maren Toll</span>
+				<span class="person-name">Juno Halley</span>
 				<span class="person-meta">Character · in 2 books</span>
 			</span>
 		</div>
@@ -312,7 +283,7 @@
 			</span>
 			<span class="tag-text">
 				<span class="tag-over">System · Magic</span>
-				<span class="tag-title">Tidecraft</span>
+				<span class="tag-title">Starsinging</span>
 			</span>
 		</div>
 	</div>

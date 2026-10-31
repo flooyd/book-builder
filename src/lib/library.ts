@@ -94,7 +94,7 @@ export function clearLibrary() {
 	libraryStatus.set('loading');
 }
 
-/** Up to two initials for a monogram, e.g. "Maren Toll" -> "MT". */
+/** Up to two initials for a monogram, e.g. "Juno Halley" -> "JH". */
 export function initials(name: string) {
 	const words = name.split(/\s+/).filter((word) => word && !/^(the|a|an|of)$/i.test(word));
 	return (

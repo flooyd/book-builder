@@ -22,31 +22,31 @@
 	}[] = [
 		{
 			label: 'Part One',
-			title: 'The Ninth Bell',
+			title: 'The Drowned Moon',
 			cards: [
-				{ label: 'Chapter 1', title: 'Salt and Iron', status: 'done', statusLabel: 'Done' },
+				{ label: 'Chapter 1', title: 'Salvage Rights', status: 'done', statusLabel: 'Done' },
 				{
 					label: 'Chapter 2',
-					title: 'A Map Drawn in Ash',
+					title: 'A Map of Dead Stars',
 					status: 'drafting',
 					statusLabel: 'Drafting',
 					lifted: true
 				},
-				{ label: 'Chapter 3', title: 'The Crossing', status: 'revising', statusLabel: 'Revising' }
+				{ label: 'Chapter 3', title: 'Burn Through', status: 'revising', statusLabel: 'Revising' }
 			]
 		},
 		{
 			label: 'Part Two',
-			title: 'The Ashen Coast',
+			title: 'The Hollow Sun',
 			cards: [
-				{ label: 'Chapter 4', title: 'Tidecraft', status: 'outlined', statusLabel: 'Outlined' },
-				{ label: 'Chapter 5', title: 'Embers at Dawn', status: 'idea', statusLabel: 'Idea' }
+				{ label: 'Chapter 4', title: 'Ghostlight', status: 'outlined', statusLabel: 'Outlined' },
+				{ label: 'Chapter 5', title: 'The Lantern Gate', status: 'idea', statusLabel: 'Idea' }
 			]
 		},
 		{
 			label: 'Story text',
 			title: 'Epilogue',
-			cards: [{ label: 'Epilogue', title: 'The Last Bell', status: 'idea', statusLabel: 'Idea' }]
+			cards: [{ label: 'Epilogue', title: 'Last Light', status: 'idea', statusLabel: 'Idea' }]
 		}
 	];
 
@@ -186,10 +186,10 @@
 			<motion-tilt class="tree-tilt" max={3} scale={1.01} gloss={true}>
 				<div class="tree-card">
 					<div class="tree-book">
-						<div class="tree-cover" aria-hidden="true">IX</div>
+						<div class="tree-cover" aria-hidden="true">I</div>
 						<div class="tree-book-text">
 							<span class="tree-over">Book</span>
-							<span class="tree-title">The War of Nine</span>
+							<span class="tree-title">The Glass Armada</span>
 						</div>
 					</div>
 					<div class="tree-rows">
@@ -200,22 +200,23 @@
 						</div>
 						<div class="tree-row">
 							<Icon name="chevron-down" size={16} class="tree-icon" />
-							<span class="tree-name">Part One <span class="tree-sub">— The Ninth Bell</span></span>
+							<span class="tree-name"
+								>Part One <span class="tree-sub">— The Drowned Moon</span></span
+							>
 							<span class="tree-meta">3 chapters</span>
 						</div>
 						<div class="tree-chapter">
-							<span class="tree-num">1</span><span>Salt and Iron</span>
+							<span class="tree-num">1</span><span>Salvage Rights</span>
 						</div>
 						<div class="tree-chapter current">
-							<span class="tree-num">2</span><span class="grow">A Map Drawn in Ash</span><span
+							<span class="tree-num">2</span><span class="grow">A Map of Dead Stars</span><span
 								class="tree-dot"
 							></span>
 						</div>
-						<div class="tree-chapter"><span class="tree-num">3</span><span>The Crossing</span></div>
+						<div class="tree-chapter"><span class="tree-num">3</span><span>Burn Through</span></div>
 						<div class="tree-row">
 							<Icon name="chevron-right" size={16} class="tree-icon" />
-							<span class="tree-name">Part Two <span class="tree-sub">— The Ashen Coast</span></span
-							>
+							<span class="tree-name">Part Two <span class="tree-sub">— The Hollow Sun</span></span>
 							<span class="tree-meta">4 chapters</span>
 						</div>
 					</div>
@@ -275,16 +276,16 @@
 			<div class="preview">
 				<div class="preview-bar">
 					<span class="preview-crumbs"
-						>The War of Nine <span class="sep">/</span> Part One <span class="sep">/</span>
-						<span class="here">A Map Drawn in Ash</span></span
+						>The Glass Armada <span class="sep">/</span> Part One <span class="sep">/</span>
+						<span class="here">A Map of Dead Stars</span></span
 					>
 					<span class="preview-saved"><Icon name="check-circle" size={15} />Saved</span>
 				</div>
 				<div class="preview-body">
 					<h3 class="preview-title">
-						A Map Drawn in Ash <span class="bullet">•</span> <span class="muted">Chapter 2</span>
+						A Map of Dead Stars <span class="bullet">•</span> <span class="muted">Chapter 2</span>
 					</h3>
-					<p class="preview-desc">In which the ninth bell rings</p>
+					<p class="preview-desc">In which the beacon wakes</p>
 					<!-- A picture of the editor's toolbar, not a working one. -->
 					<div class="preview-tools" aria-hidden="true">
 						<span class="tool-pick">Paragraph</span>
@@ -307,15 +308,16 @@
 						style="--cap-lines: 2; --cap-font: var(--font-display); --cap-color: var(--ink-accent)"
 					>
 						<p>
-							The bell rang <span style="color: var(--ink-ruby)">nine times</span> before anyone in
-							Saltmere thought to count. By the ninth stroke the harbour had gone quiet, and old
-							Maren Toll set down her net and
-							<mark style="background-color: var(--mark-yellow)">looked east</mark>.
+							The beacon had been calling for
+							<span style="color: var(--ink-ruby)">three hundred years</span> before anyone thought
+							to answer. By the time the <em>Meridian</em> dropped out of the lane the signal had
+							gone quiet, and Captain Juno Halley set down her coffee and
+							<mark style="background-color: var(--mark-yellow)">looked into the dark</mark>.
 						</p>
-						<p><em>“That is not a fire bell,”</em> she said, though no one had asked her.</p>
+						<p><em>“That isn't a distress call,”</em> she said, though no one had asked her.</p>
 						<hr />
 						<p>
-							By nightfall the whole town had an opinion and none of them had a plan<span
+							By the next watch the whole crew had a theory and none of them had a plan<span
 								class="caret"
 							></span>
 						</p>
@@ -395,11 +397,11 @@
 							>
 						</div>
 						<div class="focus-demo-page">
-							<p class="faded">The tide had turned twice before she reached the ferry.</p>
+							<p class="faded">The engines had gone quiet twice before she reached the airlock.</p>
 							<p>
-								Maren counted the bells again, and this time she was sure<span class="caret"></span>
+								Juno counted the stars again, and this time she was sure<span class="caret"></span>
 							</p>
-							<p class="faded">Behind her, the harbour lights went out one by one.</p>
+							<p class="faded">Behind her, the station lights went out one by one.</p>
 						</div>
 					</div>
 					<h3>Focus mode</h3>
@@ -412,16 +414,18 @@
 				<article class="duo-card">
 					<!-- A picture of a public author page. -->
 					<div class="author-demo" aria-hidden="true">
-						<span class="author-demo-face">WA</span>
-						<span class="author-demo-name">Wren Ashby</span>
-						<span class="author-demo-bio">Writes about salt, bells and the sea.</span>
+						<span class="author-demo-face">OV</span>
+						<span class="author-demo-name">Oriel Vance</span>
+						<span class="author-demo-bio"
+							>Writes about lost fleets and the people who chase them.</span
+						>
 						<span class="author-demo-address"
-							><Icon name="globe" size={13} />book-builder/author/wren-ashby</span
+							><Icon name="globe" size={13} />book-builder/author/oriel-vance</span
 						>
 						<span class="author-demo-books">
-							<BookCover id={2} title="The War of Nine" size="sm" />
-							<BookCover id={3} title="Glass Harbor" size="sm" />
-							<BookCover id={5} title="Tidewater" size="sm" />
+							<BookCover id={2} title="The Glass Armada" size="sm" />
+							<BookCover id={3} title="Lanterns of Vesper" size="sm" />
+							<BookCover id={5} title="Starwake" size="sm" />
 						</span>
 					</div>
 					<h3>Your author page</h3>

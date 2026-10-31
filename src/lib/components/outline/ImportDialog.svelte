@@ -53,12 +53,12 @@
 		if (done) onclose();
 	}
 
-	const example = `# Part One — The bell rings
-Ink, Vellum and Salt — Maren hears the ninth bell
-The Northern Survey
+	const example = `# Part One — The Drowned Moon
+Salvage Rights — Juno answers a three-hundred-year-old call
+A Map of Dead Stars
 > Interlude
 # Part Two
-Embers at Dawn`;
+Ghostlight`;
 </script>
 
 <Dialog labelledby="import-title" width={760} {onclose}>

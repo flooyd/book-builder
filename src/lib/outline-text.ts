@@ -1,8 +1,8 @@
 // The outline as plain text, for "Import from text" and "Copy as text":
 //
-//   # Part One — The bell rings     a part that holds chapters ("— synopsis" is optional)
+//   # Part One — The Drowned Moon   a part that holds chapters ("— synopsis" is optional)
 //   > Prologue                      a part that holds its own story text
-//   Ink, Vellum and Salt            every other line is a chapter of the part above it
+//   Salvage Rights                  every other line is a chapter of the part above it
 //
 // List markers ("- ", "* ", "1. ") in front of chapters are dropped, and " -- " works in place
 // of " — ". Formatting in synopses doesn't survive the trip: they export as plain text.

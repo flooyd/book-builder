@@ -31,7 +31,7 @@
 			'New book',
 			'Give it a title — you can shape everything else later.',
 			'Title',
-			'e.g. The War of Nine',
+			'e.g. The Glass Armada',
 			'What is this book about?',
 			'Create book'
 		],
@@ -39,7 +39,7 @@
 			'New part',
 			'Parts hold chapters, or a single run of story text.',
 			'Title',
-			'e.g. Part Three — The Ninth Gate',
+			'e.g. Part Three — The Lantern Gate',
 			'A line about this part',
 			'Create part'
 		],
@@ -47,7 +47,7 @@
 			'New chapter',
 			'Chapters live inside a part.',
 			'Title',
-			'e.g. The Drowned Archive',
+			'e.g. A Map of Dead Stars',
 			'What happens here?',
 			'Create chapter'
 		],
@@ -55,7 +55,7 @@
 			'New character',
 			'Characters can appear in more than one book.',
 			'Name',
-			'e.g. Maren Toll',
+			'e.g. Juno Halley',
 			'Who are they, and what do they want?',
 			'Create character'
 		],
@@ -63,7 +63,7 @@
 			'New system',
 			'Magic, law, trade — the rules your world runs on.',
 			'Name',
-			'e.g. Tidecraft',
+			'e.g. Starsinging',
 			'The rules, costs and limits',
 			'Create system'
 		]
@@ -84,7 +84,7 @@
 		'Edit system',
 		'Change its details, or the books it applies to.',
 		'Name',
-		'e.g. Tidecraft',
+		'e.g. Starsinging',
 		'The rules, costs and limits',
 		'Save system'
 	];

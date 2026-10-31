@@ -35,14 +35,14 @@
 		<div class="shelf" aria-hidden="true">
 			<motion-stagger y={-70} interval={0.09} duration={0.8} delay={0.2}>
 				<div>
-					<div class="spine s1"><span>The War of Nine</span><span class="num">I</span></div>
+					<div class="spine s1"><span>The Glass Armada</span><span class="num">I</span></div>
 				</div>
 				<div><div class="spine s2">Prologue</div></div>
 				<div>
-					<div class="spine s3"><span>The Ashen Coast</span><span class="num">II</span></div>
+					<div class="spine s3"><span>The Hollow Sun</span><span class="num">II</span></div>
 				</div>
 				<div><div class="spine s4">Notes</div></div>
-				<div><div class="spine s5">Tidecraft</div></div>
+				<div><div class="spine s5">Starsinging</div></div>
 				<div><div class="spine s6">Characters</div></div>
 			</motion-stagger>
 			<div class="floor"></div>

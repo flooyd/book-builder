@@ -9,7 +9,7 @@ export const handleProblem = (handle: string) =>
 		? null
 		: 'Use 3–30 lowercase letters, numbers and dashes (not at the start or end).';
 
-/** An address to suggest from a name: "Maren Toll" → "maren-toll". */
+/** An address to suggest from a name: "Juno Halley" → "juno-halley". */
 export function suggestHandle(name: string) {
 	const slug = name
 		.normalize('NFKD')
@@ -22,7 +22,7 @@ export function suggestHandle(name: string) {
 	return slug.length >= 3 ? slug : '';
 }
 
-/** A website as typed ("maren.example") made a full http(s) URL, or null if it isn't one. */
+/** A website as typed ("juno.example") made a full http(s) URL, or null if it isn't one. */
 export function cleanWebsite(value: string): string | null {
 	const text = value.trim();
 	if (!text) return '';
@@ -37,5 +37,5 @@ export function cleanWebsite(value: string): string | null {
 	}
 }
 
-/** "https://maren.example/" shown as "maren.example". */
+/** "https://juno.example/" shown as "juno.example". */
 export const websiteLabel = (url: string) => url.replace(/^https?:\/\//i, '').replace(/\/$/, '');
