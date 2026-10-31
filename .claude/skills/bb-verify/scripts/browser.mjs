@@ -128,9 +128,12 @@ export async function ensureSignedIn(page) {
 	await sleep(500);
 	if (page.url().includes('/login')) {
 		// Already registered: sign in instead (the form's default action).
+		// Enter in the password field submits the default action; a selector like
+		// 'button:not([formaction])' would hit the theme toggle first.
+		await page.focus('input[name=password]');
 		await Promise.all([
 			page.waitForNavigation({ waitUntil: 'networkidle0' }).catch(() => {}),
-			page.click('button:not([formaction])')
+			page.keyboard.press('Enter')
 		]);
 		await sleep(500);
 	}

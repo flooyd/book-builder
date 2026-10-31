@@ -433,6 +433,11 @@
 						Your name, a short bio and every book you've shared, at an address of your own. Private
 						until you switch it on.
 					</p>
+					<div class="duo-action">
+						<Button href={resolve('/author/[handle]', { handle: 'demo-author' })}>
+							See the demo author<Icon name="arrow-right" size={16} />
+						</Button>
+					</div>
 				</article>
 			</motion-stagger>
 		</div>
@@ -1097,6 +1102,10 @@
 		font-size: 15.5px;
 		line-height: 1.6;
 		color: var(--bb-text-2);
+	}
+
+	.duo-action {
+		margin: 6px 8px 0;
 	}
 
 	/* Focus mode: always a night page, as on a dark screen. */

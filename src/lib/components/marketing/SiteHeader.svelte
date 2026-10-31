@@ -130,12 +130,35 @@
 	@media (max-width: 600px) {
 		.inner {
 			padding: 10px 20px;
+			gap: 4px 12px;
+		}
+
+		/* The wordmark sets its size inline, so scale the whole link to fit beside the buttons. */
+		.brand {
+			zoom: 0.85;
+		}
+
+		.start {
+			padding: 0 14px;
 		}
 
 		nav {
 			order: 3;
 			width: 100%;
+			flex-wrap: nowrap;
 			gap: 4px 20px;
+			overflow-x: auto;
+			white-space: nowrap;
+			scrollbar-width: none;
+		}
+
+		nav a {
+			padding: 6px 0;
+		}
+
+		/* "Get started" leads to the same page, so the bar stays short on a phone. */
+		.login {
+			display: none;
 		}
 	}
 </style>

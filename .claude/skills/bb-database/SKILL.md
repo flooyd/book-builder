@@ -8,7 +8,8 @@ description: How Book Builder's Postgres data works and how to change it safely,
 ## Ground rules (the user set these)
 
 1. **Never write test data to the user's Neon database.** All experiments, seeds and test
-   accounts go into a local throwaway Postgres (see the `bb-verify` skill).
+   accounts go into a local throwaway Postgres (see the `bb-verify` skill). The one exception is
+   the public **Demo Author** account (see "The demo account" below), which the user asked for.
 2. **Ask before any production database change.** The user approves each migration
    explicitly ("yes, run the migration"). Approval for one migration doesn't cover the next.
 3. **Never print secrets.** Read `DATABASE_URL` from `.env` into a shell variable and print
@@ -75,6 +76,24 @@ DATABASE_URL="$DB" npx drizzle-kit push 2>&1 | grep -iE "no changes|statements" 
 - **psql location.** psql lives in `C:\Program Files\PostgreSQL\18\bin` on this machine. Under Git Bash, quote it as `"/c/Program Files/PostgreSQL/18/bin/psql.exe"`.
 - **If drizzle-kit wants changes**, don't confirm anything. Stop and report.
 - **Afterwards**, tell the user it was applied and mention the migration file in the commit message ("Migration: drizzle/manual/0006_profiles.sql (already applied to Neon).").
+
+## The demo account (lives in Neon)
+
+A real user named **Demo Author** (handle `demo-author`, email `demo@book-builder.invalid`) lives
+in the Neon database so visitors can see a finished book without signing up:
+
+- **Public pages.** `/author/demo-author` lists the book, which is shared at its `/read/<shareId>` link.
+- **Content.** It is _The Long Light_ (prologue plus two parts, about 9,800 words, with the statuses
+  spread across done, revising, drafting and outlined), the characters Juno Halley, Ade, Pell and
+  Tamsin, and the system Starsinging, all from the sample universe in the `bb-homepage` skill.
+- **Login.** The password was generated once and saved as `DEMO_AUTHOR_EMAIL` / `DEMO_AUTHOR_PASSWORD`
+  in `.env` (gitignored). Never print it. Sign-up is open, so don't rely on the email being unguessable.
+- **Rebuilding it.** `scripts/seed-demo-author.mjs` copies _The Long Light_ from a throwaway database
+  (build one with the `bb-verify` skill and its `seed-long-book.py`) into `DATABASE_URL`, replacing
+  the demo user and everything it owns, and sets a new password. Run it from the repo root with
+  `SOURCE_DATABASE_URL`, `DATABASE_URL` and optionally `ENV_FILE` set. Try it on a throwaway target
+  first, then run it on Neon only when the user asks. It only ever deletes the one demo user.
+- **Don't** use the demo account for experiments. Make a test user on the throwaway database instead.
 
 ## Seeding test data
 

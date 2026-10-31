@@ -38,6 +38,8 @@ space-opera / science-fantasy series. The user had the earlier sample ("The War 
 books when this one fits.
 
 **Books.** _The Glass Armada_, the main sample, by author **Oriel Vance**, plus a second book, _Lanterns of Vesper_.
+The live demo account in Neon (see the `bb-database` skill) is named **Demo Author** instead,
+because the user asked for that name. It holds _The Long Light_, a long sample in this same universe.
 
 **Outline of _The Glass Armada_:**
 

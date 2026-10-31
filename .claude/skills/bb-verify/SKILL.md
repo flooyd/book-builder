@@ -90,6 +90,14 @@ page looking right.
 - **View transitions block clicks.** Theme switches and page navigations run view transitions, and the page ignores clicks while one runs. Wait about 1.3s after toggling the theme before clicking anything.
 - **Mobile emulation reloads.** `page.setViewport({ isMobile: true, hasTouch: true })` reloads the page in puppeteer. Plain width changes don't, and those are what test resize handling.
 - **Saved preferences leak between runs.** Reader preferences (`bb-reader` cookie) and reading positions (`localStorage`) persist in the `auth` profile across runs. Delete them at the start of a test that depends on defaults.
+- **Clicking "Log in".** `button:not([formaction])` matches the theme toggle first. Submit the login
+  form with Enter in the password field (`ensureSignedIn` does).
+- **Starting a second Postgres.** `pg_ctl ... start` run straight from PowerShell hangs on inherited
+  streams. Use `scratch-db.sh` (it detaches them), or start `postgres.exe -D <dir> -p <port>` with
+  `Start-Process -WindowStyle Hidden`. Stopping the shell that started a server kills it.
+- **Old scratch data.** Earlier scratch databases are kept under the Claude scratchpad
+  (`%LOCALAPPDATA%\Temp\claude\...\scratchpad\*\pgdata`). The user values them, so copy a folder
+  before starting a server on it, and never edit the original.
 - **Duplicate headlines.** `motion-headline` keeps a hidden copy of its text for screen readers, so `h1.textContent` reads the title twice. That's expected.
 
 ## 4. Test data
