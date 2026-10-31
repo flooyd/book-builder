@@ -22,29 +22,40 @@ export function readingTime(words: number) {
 export const TEXT_SIZES = [16, 18, 20, 22, 24, 27];
 
 export type Typeface = 'serif' | 'sans';
-export type ReaderPrefs = { size: number; face: Typeface };
+/** One long page you scroll, or a book you turn the pages of. */
+export type ReaderView = 'scroll' | 'book';
+export type ReaderPrefs = { size: number; face: Typeface; view: ReaderView };
 
 /** Kept in a cookie so the server renders the book at the reader's size (no reflow on load). */
 export const READER_COOKIE = 'bb-reader';
 
-export const DEFAULT_PREFS: ReaderPrefs = { size: 2, face: 'serif' };
+export const DEFAULT_PREFS: ReaderPrefs = { size: 2, face: 'serif', view: 'scroll' };
 
-/** Cookie value "<size index>-<typeface>", e.g. "3-sans". */
+/** Cookie value "<size index>-<typeface>-<view>", e.g. "3-sans-book"; the view is optional. */
 export function parseReaderPrefs(value: string | undefined): ReaderPrefs {
-	const [size, face] = (value ?? '').split('-');
+	const [size, face, view] = (value ?? '').split('-');
 	const index = Number(size);
 	return {
 		size:
 			size && Number.isInteger(index) && index >= 0 && index < TEXT_SIZES.length
 				? index
 				: DEFAULT_PREFS.size,
-		face: face === 'sans' ? 'sans' : 'serif'
+		face: face === 'sans' ? 'sans' : 'serif',
+		view: view === 'book' ? 'book' : 'scroll'
 	};
 }
 
 export function saveReaderPrefs(prefs: ReaderPrefs) {
-	document.cookie = `${READER_COOKIE}=${prefs.size}-${prefs.face}; path=/; max-age=31536000; samesite=lax`;
+	document.cookie = `${READER_COOKIE}=${prefs.size}-${prefs.face}-${prefs.view}; path=/; max-age=31536000; samesite=lax`;
 }
+
+// ---- Where the reader is -------------------------------------------------------------------
+
+/** A part or chapter in reading order; key is its anchor ("part-3", "chapter-12"). */
+export type ReadingSection = { key: string; overline: string | null; title: string };
+
+/** A place in the book: a section, and how far through it (0 to 1). Both views read and write it. */
+export type ReadingPosition = { key: string; fraction: number };
 
 // ---- Page data ---------------------------------------------------------------------------
 

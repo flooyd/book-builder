@@ -9,7 +9,9 @@
 		readingTime,
 		saveReaderPrefs,
 		type ReaderData,
-		type ReaderPrefs
+		type ReaderPrefs,
+		type ReadingPosition,
+		type ReadingSection
 	} from '$lib/reading';
 	import { plainText } from '$lib/rich';
 	import BookCover from '$lib/components/ui/BookCover.svelte';
@@ -19,10 +21,12 @@
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
 	import Wordmark from '$lib/components/ui/Wordmark.svelte';
+	import BookView from './BookView.svelte';
 
 	// Reading mode: the whole book typeset on one page (title page, contents, then every part and
 	// chapter in order), with a bar that slides away while reading, a progress line, text
-	// settings, and the reading position remembered per book.
+	// settings, and the reading position remembered per book. The Book button swaps the page for
+	// an open book you turn the pages of (BookView); both views keep the same place.
 	let { data }: { data: ReaderData } = $props();
 
 	const outline = $derived(bookOutline(data.book.id, data.parts, data.chapters));
@@ -31,10 +35,14 @@
 		Object.values(data.texts).reduce((sum, text) => sum + countWords(plainText(text)), 0)
 	);
 
+	const facts = $derived(
+		`${plural(outline.length, 'part')} · ${plural(chapterCount, 'chapter')}` +
+			(words > 0 ? ` · ${plural(words, 'word')} · about ${readingTime(words)}` : '')
+	);
+
 	// Every part and chapter in reading order, with its anchor (the element's id).
-	type Section = { key: string; overline: string | null; title: string };
-	const sections = $derived<Section[]>(
-		outline.flatMap((entry): Section[] =>
+	const sections = $derived<ReadingSection[]>(
+		outline.flatMap((entry): ReadingSection[] =>
 			entry.label
 				? [
 						{ key: `part-${entry.part.id}`, overline: entry.label, title: entry.part.title },
@@ -47,7 +55,7 @@
 				: [{ key: `part-${entry.part.id}`, overline: null, title: entry.part.title }]
 		)
 	);
-	const labelOf = (section: Section) =>
+	const labelOf = (section: ReadingSection) =>
 		section.overline ? `${section.overline} · ${section.title}` : section.title;
 
 	const bookHref = $derived(resolve('/book/[id]', { id: String(data.book.id) }));
@@ -59,12 +67,35 @@
 	let settingsOpen = $state(false);
 
 	async function setPrefs(next: Partial<ReaderPrefs>) {
-		// Keep the reader on the same line while the text reflows.
+		// Keep the reader on the same line while the text reflows (the book keeps its own place).
 		const at = position();
+		const switching = next.view !== undefined && next.view !== prefs.view;
+		if (switching && next.view === 'book') bookStart = at;
 		prefs = { ...prefs, ...next };
 		saveReaderPrefs(prefs);
 		await tick();
+		if (prefs.view === 'book') {
+			if (switching) scrollTo({ top: 0, behavior: 'instant' });
+			return;
+		}
+		if (switching) collect();
 		if (at) restore(at);
+		else if (switching) scrollTo({ top: 0, behavior: 'instant' });
+		measure();
+	}
+
+	// ---- Book view -----------------------------------------------------------------------------
+	const bookMode = $derived(prefs.view === 'book');
+	let bookView = $state<ReturnType<typeof BookView>>();
+	/** Where the book opens when switching to it from the scroll view. */
+	let bookStart = $state<ReadingPosition | null>(null);
+
+	function onbookmove(moved: { position: ReadingPosition | null; progress: number }) {
+		progress = moved.progress;
+		current = moved.position
+			? sections.findIndex((section) => section.key === moved.position?.key)
+			: -1;
+		remember();
 	}
 
 	const sizePercent = $derived(
@@ -83,10 +114,13 @@
 	let lastY = 0;
 	let frame = 0;
 
-	type Position = { key: string; fraction: number };
+	/** Where the reader is, in whichever view is on. */
+	function position(): ReadingPosition | null {
+		return bookMode ? (bookView?.position() ?? null) : scrollPosition();
+	}
 
 	/** The section under the reading line, and how far through it the line is. */
-	function position(): Position | null {
+	function scrollPosition(): ReadingPosition | null {
 		const element = elements[current];
 		if (!element) return null;
 		const rect = element.getBoundingClientRect();
@@ -94,7 +128,7 @@
 		return { key: sections[current].key, fraction: Math.min(1, Math.max(0, fraction)) };
 	}
 
-	function restore(at: Position, behavior: ScrollBehavior = 'instant') {
+	function restore(at: ReadingPosition, behavior: ScrollBehavior = 'instant') {
 		const element = document.getElementById(at.key);
 		if (!element) return;
 		if (at.fraction < 0.01) {
@@ -110,6 +144,7 @@
 
 	function measure() {
 		frame = 0;
+		if (bookMode) return;
 		const y = scrollY;
 		const max = document.documentElement.scrollHeight - innerHeight;
 		progress = max > 0 ? Math.min(1, Math.max(0, y / max)) : 1;
@@ -152,7 +187,7 @@
 	}
 
 	/** Where the reader left off last time, offered on the title page. */
-	let resume = $state<(Position & { label: string }) | null>(null);
+	let resume = $state<(ReadingPosition & { label: string }) | null>(null);
 
 	function readSaved() {
 		try {
@@ -167,13 +202,22 @@
 		}
 	}
 
-	// ---- Keyboard: ← → move between parts and chapters ---------------------------------------
+	// ---- Keyboard: ← → move between parts and chapters, or turn the book's pages --------------
+	const TURNS: Record<string, 1 | -1> = { ArrowLeft: -1, ArrowRight: 1, PageUp: -1, PageDown: 1 };
+
 	function onkeydown(event: KeyboardEvent) {
-		if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
 		if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)
 			return;
 		if (contentsOpen || settingsOpen) return;
 		if ((event.target as Element).closest('input, textarea, select, [contenteditable]')) return;
+		if (bookMode) {
+			if (event.key in TURNS) bookView?.step(TURNS[event.key]);
+			else if (event.key === 'Home' || event.key === 'End') bookView?.edge(event.key === 'End');
+			else return;
+			event.preventDefault();
+			return;
+		}
+		if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
 		event.preventDefault();
 		step(event.key === 'ArrowRight' ? 1 : -1);
 	}
@@ -189,10 +233,22 @@
 		else elements[Math.min(target, elements.length - 1)]?.scrollIntoView({ behavior: smooth });
 	}
 
-	onMount(() => {
+	/** The scroll view's part and chapter elements, in order. */
+	function collect() {
 		elements = sections
 			.map((section) => document.getElementById(section.key))
 			.filter((element) => element !== null);
+	}
+
+	function jump(event: MouseEvent, key: string) {
+		contentsOpen = false;
+		if (!bookMode) return;
+		event.preventDefault();
+		bookView?.goTo(key);
+	}
+
+	onMount(() => {
+		collect();
 		resume = readSaved();
 		measure();
 
@@ -229,7 +285,7 @@
 				<a
 					href="#{partKey}"
 					aria-current={inDialog && sections[current]?.key === partKey ? 'location' : undefined}
-					onclick={() => (contentsOpen = false)}
+					onclick={(event) => jump(event, partKey)}
 				>
 					{#if entry.label}<span class="toc-over">{entry.label}</span>{/if}
 					<span class="toc-title">{entry.part.title}</span>
@@ -242,7 +298,7 @@
 								<a
 									href="#{key}"
 									aria-current={inDialog && sections[current]?.key === key ? 'location' : undefined}
-									onclick={() => (contentsOpen = false)}
+									onclick={(event) => jump(event, key)}
 								>
 									<span class="toc-num">{number}</span>
 									<span class="toc-title">{chapter.title}</span>
@@ -270,10 +326,10 @@
 {/snippet}
 
 <!-- data-scheme: lets print (below) set this subtree to the light theme. -->
-<div class="reader" data-scheme="">
+<div class="reader" class:book-mode={bookMode} data-scheme="">
 	<div class="progress" style:transform="scaleX({progress})" aria-hidden="true"></div>
 
-	<header class="bar" class:hidden={barHidden && !settingsOpen && !contentsOpen}>
+	<header class="bar" class:hidden={!bookMode && barHidden && !settingsOpen && !contentsOpen}>
 		{#if data.owner}
 			<a class="back" href={bookHref}>
 				<Icon name="arrow-left" size={18} /><span class="back-title">{data.book.title}</span>
@@ -285,6 +341,15 @@
 		<p class="where">{current >= 0 ? labelOf(sections[current]) : ''}</p>
 
 		<div class="tools">
+			<button
+				type="button"
+				class="tool"
+				aria-pressed={bookMode}
+				title={bookMode ? 'Back to one long page' : 'Read it as a book'}
+				onclick={() => setPrefs({ view: bookMode ? 'scroll' : 'book' })}
+			>
+				<Icon name="book-open" size={18} /><span class="tool-label">Book</span>
+			</button>
 			{#if sections.length > 0}
 				<button type="button" class="tool" onclick={() => (contentsOpen = true)}>
 					<Icon name="list-tree" size={18} /><span class="tool-label">Contents</span>
@@ -343,122 +408,137 @@
 		</div>
 
 		<p class="settings-hint">
-			<kbd>←</kbd><kbd>→</kbd> previous or next chapter
+			<kbd>←</kbd><kbd>→</kbd>
+			{bookMode ? 'turn the page' : 'previous or next chapter'}
 		</p>
 	</div>
 
-	<main
-		class="book"
-		class:sans={prefs.face === 'sans'}
-		style:--read-size="{TEXT_SIZES[prefs.size]}px"
-	>
-		<section id="top" class="title-page" aria-labelledby="book-title">
-			<BookCover id={data.book.id} title={data.book.title} author={data.author} size="lg" tilt />
-			{#key data.book.title}
-				<h1 id="book-title">
-					<motion-headline by="words" interval={0.07}>{data.book.title}</motion-headline>
-				</h1>
-			{/key}
-			{#if data.author}
-				<p class="byline">
-					by {#if data.authorHandle}<a
-							href={resolve('/author/[handle]', { handle: data.authorHandle })}>{data.author}</a
-						>{:else}{data.author}{/if}
-				</p>
-			{/if}
-			{#if data.book.description}
-				<p class="blurb"><RichText value={data.book.description} italic /></p>
-			{/if}
-			<p class="facts">
-				{plural(outline.length, 'part')} · {plural(chapterCount, 'chapter')}
-				{#if words > 0}
-					· {plural(words, 'word')} · about {readingTime(words)}
+	{#if bookMode}
+		<main class="book-view">
+			<BookView
+				bind:this={bookView}
+				{data}
+				{outline}
+				{prefs}
+				{facts}
+				start={bookStart}
+				{resume}
+				onmove={onbookmove}
+			/>
+		</main>
+	{:else}
+		<main
+			class="book"
+			class:sans={prefs.face === 'sans'}
+			style:--read-size="{TEXT_SIZES[prefs.size]}px"
+		>
+			<section id="top" class="title-page" aria-labelledby="book-title">
+				<BookCover id={data.book.id} title={data.book.title} author={data.author} size="lg" tilt />
+				{#key data.book.title}
+					<h1 id="book-title">
+						<motion-headline by="words" interval={0.07}>{data.book.title}</motion-headline>
+					</h1>
+				{/key}
+				{#if data.author}
+					<p class="byline">
+						by {#if data.authorHandle}<a
+								href={resolve('/author/[handle]', { handle: data.authorHandle })}>{data.author}</a
+							>{:else}{data.author}{/if}
+					</p>
 				{/if}
-			</p>
+				{#if data.book.description}
+					<p class="blurb"><RichText value={data.book.description} italic /></p>
+				{/if}
+				<p class="facts">{facts}</p>
+				{#if sections.length > 0}
+					<div class="start">
+						<Button variant="primary" size="lg" href="#{sections[0].key}">
+							Start reading<Icon name="arrow-right" size={17} />
+						</Button>
+						{#if resume}
+							{@const at = resume}
+							<Button size="lg" onclick={() => restore(at, 'smooth')}>Continue · {at.label}</Button>
+						{/if}
+					</div>
+				{/if}
+			</section>
+
 			{#if sections.length > 0}
-				<div class="start">
-					<Button variant="primary" size="lg" href="#{sections[0].key}">
-						Start reading<Icon name="arrow-right" size={17} />
-					</Button>
-					{#if resume}
-						{@const at = resume}
-						<Button size="lg" onclick={() => restore(at, 'smooth')}>Continue · {at.label}</Button>
-					{/if}
-				</div>
+				<nav class="contents" aria-labelledby="contents-title">
+					<h2 id="contents-title">Contents</h2>
+					{@render contents(false)}
+				</nav>
 			{/if}
-		</section>
 
-		{#if sections.length > 0}
-			<nav class="contents" aria-labelledby="contents-title">
-				<h2 id="contents-title">Contents</h2>
-				{@render contents(false)}
-			</nav>
-		{/if}
-
-		{#each outline as entry (entry.part.id)}
-			{@const partHref = resolve('/part/[id]', { id: String(entry.part.id) })}
-			{#if entry.label}
-				<header class="part-page" id="part-{entry.part.id}">
-					<span class="part-over">{entry.label}</span>
-					<h2>{entry.part.title}</h2>
-					{#if entry.part.description}
-						<p class="subtitle"><RichText value={entry.part.description} italic /></p>
-					{/if}
-					{@render ornament()}
-				</header>
-				{#each entry.chapters as { chapter, number } (chapter.id)}
-					<section
-						class="chapter"
-						id="chapter-{chapter.id}"
-						aria-labelledby="h-chapter-{chapter.id}"
-					>
-						<header class="chapter-head">
-							<span class="chapter-over">Chapter {number}</span>
-							<h3 id="h-chapter-{chapter.id}">{chapter.title}</h3>
-							{#if chapter.description}
-								<p class="subtitle"><RichText value={chapter.description} italic /></p>
-							{/if}
-						</header>
-						{@render prose(
-							`chapter-${chapter.id}`,
-							resolve('/chapter/[id]', { id: String(chapter.id) })
-						)}
-					</section>
-				{:else}
-					<p class="no-text">No chapters yet.</p>
-				{/each}
-			{:else}
-				<section class="chapter" id="part-{entry.part.id}" aria-labelledby="h-part-{entry.part.id}">
-					<header class="chapter-head">
-						<h2 id="h-part-{entry.part.id}">{entry.part.title}</h2>
+			{#each outline as entry (entry.part.id)}
+				{@const partHref = resolve('/part/[id]', { id: String(entry.part.id) })}
+				{#if entry.label}
+					<header class="part-page" id="part-{entry.part.id}">
+						<span class="part-over">{entry.label}</span>
+						<h2>{entry.part.title}</h2>
 						{#if entry.part.description}
 							<p class="subtitle"><RichText value={entry.part.description} italic /></p>
 						{/if}
+						{@render ornament()}
 					</header>
-					{@render prose(`part-${entry.part.id}`, partHref)}
-				</section>
-			{/if}
-		{/each}
-
-		{#if sections.length > 0}
-			<footer class="colophon">
-				{@render ornament()}
-				<p class="the-end">The End</p>
-				<div class="end-actions">
-					{#if data.owner}<Button href={bookHref}>Back to the book</Button>{/if}
-					<Button variant="quiet" href="#top">Back to the top</Button>
-				</div>
-				{#if !data.owner}
-					<p class="made">Written with <a href={resolve('/')}>Book Builder</a></p>
+					{#each entry.chapters as { chapter, number } (chapter.id)}
+						<section
+							class="chapter"
+							id="chapter-{chapter.id}"
+							aria-labelledby="h-chapter-{chapter.id}"
+						>
+							<header class="chapter-head">
+								<span class="chapter-over">Chapter {number}</span>
+								<h3 id="h-chapter-{chapter.id}">{chapter.title}</h3>
+								{#if chapter.description}
+									<p class="subtitle"><RichText value={chapter.description} italic /></p>
+								{/if}
+							</header>
+							{@render prose(
+								`chapter-${chapter.id}`,
+								resolve('/chapter/[id]', { id: String(chapter.id) })
+							)}
+						</section>
+					{:else}
+						<p class="no-text">No chapters yet.</p>
+					{/each}
+				{:else}
+					<section
+						class="chapter"
+						id="part-{entry.part.id}"
+						aria-labelledby="h-part-{entry.part.id}"
+					>
+						<header class="chapter-head">
+							<h2 id="h-part-{entry.part.id}">{entry.part.title}</h2>
+							{#if entry.part.description}
+								<p class="subtitle"><RichText value={entry.part.description} italic /></p>
+							{/if}
+						</header>
+						{@render prose(`part-${entry.part.id}`, partHref)}
+					</section>
 				{/if}
-			</footer>
-		{:else}
-			<p class="nothing">
-				There's nothing to read yet.
-				{#if data.owner}<a href={bookHref}>Add parts and chapters</a> first.{/if}
-			</p>
-		{/if}
-	</main>
+			{/each}
+
+			{#if sections.length > 0}
+				<footer class="colophon">
+					{@render ornament()}
+					<p class="the-end">The End</p>
+					<div class="end-actions">
+						{#if data.owner}<Button href={bookHref}>Back to the book</Button>{/if}
+						<Button variant="quiet" href="#top">Back to the top</Button>
+					</div>
+					{#if !data.owner}
+						<p class="made">Written with <a href={resolve('/')}>Book Builder</a></p>
+					{/if}
+				</footer>
+			{:else}
+				<p class="nothing">
+					There's nothing to read yet.
+					{#if data.owner}<a href={bookHref}>Add parts and chapters</a> first.{/if}
+				</p>
+			{/if}
+		</main>
+	{/if}
 </div>
 
 {#if contentsOpen}
@@ -490,6 +570,26 @@
 
 	.reader {
 		min-height: 100vh;
+	}
+
+	/* The book fills the window between the bar and its controls; nothing scrolls. */
+	.reader.book-mode {
+		height: 100vh;
+		height: 100dvh;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	.book-mode .bar {
+		flex: none;
+	}
+
+	.book-view {
+		flex: 1;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
 	}
 
 	/* ---- Progress line and bar ---- */
@@ -595,7 +695,8 @@
 	}
 
 	.tool:hover,
-	.tool[aria-expanded='true'] {
+	.tool[aria-expanded='true'],
+	.tool[aria-pressed='true'] {
 		background: var(--bb-line-faint);
 		color: var(--bb-text-strong);
 	}
