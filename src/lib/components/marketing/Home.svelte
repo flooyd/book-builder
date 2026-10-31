@@ -5,6 +5,49 @@
 	import AnimatedBook from './AnimatedBook.svelte';
 	import SiteHeader from './SiteHeader.svelte';
 	import SiteFooter from './SiteFooter.svelte';
+	import { SOON } from './soon';
+
+	// The corkboard picture in "03 — The outline". Statuses are the outline's colours (see .board).
+	const board: {
+		label: string;
+		title: string;
+		cards: {
+			label: string;
+			title: string;
+			status: string;
+			statusLabel: string;
+			lifted?: boolean;
+		}[];
+	}[] = [
+		{
+			label: 'Part One',
+			title: 'The Ninth Bell',
+			cards: [
+				{ label: 'Chapter 1', title: 'Salt and Iron', status: 'done', statusLabel: 'Done' },
+				{
+					label: 'Chapter 2',
+					title: 'A Map Drawn in Ash',
+					status: 'drafting',
+					statusLabel: 'Drafting',
+					lifted: true
+				},
+				{ label: 'Chapter 3', title: 'The Crossing', status: 'revising', statusLabel: 'Revising' }
+			]
+		},
+		{
+			label: 'Part Two',
+			title: 'The Ashen Coast',
+			cards: [
+				{ label: 'Chapter 4', title: 'Tidecraft', status: 'outlined', statusLabel: 'Outlined' },
+				{ label: 'Chapter 5', title: 'Embers at Dawn', status: 'idea', statusLabel: 'Idea' }
+			]
+		},
+		{
+			label: 'Story text',
+			title: 'Epilogue',
+			cards: [{ label: 'Epilogue', title: 'The Last Bell', status: 'idea', statusLabel: 'Idea' }]
+		}
+	];
 
 	const GITHUB = 'https://github.com/flooyd/book-builder';
 
@@ -48,14 +91,6 @@
 			body: 'Write down the rules of your magic, politics or trade once, and keep them consistent everywhere.'
 		}
 	];
-
-	const soon: { title: string; icon: IconName; body: string }[] = [
-		{
-			title: 'Text Editor',
-			icon: 'pen',
-			body: 'Richer formatting for your story text, right where you write it.'
-		}
-	];
 </script>
 
 <svelte:head>
@@ -87,9 +122,9 @@
 					them<br />into books.
 				</h1>
 				<p class="lede">
-					Book Builder is a free, open-source workshop for long-form stories. Shape your book into
-					parts and chapters, keep its characters and systems close at hand, and share what you've
-					written with readers.
+					Book Builder is a free, open-source workshop for long-form stories. Plan your book on a
+					corkboard, write it in an editor set like the finished page, keep its characters and
+					systems close at hand, and share it with readers.
 				</p>
 				<div class="cta-row">
 					<motion-magnetic strength={0.2}>
@@ -209,27 +244,27 @@
 
 	<section id="example" class="section example">
 		<div class="example-copy">
-			<p class="overline">02 — Example of a Part</p>
+			<p class="overline">02 — The editor</p>
 			<h2 class="section-title">
 				<motion-headline by="words">Write where the story lives.</motion-headline>
 			</h2>
 			<p class="example-lede">
-				Open a part and its story text is right there, set in a typeface made for long reading —
-				nothing between you and the page.
+				Open a chapter and write in an editor set like the finished page, in a typeface made for
+				long reading. Then read it back, or share it, in reading mode.
 			</p>
 			<div class="checks">
 				<motion-stagger interval={0.1} delay={0.2}>
 					<span class="check"
-						><span class="check-dot"><Icon name="check" size={13} strokeWidth={3} /></span>Parts
-						without chapters hold their own story text</span
+						><span class="check-dot"><Icon name="check" size={13} strokeWidth={3} /></span>Fonts,
+						sizes, colours and highlights</span
 					>
 					<span class="check"
-						><span class="check-dot"><Icon name="check" size={13} strokeWidth={3} /></span>Edit
-						titles and descriptions in place</span
+						><span class="check-dot"><Icon name="check" size={13} strokeWidth={3} /></span>A drop,
+						raised or boxed first letter</span
 					>
 					<span class="check"
-						><span class="check-dot"><Icon name="check" size={13} strokeWidth={3} /></span>Share
-						finished books with readers</span
+						><span class="check-dot"><Icon name="check" size={13} strokeWidth={3} /></span>Reading
+						mode, with a link to share</span
 					>
 				</motion-stagger>
 			</div>
@@ -239,28 +274,49 @@
 			<div class="preview">
 				<div class="preview-bar">
 					<span class="preview-crumbs"
-						>The War of Nine <span class="sep">/</span> <span class="here">Prologue</span></span
+						>The War of Nine <span class="sep">/</span> Part One <span class="sep">/</span>
+						<span class="here">A Map Drawn in Ash</span></span
 					>
 					<span class="preview-saved"><Icon name="check-circle" size={15} />Saved</span>
 				</div>
 				<div class="preview-body">
 					<h3 class="preview-title">
-						Prologue <span class="bullet">•</span> <span class="muted">The War of Nine</span>
+						A Map Drawn in Ash <span class="bullet">•</span> <span class="muted">Chapter 2</span>
 					</h3>
-					<p class="preview-desc">Prologue to The War of Nine</p>
-					<p class="preview-pill">
-						<Icon name="pen" size={14} />No chapters — this part holds its own story text
-					</p>
-					<div class="preview-text">
+					<p class="preview-desc">In which the ninth bell rings</p>
+					<!-- A picture of the editor's toolbar, not a working one. -->
+					<div class="preview-tools" aria-hidden="true">
+						<span class="tool-pick">Paragraph</span>
+						<span class="tool-pick">Book</span>
+						<span class="tool-sep"></span>
+						<span class="tool-glyph bold">B</span>
+						<span class="tool-glyph italic on">I</span>
+						<span class="tool-glyph underline">U</span>
+						<span class="tool-sep"></span>
+						<span class="tool-glyph ink">A</span>
+						<span class="tool-icon"><Icon name="highlighter" size={15} /></span>
+						<span class="tool-sep"></span>
+						<span class="tool-icon on"><Icon name="align-left" size={15} /></span>
+						<span class="tool-icon"><Icon name="scene-break" size={16} /></span>
+						<span class="tool-glyph cap">A<span class="cap-lines"></span></span>
+					</div>
+					<!-- Set with the editor's own styles (prose.css), first letter and all. -->
+					<div
+						class="preview-text bb-prose cap-drop"
+						style="--cap-lines: 2; --cap-font: var(--font-display); --cap-color: var(--ink-accent)"
+					>
 						<p>
-							Lorem ipsum dolor sit amet consectetur adipiscing elit non dolor quidem imperdiet est
-							quod voluptatum non quidem proident excepteur dolor pariatur eos do provident esse
-							harum imperdiet dolore expedita.
+							The bell rang <span style="color: var(--ink-ruby)">nine times</span> before anyone in
+							Saltmere thought to count. By the ninth stroke the harbour had gone quiet, and old
+							Maren Toll set down her net and
+							<mark style="background-color: var(--mark-yellow)">looked east</mark>.
 						</p>
+						<p><em>“That is not a fire bell,”</em> she said, though no one had asked her.</p>
+						<hr />
 						<p>
-							Deleniti vero est autem distinctio enim est quas elit temporibus pariatur deleniti
-							fugiat non autem sunt est facere accusamus culpa vero ullamco similique est in
-							temporibus amet possimus duis excepteur<span class="caret"></span>
+							By nightfall the whole town had an opinion and none of them had a plan<span
+								class="caret"
+							></span>
 						</p>
 					</div>
 				</div>
@@ -268,26 +324,79 @@
 		</motion-reveal>
 	</section>
 
-	<section id="soon" class="section">
-		<p class="overline">03 — On the shelf next</p>
-		<h2 class="section-title soon-title">
-			<motion-headline by="words">Coming soon.</motion-headline>
-		</h2>
-		<div class="soon-grid">
-			<motion-stagger interval={0.1}>
-				{#each soon as item (item.title)}
-					<div class="soon-card">
-						<div class="soon-top">
-							<span class="soon-icon"><Icon name={item.icon} size={22} strokeWidth={1.8} /></span>
-							<span class="soon-tag">Soon</span>
-						</div>
-						<h3>{item.title}</h3>
-						<p>{item.body}</p>
+	<section id="outline" class="section example outline-section">
+		<!-- A picture of the corkboard: a column per part, a card per chapter. -->
+		<motion-reveal class="board-reveal" y={40} delay={0.1} duration={0.8}>
+			<div class="board" aria-hidden="true">
+				{#each board as column (column.title)}
+					<div class="board-column">
+						<span class="board-over">{column.label}</span>
+						<span class="board-title">{column.title}</span>
+						{#each column.cards as card (card.title)}
+							<div
+								class={['board-card', { lifted: card.lifted }]}
+								style:--stripe="var(--{card.status})"
+							>
+								<span class="board-num"><Icon name="grip" size={12} />{card.label}</span>
+								<span class="board-card-title">{card.title}</span>
+								<span class="board-status"><span class="dot"></span>{card.statusLabel}</span>
+							</div>
+						{/each}
 					</div>
 				{/each}
-			</motion-stagger>
+			</div>
+		</motion-reveal>
+
+		<div class="example-copy">
+			<p class="overline">03 — The outline</p>
+			<h2 class="section-title">
+				<motion-headline by="words">See the whole book at once.</motion-headline>
+			</h2>
+			<p class="example-lede">
+				Lay your book out as a list or a corkboard. Drag chapters between parts, give each a status
+				and a cast, and write synopses right on the cards.
+			</p>
+			<div class="checks">
+				<motion-stagger interval={0.1} delay={0.2}>
+					<span class="check"
+						><span class="check-dot"><Icon name="check" size={13} strokeWidth={3} /></span>Drag
+						parts and chapters into place</span
+					>
+					<span class="check"
+						><span class="check-dot"><Icon name="check" size={13} strokeWidth={3} /></span>Track
+						every chapter from idea to done</span
+					>
+					<span class="check"
+						><span class="check-dot"><Icon name="check" size={13} strokeWidth={3} /></span>Paste in
+						an outline you already have</span
+					>
+				</motion-stagger>
+			</div>
 		</div>
 	</section>
+
+	{#if SOON.length > 0}
+		<section id="soon" class="section">
+			<p class="overline">04 — On the shelf next</p>
+			<h2 class="section-title soon-title">
+				<motion-headline by="words">Coming soon.</motion-headline>
+			</h2>
+			<div class="soon-grid">
+				<motion-stagger interval={0.1}>
+					{#each SOON as item (item.title)}
+						<div class="soon-card">
+							<div class="soon-top">
+								<span class="soon-icon"><Icon name={item.icon} size={22} strokeWidth={1.8} /></span>
+								<span class="soon-tag">Soon</span>
+							</div>
+							<h3>{item.title}</h3>
+							<p>{item.body}</p>
+						</div>
+					{/each}
+				</motion-stagger>
+			</div>
+		</section>
+	{/if}
 
 	<section class="closing">
 		<motion-stagger interval={0.12} y={20} duration={0.7}>
@@ -881,9 +990,148 @@
 		color: var(--bb-sky);
 	}
 
-	.preview-reveal {
+	.preview-reveal,
+	.board-reveal {
 		flex: 1 1 620px;
 		min-width: 0;
+	}
+
+	/* A picture of the corkboard: status colours as in the outline. */
+	.board {
+		--done: var(--ink-moss);
+		--drafting: var(--ink-gold);
+		--revising: var(--ink-violet);
+		--outlined: var(--bb-sky);
+		--idea: var(--bb-text-4);
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		align-items: start;
+		gap: 14px;
+		padding: 18px;
+		border-radius: 22px;
+		background: var(--bb-panel);
+		border: 1px solid var(--bb-line);
+		box-shadow:
+			0 40px 80px -40px var(--bb-drop),
+			0 0 0 6px rgba(43, 99, 245, 0.06);
+	}
+
+	.board-column {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		min-width: 0;
+		padding: 10px;
+		border-radius: 16px;
+		background: var(--bb-night);
+		border: 1px solid var(--bb-line-faint);
+	}
+
+	.board-over {
+		padding: 2px 4px 0;
+		font-size: 10.5px;
+		font-weight: 700;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		color: var(--bb-sky);
+	}
+
+	.board-title {
+		padding: 0 4px 4px;
+		font-family: var(--font-display);
+		font-size: 18px;
+		line-height: 1.2;
+		color: var(--bb-text-strong);
+	}
+
+	.board-card {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		padding: 9px 10px 10px;
+		border-radius: 12px;
+		background: var(--bb-ink);
+		border: 1px solid var(--bb-line-soft);
+		box-shadow:
+			inset 0 3px 0 var(--stripe),
+			0 8px 18px -14px var(--bb-drop);
+	}
+
+	/* Mid-drag. */
+	.board-card.lifted {
+		position: relative;
+		z-index: 1;
+		border-color: var(--bb-line-control);
+		box-shadow:
+			inset 0 3px 0 var(--stripe),
+			0 26px 40px -18px var(--bb-drop);
+		transform: translate(12px, 4px) rotate(-2.5deg);
+		animation: lifted 4s ease-in-out infinite;
+	}
+
+	@keyframes lifted {
+		50% {
+			transform: translate(20px, -2px) rotate(-1deg);
+		}
+	}
+
+	.board-num {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 10px;
+		font-weight: 700;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--bb-text-4);
+	}
+
+	.board-card-title {
+		font-family: var(--font-read);
+		font-size: 16px;
+		line-height: 1.3;
+		color: var(--bb-text);
+		overflow-wrap: anywhere;
+	}
+
+	.board-status {
+		align-self: flex-start;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 3px 9px;
+		border-radius: var(--r-pill);
+		background: var(--bb-ink-2);
+		border: 1px solid var(--bb-line-soft);
+		font-size: 11px;
+		font-weight: 600;
+		color: var(--bb-text-label);
+	}
+
+	.board-status .dot {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: var(--stripe);
+	}
+
+	/* Copy first when the section stacks, as in the editor section above. */
+	@media (max-width: 1060px) {
+		.board-reveal {
+			order: 2;
+		}
+	}
+
+	@media (max-width: 600px) {
+		.board {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			padding: 12px;
+			gap: 10px;
+		}
+
+		.board-column:nth-child(3) {
+			display: none;
+		}
 	}
 
 	.preview {
@@ -956,17 +1204,95 @@
 		color: var(--bb-text-2);
 	}
 
-	.preview-pill {
-		margin-top: 18px;
-		display: inline-flex;
+	/* A picture of the editor's toolbar. */
+	.preview-tools {
+		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
-		gap: 8px;
-		padding: 7px 14px;
-		border-radius: var(--r-pill);
-		background: var(--bb-sky-wash);
-		font-size: 13.5px;
+		gap: 4px;
+		margin-top: 20px;
+		padding: 6px;
+		border-radius: 12px;
+		border: 1px solid var(--bb-line-soft);
+		background: var(--bb-night);
+		color: var(--bb-text-label);
+	}
+
+	.tool-pick {
+		padding: 5px 10px;
+		border-radius: 7px;
+		border: 1px solid var(--bb-line-soft);
+		background: var(--bb-ink);
+		font-size: 12px;
 		font-weight: 600;
+	}
+
+	.tool-sep {
+		width: 1px;
+		height: 20px;
+		margin: 0 4px;
+		background: var(--bb-line-soft);
+	}
+
+	.tool-glyph,
+	.tool-icon {
+		display: grid;
+		place-items: center;
+		min-width: 28px;
+		height: 28px;
+		border-radius: 7px;
+		font-size: 15px;
+	}
+
+	.tool-glyph.on,
+	.tool-icon.on {
+		background: var(--bb-sky-wash);
 		color: var(--bb-sky-text);
+	}
+
+	.tool-glyph.bold {
+		font-weight: 800;
+	}
+
+	.tool-glyph.italic {
+		font-family: var(--font-read);
+		font-style: italic;
+		font-size: 17px;
+	}
+
+	.tool-glyph.underline {
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+
+	.tool-glyph.ink {
+		min-width: 18px;
+		height: 22px;
+		margin: 0 5px;
+		border-radius: 0;
+		border-bottom: 3px solid var(--ink-ruby);
+		font-family: var(--font-display);
+	}
+
+	.tool-glyph.cap {
+		display: flex;
+		align-items: flex-end;
+		gap: 2px;
+		padding: 0 4px 5px;
+		font-family: var(--font-display);
+		font-size: 19px;
+		color: var(--bb-sky);
+	}
+
+	.cap-lines {
+		width: 8px;
+		height: 10px;
+		margin-bottom: 2px;
+		background: repeating-linear-gradient(
+			to bottom,
+			var(--bb-text-label) 0 1.5px,
+			transparent 1.5px 4px
+		);
 	}
 
 	.preview-text {
@@ -977,10 +1303,6 @@
 		font-size: 18px;
 		line-height: 1.75;
 		color: var(--bb-text-read);
-	}
-
-	.preview-text p + p {
-		margin-top: 14px;
 	}
 
 	.caret {
@@ -1124,7 +1446,8 @@
 	@media (prefers-reduced-motion: reduce) {
 		.marquee-track,
 		.caret,
-		.swash path {
+		.swash path,
+		.board-card.lifted {
 			animation: none;
 		}
 

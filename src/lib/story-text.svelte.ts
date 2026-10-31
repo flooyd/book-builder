@@ -1,6 +1,7 @@
 import { beforeNavigate } from '$app/navigation';
 import { countWords } from '$lib/reading';
 import { plainText } from '$lib/rich';
+import { touchLibrary } from '$lib/library';
 
 type Status = 'loading' | 'load-error' | 'ready' | 'saving' | 'saved' | 'error';
 
@@ -26,9 +27,13 @@ export class StoryTextDoc {
 
 	#exists = false;
 	#loading: Promise<void> | null = null;
+	#target: 'part' | 'chapter';
+	#id: number;
 	#url: string;
 
 	constructor(target: 'part' | 'chapter', id: number) {
+		this.#target = target;
+		this.#id = id;
 		this.#url = `/api/story-text/${target}/${id}`;
 	}
 
@@ -71,6 +76,9 @@ export class StoryTextDoc {
 			this.#exists = true;
 			this.saved = content;
 			this.status = 'saved';
+			// "Updated today" on the chapter, its part and its book, wherever they're listed.
+			const { touchedAt } = await response.json().catch(() => ({}));
+			if (touchedAt) touchLibrary(this.#target, this.#id, touchedAt);
 		} catch (error) {
 			this.error = message(error, "Couldn't save the story text.");
 			this.status = 'error';

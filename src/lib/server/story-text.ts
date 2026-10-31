@@ -2,14 +2,17 @@ import { json, type RequestEvent } from '@sveltejs/kit';
 import { asc, eq } from 'drizzle-orm';
 import { requireUser } from '$lib/server/auth-guard';
 import { db } from '$lib/server/db';
-import { storyText } from '$lib/server/db/schema';
+import { book, chapter, part, storyText } from '$lib/server/db/schema';
 import { findOwnedChapter, findOwnedPart } from '$lib/server/ownership';
 import { cleanValue } from '$lib/rich';
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
  * GET / POST / PUT handlers for the story text of a part (with no chapters) or of a chapter,
  * at /api/story-text/{part|chapter}/[id]. Every handler checks that the signed-in user owns
- * *this* part or chapter.
+ * *this* part or chapter. Saving text counts as editing: the chapter or part, the part above
+ * and the book become "updated" too, and the response says when (`touchedAt`).
  */
 export function storyTextHandlers(target: 'part' | 'chapter') {
 	const column = target === 'part' ? storyText.partId : storyText.chapterId;
@@ -27,6 +30,24 @@ export function storyTextHandlers(target: 'part' | 'chapter') {
 			return { error: json({ error: `${label} not found` }, { status: 404 }) };
 		}
 		return { id };
+	}
+
+	async function touch(tx: Tx, id: number, at: Date) {
+		let partId = id;
+		if (target === 'chapter') {
+			const [row] = await tx
+				.update(chapter)
+				.set({ updatedAt: at })
+				.where(eq(chapter.id, id))
+				.returning({ partId: chapter.partId });
+			partId = row.partId;
+		}
+		const [row] = await tx
+			.update(part)
+			.set({ updatedAt: at })
+			.where(eq(part.id, partId))
+			.returning({ bookId: part.bookId });
+		await tx.update(book).set({ updatedAt: at }).where(eq(book.id, row.bookId));
 	}
 
 	// Plain text, or the editor's document cleaned against its allow-list (see $lib/rich).
@@ -62,11 +83,16 @@ export function storyTextHandlers(target: 'part' | 'chapter') {
 		}
 
 		const link = target === 'part' ? { partId: owned.id } : { chapterId: owned.id };
-		const [created] = await db
-			.insert(storyText)
-			.values({ ...link, content })
-			.returning();
-		return json(created);
+		const at = new Date();
+		const created = await db.transaction(async (tx) => {
+			const [row] = await tx
+				.insert(storyText)
+				.values({ ...link, content, createdAt: at, updatedAt: at })
+				.returning();
+			await touch(tx, owned.id, at);
+			return row;
+		});
+		return json({ ...created, touchedAt: at.toISOString() });
 	};
 
 	const PUT = async (event: RequestEvent) => {
@@ -83,12 +109,17 @@ export function storyTextHandlers(target: 'part' | 'chapter') {
 			return json({ error: 'Content must be a string' }, { status: 400 });
 		}
 
-		const [updated] = await db
-			.update(storyText)
-			.set({ content })
-			.where(eq(column, owned.id))
-			.returning();
-		return json(updated);
+		const at = new Date();
+		const updated = await db.transaction(async (tx) => {
+			const [row] = await tx
+				.update(storyText)
+				.set({ content, updatedAt: at })
+				.where(eq(column, owned.id))
+				.returning();
+			await touch(tx, owned.id, at);
+			return row;
+		});
+		return json({ ...updated, touchedAt: at.toISOString() });
 	};
 
 	return { GET, POST, PUT };

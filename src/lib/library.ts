@@ -69,6 +69,21 @@ export async function loadLibrary() {
 	}
 }
 
+/**
+ * Story text was saved at `at`: its chapter (or story-text part), the part above and the book
+ * show as updated then, as the server recorded.
+ */
+export function touchLibrary(target: 'part' | 'chapter', id: number, at: string) {
+	const partId =
+		target === 'part' ? id : get(chaptersStore).find((chapter) => chapter.id === id)?.partId;
+	const bookId = get(partsStore).find((part) => part.id === partId)?.bookId;
+	if (target === 'chapter') {
+		chaptersStore.update((list) => list.map((c) => (c.id === id ? { ...c, updatedAt: at } : c)));
+	}
+	partsStore.update((list) => list.map((p) => (p.id === partId ? { ...p, updatedAt: at } : p)));
+	booksStore.update((list) => list.map((b) => (b.id === bookId ? { ...b, updatedAt: at } : b)));
+}
+
 export function clearLibrary() {
 	generation++;
 	booksStore.set([]);

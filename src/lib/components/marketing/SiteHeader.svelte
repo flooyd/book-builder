@@ -2,14 +2,16 @@
 	import { resolve } from '$app/paths';
 	import Wordmark from '$lib/components/ui/Wordmark.svelte';
 	import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
+	import { SOON } from './soon';
 
 	// On the home page the section links scroll in place; elsewhere they lead back to it.
 	let { onHome = false }: { onHome?: boolean } = $props();
 
 	const sections = [
 		{ id: 'features', label: 'Features' },
-		{ id: 'example', label: 'Example' },
-		{ id: 'soon', label: 'Coming soon' }
+		{ id: 'example', label: 'Editor' },
+		{ id: 'outline', label: 'Outline' },
+		...(SOON.length > 0 ? [{ id: 'soon', label: 'Coming soon' }] : [])
 	];
 </script>
 
