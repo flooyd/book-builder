@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Editor } from '@tiptap/core';
+	import type { Transaction } from '@tiptap/pm/state';
 	import type { StoryTextDoc } from '$lib/story-text.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import RichEditor from '$lib/components/rich/RichEditor.svelte';
@@ -10,7 +11,7 @@
 	// Focus mode: the story text alone on a full-screen page (Night or Paper, as on the writing
 	// surface). The line being written stays at eye level (typewriter), the other paragraphs can
 	// dim, a session timer counts up or runs a sprint, and the text saves itself a moment after
-	// typing stops. The bar fades while typing; moving the mouse brings it back. Esc leaves.
+	// typing stops. Esc leaves.
 	let {
 		doc,
 		title,
@@ -67,8 +68,11 @@
 		(sprint = { minutes, endsAt: Date.now() + minutes * 60_000 });
 
 	// ---- Typewriter: the line being written stays at the same height --------------------------
-	function follow(instance: Editor) {
+	// Only while writing (the text changed, nothing selected): selecting, clicking and copying
+	// leave the page where it is.
+	function follow(instance: Editor, transaction: Transaction) {
 		if (!typewriter || !page || !instance.isFocused) return;
+		if (!transaction.docChanged || !instance.state.selection.empty) return;
 		let top: number;
 		try {
 			top = instance.view.coordsAtPos(instance.state.selection.head).top;
@@ -79,9 +83,6 @@
 		const delta = top - (box.top + box.height * 0.42);
 		if (Math.abs(delta) > 1) page.scrollTop += delta;
 	}
-
-	// ---- The bar fades while typing ------------------------------------------------------------
-	let typing = $state(false);
 
 	// ---- Autosave: a moment after typing stops; once per change, so a failure doesn't loop ------
 	let attempted = '';
@@ -137,12 +138,8 @@
 		event.preventDefault();
 		onexit();
 	}}
-	onkeydown={(event) => {
-		if (!event.ctrlKey && !event.metaKey && !event.altKey) typing = true;
-	}}
-	onpointermove={() => (typing = false)}
 >
-	<header class={['bar', { asleep: typing }]}>
+	<header class="bar">
 		<button type="button" class="tool leave" onclick={onexit}>
 			<Icon name="arrow-left" size={16} />Leave<kbd>Esc</kbd>
 		</button>
@@ -271,11 +268,6 @@
 		padding: 10px 18px;
 		font-family: var(--font-ui);
 		color: var(--bb-text-2);
-		transition: opacity 0.5s;
-	}
-
-	.bar.asleep:not(:focus-within) {
-		opacity: 0;
 	}
 
 	.tool {
@@ -460,7 +452,6 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.bar,
 		.dim :global(.rich-area > *) {
 			transition: none;
 		}

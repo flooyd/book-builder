@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Editor } from '@tiptap/core';
+	import type { Transaction } from '@tiptap/pm/state';
 	import {
 		DEFAULT_CAP,
 		capPresentation,
@@ -47,8 +48,8 @@
 		italic?: boolean;
 		/** Show the formatting toolbar (keyboard shortcuts work either way). */
 		toolbar?: boolean;
-		/** After every change of text or selection, with the editor (focus mode's typewriter). */
-		ontransaction?: (editor: Editor) => void;
+		/** After every change of text or selection (focus mode's typewriter). */
+		ontransaction?: (editor: Editor, transaction: Transaction) => void;
 		class?: string;
 		onescape?: () => void;
 		onblur?: () => void;
@@ -115,9 +116,9 @@
 						},
 						transformPastedHTML: cleanPastedHTML
 					},
-					onTransaction: ({ editor }) => {
+					onTransaction: ({ editor, transaction }) => {
 						version++;
-						ontransaction?.(editor);
+						ontransaction?.(editor, transaction);
 					},
 					onUpdate: () => {
 						pending = true;
