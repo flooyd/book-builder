@@ -2,6 +2,8 @@
 	import { tick, type Snippet } from 'svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
+	import RichEditor from '$lib/components/rich/RichEditor.svelte';
+	import RichText from '$lib/components/rich/RichText.svelte';
 
 	// Overline, title, italic description and inline "Edit details" for part and chapter pages.
 	let {
@@ -33,6 +35,7 @@
 	let draftTitle = $state('');
 	let draftDescription = $state('');
 	let draftShow = $state(false);
+	let descriptionEditor = $state<RichEditor>();
 	let saving = $state(false);
 	let error = $state('');
 	let titleInput = $state<HTMLInputElement>();
@@ -49,6 +52,7 @@
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
+		descriptionEditor?.flush();
 		if (!draftTitle.trim()) {
 			error = 'Give it a title.';
 			titleInput?.focus();
@@ -87,14 +91,18 @@
 				aria-describedby={error ? 'details-error' : undefined}
 				onkeydown={cancelOnEscape}
 			/>
-			<label class="sr-only" for="details-description">Description</label>
-			<textarea
-				bind:value={draftDescription}
-				id="details-description"
+			<RichEditor
+				bind:this={descriptionEditor}
+				kind="description"
 				class="edit-description"
-				rows="2"
+				boxed
+				italic
+				value={draftDescription}
+				onchange={(value) => (draftDescription = value)}
+				label="Description"
 				placeholder={descriptionPlaceholder}
-				onkeydown={cancelOnEscape}></textarea>
+				onescape={() => (editing = false)}
+			/>
 			<label class="show">
 				<input type="checkbox" bind:checked={draftShow} />
 				Show the description under the title in reading mode
@@ -125,7 +133,7 @@
 			</div>
 		</div>
 		{#if description}
-			<p class="description">{description}</p>
+			<p class="description"><RichText value={description} italic /></p>
 			{#if showDescription}
 				<p class="shown"><Icon name="book-open" size={14} />Shown as a subtitle in reading mode</p>
 			{/if}
@@ -201,8 +209,7 @@
 		gap: 12px;
 	}
 
-	.edit-title,
-	.edit-description {
+	.edit-title {
 		width: 100%;
 		border-radius: var(--r-control);
 		border: 1px solid var(--bb-line-control);
@@ -217,18 +224,15 @@
 		line-height: 1.1;
 	}
 
-	.edit-description {
-		padding: 10px 14px;
+	.edit :global(.edit-description) {
 		font-family: var(--font-read);
 		font-style: italic;
 		font-size: 20px;
 		line-height: 1.45;
 		color: var(--bb-text-desc);
-		resize: vertical;
 	}
 
-	.edit-title:focus-visible,
-	.edit-description:focus-visible {
+	.edit-title:focus-visible {
 		outline: none;
 		border-color: var(--bb-sky);
 		box-shadow: var(--focus-ring);

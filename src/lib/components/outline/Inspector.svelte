@@ -7,6 +7,7 @@
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import type { Group, Item, OutlineUi } from './types';
 	import EditableText from './EditableText.svelte';
+	import RichInline from '$lib/components/rich/RichInline.svelte';
 
 	// Everything about the selected part or chapter: title, synopsis, reading-mode subtitle,
 	// status, cast, numbers and actions.
@@ -83,11 +84,9 @@
 	/>
 
 	<div class="field">
-		<label class="label" for="inspector-synopsis">Synopsis</label>
-		<EditableText
-			id="inspector-synopsis"
+		<p class="label">Synopsis</p>
+		<RichInline
 			class="i-synopsis"
-			multiline
 			value={item.description}
 			label="Synopsis"
 			placeholder={isPart ? 'What is this part about?' : 'What happens here?'}

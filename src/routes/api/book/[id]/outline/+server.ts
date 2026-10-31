@@ -3,9 +3,10 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import { requireUser } from '$lib/server/auth-guard';
 import { db } from '$lib/server/db';
 import { chapter, chapterCharacter, part, partCharacter } from '$lib/server/db/schema';
-import { findOwnedBook, textField } from '$lib/server/ownership';
+import { descriptionField, findOwnedBook, textField } from '$lib/server/ownership';
 import { storyTexts } from '$lib/server/outline';
 import { countWords } from '$lib/reading';
+import { plainText } from '$lib/rich';
 
 async function ownedBook(event: RequestEvent) {
 	const user = requireUser(event);
@@ -28,7 +29,7 @@ export const GET = async (event: RequestEvent) => {
 
 	const words: Record<string, number> = {};
 	for (const [key, content] of Object.entries(await storyTexts(partIds, chapterIds))) {
-		words[key] = countWords(content);
+		words[key] = countWords(plainText(content));
 	}
 
 	const cast: Record<string, number[]> = {};
@@ -58,7 +59,7 @@ function readDrafts(value: unknown): Draft[] | null {
 	if (!Array.isArray(value)) return null;
 	const drafts = value.map((item) => ({
 		title: textField(item?.title),
-		description: textField(item?.description)
+		description: descriptionField(item?.description)
 	}));
 	return drafts.every((draft) => draft.title) ? drafts : null;
 }
@@ -79,7 +80,7 @@ export const POST = async (event: RequestEvent) => {
 	const newParts = Array.isArray(body?.parts)
 		? body.parts.map((item: Record<string, unknown>) => ({
 				title: textField(item?.title),
-				description: textField(item?.description),
+				description: descriptionField(item?.description),
 				hasChapters: item?.hasChapters === false ? 0 : 1,
 				chapters: readDrafts(item?.chapters)
 			}))

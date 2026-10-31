@@ -1,0 +1,150 @@
+/* Formatted story text, the same in the editor and in reading mode: book paragraphs (indented,
+   no gaps), headings, quotes, lists, scene breaks drawn as an ornament, and the first letter
+   (.cap-drop, .cap-raised, .cap-boxed, .cap-none with --cap-lines, --cap-font, --cap-color). */
+.bb-prose {
+	line-height: 1.75;
+	color: var(--bb-text-read);
+	overflow-wrap: break-word;
+	-webkit-hyphens: auto;
+	hyphens: auto;
+	text-wrap: pretty;
+	font-optical-sizing: auto;
+}
+
+.bb-prose p {
+	margin: 0;
+}
+
+.bb-prose p + p {
+	text-indent: 1.6em;
+}
+
+.bb-prose :is(h4, h5, h6, h1, h2, h3) {
+	margin: 1.3em 0 0.5em;
+	font-family: var(--font-display);
+	font-weight: 400;
+	line-height: 1.2;
+	color: var(--bb-text-strong);
+	text-indent: 0;
+}
+
+.bb-prose :is(h4, h1) {
+	font-size: 1.6em;
+}
+
+.bb-prose :is(h5, h2) {
+	font-size: 1.3em;
+}
+
+.bb-prose :is(h6, h3) {
+	font-family: inherit;
+	font-size: 0.8em;
+	font-weight: 700;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--bb-sky);
+}
+
+.bb-prose blockquote {
+	margin: 1em 0;
+	padding: 0.1em 0 0.1em 1.2em;
+	border-left: 3px solid var(--bb-line-control);
+	font-style: italic;
+	color: var(--bb-text-desc);
+}
+
+.bb-prose :is(ul, ol) {
+	margin: 0.7em 0;
+	padding-left: 1.6em;
+}
+
+.bb-prose li + li {
+	margin-top: 0.25em;
+}
+
+.bb-prose li p,
+.bb-prose blockquote p:first-child {
+	text-indent: 0;
+}
+
+/* After anything but a paragraph, a paragraph starts flush, as in print. */
+.bb-prose :is(h1, h2, h3, h4, h5, h6, blockquote, ul, ol, hr) + p {
+	text-indent: 0;
+}
+
+.bb-prose mark {
+	padding: 0 0.12em;
+	border-radius: 0.18em;
+	color: inherit;
+}
+
+.bb-prose u {
+	text-underline-offset: 0.18em;
+}
+
+/* Scene break: a short rule either side of a diamond. */
+.bb-prose hr {
+	position: relative;
+	width: 64px;
+	height: 10px;
+	margin: 1.3em auto 1.5em;
+	border: none;
+	background:
+		linear-gradient(var(--bb-line-control), var(--bb-line-control)) left center / 24px 1px no-repeat,
+		linear-gradient(var(--bb-line-control), var(--bb-line-control)) right center / 24px 1px
+			no-repeat;
+	overflow: visible;
+}
+
+.bb-prose hr::after {
+	content: '';
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 7px;
+	height: 7px;
+	background: var(--bb-sky);
+	transform: translate(-50%, -50%) rotate(45deg);
+}
+
+/* The first letter of the text. --cap-lines is how many lines it sits beside; the sizes are
+   measured against Gloock and Newsreader so 2, 3 and 4 lines come out exactly. */
+.bb-prose:is(.cap-drop, .cap-raised, .cap-boxed) > p:first-of-type::first-letter {
+	font-family: var(--cap-font, var(--font-display));
+	font-style: normal;
+	color: var(--cap-color, var(--bb-sky));
+}
+
+.bb-prose.cap-drop > p:first-of-type::first-letter {
+	float: left;
+	margin: 0.06em 0.12em 0 0;
+	font-size: calc((var(--cap-lines, 2) - 1) * 2.3em + 1.05em);
+	line-height: 0.8;
+}
+
+.bb-prose.cap-raised > p:first-of-type::first-letter {
+	font-size: 2.6em;
+	line-height: 1;
+}
+
+.bb-prose.cap-boxed > p:first-of-type::first-letter {
+	float: left;
+	margin: 0.12em 0.3em 0 0;
+	padding: 0.08em 0.2em;
+	border-radius: 0.06em;
+	background: var(--cap-color, var(--bb-sky));
+	color: var(--bb-night);
+	font-size: calc((var(--cap-lines, 2) - 1) * 1.4em + 1em);
+	line-height: 1.05;
+}
+
+/* Formatted descriptions. In italic text (descriptions usually are), emphasis turns roman. */
+.rich-italic em {
+	font-style: normal;
+}
+
+.rich-text mark {
+	padding: 0 0.1em;
+	border-radius: 0.18em;
+	color: inherit;
+}

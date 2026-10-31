@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import { asc, inArray, or } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { storyText } from '$lib/server/db/schema';
-import { textField } from '$lib/server/ownership';
+import { descriptionField, textField } from '$lib/server/ownership';
 import { isStatus, type Status } from '$lib/status';
 
 export type DetailChanges = {
@@ -28,7 +28,9 @@ export function readDetails(body: unknown): { changes: DetailChanges } | { error
 		if (!title) return { error: json({ error: 'Title is required' }, { status: 400 }) };
 		changes.title = title;
 	}
-	if (typeof fields.description === 'string') changes.description = fields.description.trim();
+	if (typeof fields.description === 'string') {
+		changes.description = descriptionField(fields.description);
+	}
 	if (typeof fields.showDescription === 'boolean') {
 		changes.showDescription = fields.showDescription;
 	}

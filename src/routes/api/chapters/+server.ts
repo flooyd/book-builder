@@ -1,7 +1,7 @@
 import { db } from '$lib/server/db';
 import { part, book, chapter } from '$lib/server/db/schema';
 import { requireUser } from '$lib/server/auth-guard';
-import { textField } from '$lib/server/ownership';
+import { descriptionField, textField } from '$lib/server/ownership';
 import { eq, asc, inArray, sql } from 'drizzle-orm';
 import { isStatus } from '$lib/status';
 import { json, type RequestEvent } from '@sveltejs/kit';
@@ -32,7 +32,7 @@ export const POST = async (event: RequestEvent) => {
 	const user = requireUser(event);
 	const body = await event.request.json().catch(() => null);
 	const title = textField(body?.title);
-	const description = textField(body?.description);
+	const description = descriptionField(body?.description);
 	const parsedPartId = Number(body?.partId);
 
 	if (!title) {

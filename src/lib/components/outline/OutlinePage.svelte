@@ -15,6 +15,7 @@
 	} from '$lib/outline.svelte';
 	import { outlineToText, type ParsedOutline } from '$lib/outline-text';
 	import { STATUSES } from '$lib/status';
+	import { plainText } from '$lib/rich';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
@@ -109,7 +110,8 @@
 	const needle = $derived(query.trim().toLowerCase());
 
 	const textHit = (item: Item) =>
-		!needle || `${item.title}\n${item.description}`.toLowerCase().includes(needle);
+		!needle ||
+		`${item.title}\n${plainText(item.description, 'description')}`.toLowerCase().includes(needle);
 	const hit = (item: Item) =>
 		textHit(item) &&
 		(statusFilter.length === 0 || statusFilter.includes(item.status)) &&
@@ -207,7 +209,7 @@
 
 	/** Nothing in it yet: deleting it loses nothing. */
 	const blank = (item: Item) =>
-		!item.description &&
+		!plainText(item.description, 'description').trim() &&
 		item.words === 0 &&
 		item.cast.length === 0 &&
 		!(item.kind === 'part' && (groups.find((g) => g.part.key === item.key)?.chapters.length ?? 0));

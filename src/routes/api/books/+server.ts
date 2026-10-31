@@ -1,7 +1,7 @@
 import { db } from '$lib/server/db';
 import { book } from '$lib/server/db/schema';
 import { requireUser } from '$lib/server/auth-guard';
-import { textField } from '$lib/server/ownership';
+import { descriptionField, textField } from '$lib/server/ownership';
 import { eq, asc } from 'drizzle-orm';
 import { json, type RequestEvent } from '@sveltejs/kit';
 
@@ -19,7 +19,7 @@ export const POST = async (event: RequestEvent) => {
 	const user = requireUser(event);
 	const body = await event.request.json().catch(() => null);
 	const title = textField(body?.title);
-	const description = textField(body?.description);
+	const description = descriptionField(body?.description);
 
 	if (!title) {
 		return json({ error: 'Title is required' }, { status: 400 });

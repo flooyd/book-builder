@@ -69,6 +69,22 @@
 	--bb-coral-wash: light-dark(rgba(181, 41, 58, 0.08), rgba(255, 122, 133, 0.1));
 	--bb-amber: light-dark(#8a5a00, #f2c46b); /* "Unsaved changes" */
 
+	/* Ink and highlighter colours for formatted text (the editor's palette; see $lib/rich). */
+	--ink-accent: var(--bb-sky);
+	--ink-ruby: light-dark(#b3261e, #ff8a80);
+	--ink-ember: light-dark(#b4470b, #ffab76);
+	--ink-gold: light-dark(#8a6400, #f2c46b);
+	--ink-moss: light-dark(#2a7330, #8fd694);
+	--ink-teal: light-dark(#00756a, #6fdccc);
+	--ink-violet: light-dark(#6a3fc0, #c3a6ff);
+	--ink-rose: light-dark(#b0124f, #ff8fbd);
+	--ink-slate: light-dark(#5b6385, #a9b3d6);
+	--mark-yellow: light-dark(#fbeaa0, rgba(242, 196, 107, 0.3));
+	--mark-green: light-dark(#d3efcc, rgba(95, 211, 154, 0.26));
+	--mark-blue: light-dark(#d8e4fb, rgba(124, 180, 255, 0.28));
+	--mark-pink: light-dark(#f9d6e4, rgba(255, 143, 189, 0.26));
+	--mark-violet: light-dark(#e5daf9, rgba(195, 166, 255, 0.28));
+
 	/* Shadows. --bb-drop is the color of drop shadows: warm and soft on paper, near black at night. */
 	--bb-drop: light-dark(rgba(74, 56, 28, 0.4), rgba(0, 0, 0, 0.95));
 	--shadow-card: 0 30px 60px -40px light-dark(rgba(74, 56, 28, 0.45), rgba(0, 0, 0, 0.9));
@@ -84,6 +100,7 @@
 	--font-display: 'Gloock', Georgia, serif;
 	--font-read: 'Newsreader', Georgia, serif;
 	--font-ui: 'Schibsted Grotesk', system-ui, sans-serif;
+	--font-mono: ui-monospace, 'Cascadia Mono', 'Courier New', monospace;
 
 	/* Radii */
 	--r-chip: 8px;

@@ -20,6 +20,8 @@
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import Pill from '$lib/components/ui/Pill.svelte';
+	import RichEditor from '$lib/components/rich/RichEditor.svelte';
+	import RichText from '$lib/components/rich/RichText.svelte';
 	import Missing from '$lib/components/story/Missing.svelte';
 	import TocChapterRow from './TocChapterRow.svelte';
 	import BookAside from './BookAside.svelte';
@@ -41,6 +43,7 @@
 	let editing = $state(false);
 	let draftTitle = $state('');
 	let draftDescription = $state('');
+	let descriptionEditor = $state<RichEditor>();
 	let saving = $state(false);
 	let editError = $state('');
 	let titleInput = $state<HTMLInputElement>();
@@ -56,6 +59,7 @@
 
 	async function saveEdit(event: SubmitEvent) {
 		event.preventDefault();
+		descriptionEditor?.flush();
 		if (!draftTitle.trim()) {
 			editError = 'Give the book a title.';
 			titleInput?.focus();
@@ -138,14 +142,18 @@
 							aria-describedby={editError ? 'book-edit-error' : undefined}
 							onkeydown={(e) => e.key === 'Escape' && (editing = false)}
 						/>
-						<label class="sr-only" for="book-description">Description</label>
-						<textarea
-							bind:value={draftDescription}
-							id="book-description"
+						<RichEditor
+							bind:this={descriptionEditor}
+							kind="description"
 							class="edit-description"
-							rows="2"
+							boxed
+							italic
+							value={draftDescription}
+							onchange={(value) => (draftDescription = value)}
+							label="Description"
 							placeholder="What is this book about?"
-							onkeydown={(e) => e.key === 'Escape' && (editing = false)}></textarea>
+							onescape={() => (editing = false)}
+						/>
 						{#if editError}
 							<p id="book-edit-error" class="error" role="alert">
 								<Icon name="alert-circle" size={16} />{editError}
@@ -166,7 +174,7 @@
 						<h1><motion-headline by="words" interval={0.07}>{book.title}</motion-headline></h1>
 					{/key}
 					{#if book.description}
-						<p class="description">{book.description}</p>
+						<p class="description"><RichText value={book.description} italic /></p>
 					{/if}
 				{/if}
 
@@ -214,7 +222,7 @@
 						<a class="toc-story" href={partHref(entry.part)}>
 							<span class="overline">{entry.part.title}</span>
 							{#if entry.part.description}
-								<span class="story-desc">{entry.part.description}</span>
+								<span class="story-desc"><RichText value={entry.part.description} italic /></span>
 							{/if}
 							<span class="leader" aria-hidden="true"></span>
 							<Pill size="sm">Story text</Pill>
@@ -397,8 +405,7 @@
 		gap: 12px;
 	}
 
-	.edit-title,
-	.edit-description {
+	.edit-title {
 		width: 100%;
 		border-radius: var(--r-control);
 		border: 1px solid var(--bb-line-control);
@@ -413,19 +420,16 @@
 		line-height: 1.1;
 	}
 
-	.edit-description {
+	.edit :global(.edit-description) {
 		max-width: 640px;
-		padding: 10px 14px;
 		font-family: var(--font-read);
 		font-style: italic;
 		font-size: 20px;
 		line-height: 1.45;
 		color: var(--bb-text-desc);
-		resize: vertical;
 	}
 
-	.edit-title:focus-visible,
-	.edit-description:focus-visible {
+	.edit-title:focus-visible {
 		outline: none;
 		border-color: var(--bb-sky);
 		box-shadow: var(--focus-ring);

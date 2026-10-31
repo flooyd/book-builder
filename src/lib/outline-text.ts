@@ -5,7 +5,9 @@
 //   Ink, Vellum and Salt            every other line is a chapter of the part above it
 //
 // List markers ("- ", "* ", "1. ") in front of chapters are dropped, and " -- " works in place
-// of " — ".
+// of " — ". Formatting in synopses doesn't survive the trip: they export as plain text.
+
+import { plainText } from '$lib/rich';
 
 type Draft = { title: string; description: string };
 
@@ -46,8 +48,10 @@ export function parseOutline(text: string): ParsedOutline {
 	return parsed;
 }
 
-const line = (prefix: string, item: { title: string; description: string }) =>
-	`${prefix}${item.title}${item.description ? ` — ${item.description.replace(/\s+/g, ' ')}` : ''}`;
+function line(prefix: string, item: { title: string; description: string }) {
+	const synopsis = plainText(item.description, 'description').replace(/\s+/g, ' ').trim();
+	return `${prefix}${item.title}${synopsis ? ` — ${synopsis}` : ''}`;
+}
 
 /** The outline in the format parseOutline reads. */
 export function outlineToText(

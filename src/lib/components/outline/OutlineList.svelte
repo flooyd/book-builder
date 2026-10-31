@@ -6,6 +6,7 @@
 	import { indexAt } from './drag';
 	import type { Group, Item, OutlineUi } from './types';
 	import EditableText from './EditableText.svelte';
+	import RichInline from '$lib/components/rich/RichInline.svelte';
 	import StatusPill from './StatusPill.svelte';
 	import CastStack from './CastStack.svelte';
 
@@ -182,9 +183,8 @@
 							onfocus={() => ui.select(item.key)}
 						/>
 						{#if ui.synopses}
-							<EditableText
+							<RichInline
 								class="synopsis"
-								multiline
 								value={item.description}
 								label="Synopsis of {item.title}"
 								placeholder="What is this part about?"
@@ -225,9 +225,8 @@
 							onfocus={() => ui.select(item.key)}
 						/>
 						{#if ui.synopses}
-							<EditableText
+							<RichInline
 								class="synopsis"
-								multiline
 								value={item.description}
 								label="Synopsis of {item.title}"
 								placeholder="What happens here?"

@@ -55,7 +55,26 @@
 			[15, 18, 1]
 		],
 		search: [[11, 11, 7], 'm21 21-4.3-4.3'],
-		columns: ['M3 4h5v16H3zM10 4h5v10h-5zM17 4h4v13h-4z']
+		columns: ['M3 4h5v16H3zM10 4h5v10h-5zM17 4h4v13h-4z'],
+		undo: ['M9 14 4 9l5-5', 'M4 9h10.5a5.5 5.5 0 0 1 0 11H11'],
+		redo: ['m15 14 5-5-5-5', 'M20 9H9.5a5.5 5.5 0 0 0 0 11H13'],
+		'align-left': ['M3 6h18M3 12h12M3 18h16'],
+		'align-center': ['M3 6h18M6 12h12M4 18h16'],
+		'align-right': ['M3 6h18M9 12h12M5 18h16'],
+		'align-justify': ['M3 6h18M3 12h18M3 18h18'],
+		list: ['M9 6h12M9 12h12M9 18h12', [4, 6, 1], [4, 12, 1], [4, 18, 1]],
+		'list-ordered': [
+			'M10 6h11M10 12h11M10 18h11',
+			'M4 4h1.5v5',
+			'M3.5 14.5a1.5 1.5 0 0 1 3 0c0 1-3 2.5-3 3.5h3'
+		],
+		quote: ['M6 7h4v5c0 2.5-1.5 4-4 5', 'M14 7h4v5c0 2.5-1.5 4-4 5'],
+		'scene-break': ['M2 12h6M16 12h6', 'M12 8.5l3.5 3.5-3.5 3.5L8.5 12z'],
+		eraser: ['M8 21h12', 'm5.5 15.5 9-9a2 2 0 0 1 2.8 0l1.7 1.7a2 2 0 0 1 0 2.8L11 19H7.5z'],
+		highlighter: [
+			'm9 11-6 6v3h3l6-6',
+			'm22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4'
+		]
 	} satisfies Record<string, Shape[]>;
 
 	export type IconName = keyof typeof ICONS;

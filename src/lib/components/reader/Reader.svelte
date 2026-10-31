@@ -8,11 +8,12 @@
 		TEXT_SIZES,
 		readingTime,
 		saveReaderPrefs,
-		toBlocks,
 		type ReaderData,
 		type ReaderPrefs
 	} from '$lib/reading';
+	import { plainText } from '$lib/rich';
 	import BookCover from '$lib/components/ui/BookCover.svelte';
+	import RichText from '$lib/components/rich/RichText.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
@@ -27,7 +28,7 @@
 	const outline = $derived(bookOutline(data.book.id, data.parts, data.chapters));
 	const chapterCount = $derived(outline.reduce((sum, entry) => sum + entry.chapters.length, 0));
 	const words = $derived(
-		Object.values(data.texts).reduce((sum, text) => sum + countWords(text), 0)
+		Object.values(data.texts).reduce((sum, text) => sum + countWords(plainText(text)), 0)
 	);
 
 	// Every part and chapter in reading order, with its anchor (the element's id).
@@ -208,7 +209,7 @@
 <svelte:head>
 	<title>{data.book.title}{data.author ? ` by ${data.author}` : ''} · Book Builder</title>
 	{#if data.book.description}
-		<meta name="description" content={data.book.description} />
+		<meta name="description" content={plainText(data.book.description, 'description')} />
 	{/if}
 </svelte:head>
 
@@ -256,17 +257,9 @@
 {/snippet}
 
 {#snippet prose(key: string, editHref: string)}
-	{@const blocks = toBlocks(data.texts[key] ?? '')}
-	{#if blocks.length > 0}
-		<div class="prose">
-			{#each blocks as block, i (i)}
-				{#if block.kind === 'break'}
-					<div class="scene-break" role="separator">{@render ornament()}</div>
-				{:else}
-					<p>{block.text}</p>
-				{/if}
-			{/each}
-		</div>
+	{@const text = data.texts[key] ?? ''}
+	{#if plainText(text).trim()}
+		<RichText value={text} kind="story" class="prose" />
 	{:else}
 		<p class="no-text">
 			No story text yet.
@@ -367,7 +360,9 @@
 				</h1>
 			{/key}
 			{#if data.author}<p class="byline">by {data.author}</p>{/if}
-			{#if data.book.description}<p class="blurb">{data.book.description}</p>{/if}
+			{#if data.book.description}
+				<p class="blurb"><RichText value={data.book.description} italic /></p>
+			{/if}
 			<p class="facts">
 				{plural(outline.length, 'part')} · {plural(chapterCount, 'chapter')}
 				{#if words > 0}
@@ -400,7 +395,9 @@
 				<header class="part-page" id="part-{entry.part.id}">
 					<span class="part-over">{entry.label}</span>
 					<h2>{entry.part.title}</h2>
-					{#if entry.part.description}<p class="subtitle">{entry.part.description}</p>{/if}
+					{#if entry.part.description}
+						<p class="subtitle"><RichText value={entry.part.description} italic /></p>
+					{/if}
 					{@render ornament()}
 				</header>
 				{#each entry.chapters as { chapter, number } (chapter.id)}
@@ -412,7 +409,9 @@
 						<header class="chapter-head">
 							<span class="chapter-over">Chapter {number}</span>
 							<h3 id="h-chapter-{chapter.id}">{chapter.title}</h3>
-							{#if chapter.description}<p class="subtitle">{chapter.description}</p>{/if}
+							{#if chapter.description}
+								<p class="subtitle"><RichText value={chapter.description} italic /></p>
+							{/if}
 						</header>
 						{@render prose(
 							`chapter-${chapter.id}`,
@@ -426,7 +425,9 @@
 				<section class="chapter" id="part-{entry.part.id}" aria-labelledby="h-part-{entry.part.id}">
 					<header class="chapter-head">
 						<h2 id="h-part-{entry.part.id}">{entry.part.title}</h2>
-						{#if entry.part.description}<p class="subtitle">{entry.part.description}</p>{/if}
+						{#if entry.part.description}
+							<p class="subtitle"><RichText value={entry.part.description} italic /></p>
+						{/if}
 					</header>
 					{@render prose(`part-${entry.part.id}`, partHref)}
 				</section>
@@ -965,42 +966,9 @@
 		fill: var(--bb-sky);
 	}
 
-	/* Story text, set like a book: indented paragraphs, a drop cap to open each section. */
-	.prose {
+	/* Story text is set by prose.css (shared with the editor); here only the reader's typeface. */
+	.chapter :global(.prose) {
 		font-family: var(--reader-face);
-		line-height: 1.75;
-		color: var(--bb-text-read);
-		-webkit-hyphens: auto;
-		hyphens: auto;
-		text-wrap: pretty;
-		font-optical-sizing: auto;
-	}
-
-	.prose p + p {
-		text-indent: 1.6em;
-	}
-
-	.prose > p:first-child::first-letter {
-		float: left;
-		margin: 0.08em 0.1em 0 0;
-		font-family: var(--font-display);
-		font-size: 3.4em;
-		line-height: 0.8;
-		color: var(--bb-sky);
-	}
-
-	.scene-break {
-		display: flex;
-		justify-content: center;
-		padding: 1.2em 0 1.4em;
-	}
-
-	.scene-break .ornament {
-		margin: 0;
-	}
-
-	.scene-break + p {
-		text-indent: 0;
 	}
 
 	.no-text,

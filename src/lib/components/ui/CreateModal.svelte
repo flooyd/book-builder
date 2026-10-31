@@ -23,6 +23,7 @@
 	import Button from './Button.svelte';
 	import Icon from './Icon.svelte';
 	import Kbd from './Kbd.svelte';
+	import RichEditor from '$lib/components/rich/RichEditor.svelte';
 
 	// Copy from the mockup: heading, sub, name label, name placeholder, description placeholder, CTA.
 	const COPY: Record<ModalCategory, [string, string, string, string, string, string]> = {
@@ -131,6 +132,7 @@
 	let description = $state(editing?.description ?? '');
 	// Parts and chapters: show the description as a subtitle in reading mode.
 	let showDescription = $state(false);
+	let descriptionEditor = $state<RichEditor>();
 	let holds = $state<'chapters' | 'text'>('chapters');
 	let bookId = $state(opened?.bookId ? String(opened.bookId) : onlyBookId);
 	let partId = $state(defaultPartId());
@@ -197,6 +199,7 @@
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
+		descriptionEditor?.flush();
 		if (submitting || !validate()) {
 			if (errors.title) titleInput?.focus();
 			return;
@@ -311,13 +314,18 @@
 		</div>
 
 		<div class="field">
-			<label for="create-description">Description <span class="hint">Optional</span></label>
-			<textarea
-				bind:value={description}
-				id="create-description"
-				class="bb-field description"
-				rows="3"
-				placeholder={descPlaceholder}></textarea>
+			<p class="desc-label">Description <span class="hint">Optional</span></p>
+			<RichEditor
+				bind:this={descriptionEditor}
+				kind="description"
+				class="description"
+				boxed
+				italic
+				value={description}
+				onchange={(value) => (description = value)}
+				label="Description"
+				placeholder={descPlaceholder}
+			/>
 			{#if category === 'part' || category === 'chapter'}
 				<label class="show">
 					<input type="checkbox" bind:checked={showDescription} />
@@ -609,11 +617,20 @@
 		font-size: 20px;
 	}
 
-	.description {
+	.field :global(.description) {
 		font-family: var(--font-read);
 		font-style: italic;
 		font-size: 17px;
 		line-height: 1.5;
+		color: var(--bb-text);
+	}
+
+	.desc-label {
+		display: flex;
+		justify-content: space-between;
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--bb-text-label);
 	}
 
 	select.bb-field {

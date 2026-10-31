@@ -1,5 +1,6 @@
 import { requireUser } from '$lib/server/auth-guard';
 import { db } from '$lib/server/db';
+import { descriptionField } from '$lib/server/ownership';
 import { book, character, characterBook, system, systemBook } from '$lib/server/db/schema';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { and, eq, exists, notExists, ne } from 'drizzle-orm';
@@ -73,7 +74,9 @@ export const PUT = async (event: RequestEvent) => {
 	}
 
 	const changes: { title: string; description?: string } = { title };
-	if (typeof body?.description === 'string') changes.description = body.description.trim();
+	if (typeof body?.description === 'string') {
+		changes.description = descriptionField(body.description);
+	}
 
 	const [updated] = await db
 		.update(book)

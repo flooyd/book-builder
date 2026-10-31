@@ -15,6 +15,7 @@
 	} from '$lib/stores';
 	import { bookOutline, plural, relativeDay } from '$lib/library';
 	import BookCover from '$lib/components/ui/BookCover.svelte';
+	import RichText from '$lib/components/rich/RichText.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import Pill from '$lib/components/ui/Pill.svelte';
@@ -142,7 +143,7 @@
 							<span class="book-text">
 								<span class="book-title">{book.title}</span>
 								{#if book.description}
-									<span class="book-desc">{book.description}</span>
+									<span class="book-desc"><RichText value={book.description} italic /></span>
 								{/if}
 								<span class="book-meta">
 									<Pill variant="count" size="sm">{plural(outline.length, 'part')}</Pill>

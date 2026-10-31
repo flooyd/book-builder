@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { book, chapter, part } from '$lib/server/db/schema';
+import { cleanValue } from '$lib/rich';
 
 /** The book, if it exists and belongs to the user. */
 export async function findOwnedBook(userId: string, bookId: number) {
@@ -36,6 +37,12 @@ export async function findOwnedChapter(userId: string, chapterId: number) {
 
 /** A trimmed string field from a JSON body; '' when missing or not a string. */
 export const textField = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+
+/**
+ * A description from a JSON body: plain text, or formatted text cleaned against the editor's
+ * allow-list (see $lib/rich).
+ */
+export const descriptionField = (value: unknown) => cleanValue(textField(value), 'description');
 
 /**
  * The `bookIds` of a character or system: at least one, all owned by the user. Returns the

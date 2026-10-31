@@ -1,35 +1,8 @@
-// Reading mode: story text as paragraphs, reading time, and the reader's text settings.
+// Reading mode: word counts, reading time, and the reader's text settings.
 
 export function countWords(text: string) {
 	const trimmed = text.trim();
 	return trimmed ? trimmed.split(/\s+/).length : 0;
-}
-
-export type Block = { kind: 'p'; text: string } | { kind: 'break' };
-
-/** A line of nothing but *, #, ~, -, • or ⁂ (e.g. "* * *" or "#") marks a scene break. */
-const SCENE_BREAK = /^([*#~•⁂-]\s*)+$/;
-
-/**
- * Story text as blocks. Every non-empty line is a paragraph, so text written with blank lines
- * between paragraphs and text written without them read the same.
- */
-export function toBlocks(text: string): Block[] {
-	const blocks: Block[] = [];
-	for (const line of text.split(/\r?\n/)) {
-		const trimmed = line.trim();
-		if (!trimmed) continue;
-		if (SCENE_BREAK.test(trimmed)) {
-			// A break only between paragraphs: none first, none doubled.
-			if (blocks.length > 0 && blocks[blocks.length - 1].kind !== 'break') {
-				blocks.push({ kind: 'break' });
-			}
-		} else {
-			blocks.push({ kind: 'p', text: trimmed });
-		}
-	}
-	if (blocks[blocks.length - 1]?.kind === 'break') blocks.pop();
-	return blocks;
 }
 
 const WORDS_PER_MINUTE = 230;

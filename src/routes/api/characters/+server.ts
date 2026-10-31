@@ -1,7 +1,7 @@
 import { db } from '$lib/server/db';
 import { character, characterBook } from '$lib/server/db/schema';
 import { requireUser } from '$lib/server/auth-guard';
-import { ownedBookIds, textField } from '$lib/server/ownership';
+import { descriptionField, ownedBookIds, textField } from '$lib/server/ownership';
 import { asc, eq, inArray } from 'drizzle-orm';
 import { json, type RequestEvent } from '@sveltejs/kit';
 
@@ -34,7 +34,7 @@ export const POST = async (event: RequestEvent) => {
 	const user = requireUser(event);
 	const body = await event.request.json().catch(() => null);
 	const name = textField(body?.name);
-	const description = textField(body?.description);
+	const description = descriptionField(body?.description);
 
 	if (!name) {
 		return json({ error: 'Name is required' }, { status: 400 });

@@ -5,9 +5,17 @@
 	import { getTheme } from '$lib/theme.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
+	import RichEditor from '$lib/components/rich/RichEditor.svelte';
 
-	// The writing surface: labelled textarea, live word count, Night / Paper toggle.
+	// The writing surface: the rich text editor with its toolbar, live word count, Night / Paper.
 	let { doc }: { doc: StoryTextDoc } = $props();
+
+	let editor = $state<RichEditor>();
+	// Saving and leaving collect the last keystrokes first.
+	$effect(() => {
+		doc.flush = () => editor?.flush();
+		return () => (doc.flush = null);
+	});
 
 	const theme = getTheme();
 
@@ -37,7 +45,7 @@
 <motion-reveal y={24} delay={0.15} duration={0.7}>
 	<div class="surface" class:paper data-scheme={paper ? 'light' : 'dark'}>
 		<div class="surface-head">
-			<label for="story">Story text</label>
+			<span class="surface-label" id="story-label">Story text</span>
 			<div class="surface-tools">
 				<span class="words">{plural(doc.words, 'word')}</span>
 				<div class="toggle" role="group" aria-label="Writing surface">
@@ -53,14 +61,18 @@
 				<p>{doc.error}</p>
 				<Button onclick={() => doc.load()}>Try again</Button>
 			</div>
+		{:else if doc.status === 'loading'}
+			<p class="loading" aria-busy="true">Loading…</p>
 		{:else}
-			<textarea
+			<RichEditor
+				bind:this={editor}
 				id="story"
 				class="story"
-				bind:value={doc.content}
-				readonly={doc.status === 'loading'}
-				aria-busy={doc.status === 'loading'}
-				placeholder={doc.status === 'loading' ? 'Loading…' : 'Write your story here…'}></textarea>
+				value={doc.content}
+				onchange={(value) => (doc.content = value)}
+				label="Story text"
+				placeholder="Write your story here…"
+			/>
 		{/if}
 	</div>
 </motion-reveal>
@@ -108,7 +120,7 @@
 		border-bottom: 1px solid var(--surface-line);
 	}
 
-	.surface-head label {
+	.surface-label {
 		font-size: 12px;
 		font-weight: 700;
 		letter-spacing: 0.18em;
@@ -149,27 +161,31 @@
 		color: #fff;
 	}
 
-	.story {
-		display: block;
-		width: 100%;
-		height: 560px;
-		padding: 0;
-		border: none;
-		resize: vertical;
-		background: transparent;
+	/* The toolbar stays in view under the app header while writing a long chapter. */
+	.surface :global(.story > .bar) {
+		position: sticky;
+		top: var(--app-header-h, 69px);
+		z-index: 4;
+		margin: -10px -12px 22px;
+		padding: 8px 12px;
+		border-radius: 12px;
+		background: var(--surface-bg);
+		box-shadow: 0 1px 0 var(--surface-line);
+	}
+
+	.surface :global(.story .rich-area) {
+		min-height: 520px;
 		color: var(--surface-text);
 		caret-color: var(--surface-caret);
 		font-family: var(--font-read);
 		font-size: 20px;
-		line-height: 1.8;
 	}
 
-	.story:focus-visible {
-		outline: none;
-		box-shadow: none;
-	}
-
-	.story::placeholder {
+	.loading {
+		min-height: 520px;
+		font-family: var(--font-read);
+		font-style: italic;
+		font-size: 20px;
 		color: var(--surface-muted);
 	}
 
@@ -197,9 +213,14 @@
 			border-radius: 18px;
 		}
 
-		.story {
-			height: 420px;
+		.surface :global(.story .rich-area) {
+			min-height: 400px;
 			font-size: 18px;
+		}
+
+		.surface :global(.story > .bar) {
+			margin: -6px -8px 18px;
+			padding: 6px 8px;
 		}
 	}
 </style>

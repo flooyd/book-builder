@@ -11,6 +11,7 @@
 	import { initials } from '$lib/library';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
+	import RichText from '$lib/components/rich/RichText.svelte';
 
 	// Sharing, characters and systems of one book (Book.dc.html aside).
 	let { bookId }: { bookId: number } = $props();
@@ -180,7 +181,7 @@
 					</div>
 					<span class="system-name">{system.name}</span>
 					{#if system.description}
-						<span class="system-desc">{system.description}</span>
+						<span class="system-desc"><RichText value={system.description} italic /></span>
 					{/if}
 					{#if alsoIn(system.bookIds)}
 						<span class="system-meta">{alsoIn(system.bookIds)}</span>

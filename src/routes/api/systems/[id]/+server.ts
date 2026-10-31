@@ -1,7 +1,7 @@
 import { db } from '$lib/server/db';
 import { system, systemBook } from '$lib/server/db/schema';
 import { requireUser } from '$lib/server/auth-guard';
-import { ownedBookIds, textField } from '$lib/server/ownership';
+import { descriptionField, ownedBookIds, textField } from '$lib/server/ownership';
 import { and, eq } from 'drizzle-orm';
 import { json, type RequestEvent } from '@sveltejs/kit';
 
@@ -36,7 +36,7 @@ export const PUT = async (event: RequestEvent) => {
 	const updated = await db.transaction(async (tx) => {
 		const [row] = await tx
 			.update(system)
-			.set({ name, description: textField(body?.description), kind: textField(body?.kind) })
+			.set({ name, description: descriptionField(body?.description), kind: textField(body?.kind) })
 			.where(eq(system.id, id))
 			.returning();
 		await tx.delete(systemBook).where(eq(systemBook.systemId, id));

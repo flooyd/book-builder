@@ -6,6 +6,7 @@
 	import { indexAt } from './drag';
 	import type { Group, Item, OutlineUi } from './types';
 	import EditableText from './EditableText.svelte';
+	import RichInline from '$lib/components/rich/RichInline.svelte';
 	import StatusPill from './StatusPill.svelte';
 	import CastStack from './CastStack.svelte';
 
@@ -128,9 +129,8 @@
 							{plural(group.chapters.length, 'chapter')} · {words(part.words)}
 						</p>
 						{#if ui.synopses}
-							<EditableText
+							<RichInline
 								class="synopsis"
-								multiline
 								value={part.description}
 								label="Synopsis of {part.title}"
 								placeholder="What is this part about?"
@@ -172,9 +172,8 @@
 									onfocus={() => ui.select(card.key)}
 								/>
 								{#if ui.synopses}
-									<EditableText
+									<RichInline
 										class="synopsis"
-										multiline
 										value={card.description}
 										label="Synopsis of {card.title}"
 										placeholder="What happens here?"
@@ -199,9 +198,8 @@
 						onclick={() => ui.select(part.key)}
 					>
 						{#if ui.synopses}
-							<EditableText
+							<RichInline
 								class="synopsis"
-								multiline
 								value={part.description}
 								label="Synopsis of {part.title}"
 								placeholder="What happens here?"

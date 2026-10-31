@@ -4,6 +4,7 @@ import { requireUser } from '$lib/server/auth-guard';
 import { db } from '$lib/server/db';
 import { storyText } from '$lib/server/db/schema';
 import { findOwnedChapter, findOwnedPart } from '$lib/server/ownership';
+import { cleanValue } from '$lib/rich';
 
 /**
  * GET / POST / PUT handlers for the story text of a part (with no chapters) or of a chapter,
@@ -28,9 +29,10 @@ export function storyTextHandlers(target: 'part' | 'chapter') {
 		return { id };
 	}
 
+	// Plain text, or the editor's document cleaned against its allow-list (see $lib/rich).
 	async function readContent(event: RequestEvent) {
 		const body = await event.request.json().catch(() => null);
-		return typeof body?.content === 'string' ? body.content : null;
+		return typeof body?.content === 'string' ? cleanValue(body.content, 'story') : null;
 	}
 
 	const GET = async (event: RequestEvent) => {

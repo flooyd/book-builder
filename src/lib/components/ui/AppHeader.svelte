@@ -10,10 +10,16 @@
 	let { user }: { user: { name: string } } = $props();
 
 	const header = getAppHeader();
+
+	// Sticky things below the header (the editor's toolbar) sit under it at any height.
+	let height = $state(0);
+	$effect(() => {
+		document.documentElement.style.setProperty('--app-header-h', `${height}px`);
+	});
 	const initial = $derived(user.name?.trim().charAt(0).toUpperCase() || '?');
 </script>
 
-<header class="app-header">
+<header class="app-header" bind:clientHeight={height}>
 	<div class="inner" class:wide={header.wide}>
 		<div class="start">
 			<a class="brand" href={resolve('/')}>

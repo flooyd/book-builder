@@ -1,5 +1,6 @@
 import { beforeNavigate } from '$app/navigation';
 import { countWords } from '$lib/reading';
+import { plainText } from '$lib/rich';
 
 type Status = 'loading' | 'load-error' | 'ready' | 'saving' | 'saved' | 'error';
 
@@ -9,6 +10,7 @@ type Status = 'loading' | 'load-error' | 'ready' | 'saving' | 'saved' | 'error';
  * impossible), and nothing is written until the writer saves.
  */
 export class StoryTextDoc {
+	/** Plain text, or the rich editor's document as JSON (see $lib/rich). */
 	content = $state('');
 	/** Last value known to be on the server. */
 	saved = $state('');
@@ -18,7 +20,9 @@ export class StoryTextDoc {
 	readonly dirty = $derived(
 		this.status !== 'loading' && this.status !== 'load-error' && this.content !== this.saved
 	);
-	readonly words = $derived(countWords(this.content));
+	readonly words = $derived(countWords(plainText(this.content)));
+	/** Set by the editor: hands over typing it hasn't reported yet. */
+	flush: (() => void) | null = null;
 
 	#exists = false;
 	#loading: Promise<void> | null = null;
@@ -50,6 +54,7 @@ export class StoryTextDoc {
 	}
 
 	async save() {
+		this.flush?.();
 		if (this.status === 'loading' || this.status === 'load-error' || this.status === 'saving')
 			return;
 		const content = this.content;
@@ -88,6 +93,7 @@ export class StoryTextDoc {
  */
 export function guardStoryText(doc: StoryTextDoc, enabled: () => boolean = () => true) {
 	beforeNavigate(({ type, cancel }) => {
+		doc.flush?.();
 		if (!enabled() || !doc.dirty) return;
 		if (type === 'leave') cancel();
 		else if (!confirm('You have unsaved changes to this story text. Leave without saving?'))
@@ -96,7 +102,13 @@ export function guardStoryText(doc: StoryTextDoc, enabled: () => boolean = () =>
 
 	$effect(() => {
 		function onkeydown(event: KeyboardEvent) {
-			if (enabled() && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+			// Not with Shift: Ctrl+Shift+S is the editor's strikethrough.
+			if (
+				enabled() &&
+				(event.ctrlKey || event.metaKey) &&
+				!event.shiftKey &&
+				event.key.toLowerCase() === 's'
+			) {
 				event.preventDefault();
 				doc.save();
 			}
