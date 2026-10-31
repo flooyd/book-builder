@@ -22,6 +22,8 @@ export class StoryTextDoc {
 		this.status !== 'loading' && this.status !== 'load-error' && this.content !== this.saved
 	);
 	readonly words = $derived(countWords(plainText(this.content)));
+	/** Words in the last saved version, so the unsaved part is `words - savedWords`. */
+	readonly savedWords = $derived(countWords(plainText(this.saved)));
 	/** Set by the editor: hands over typing it hasn't reported yet. */
 	flush: (() => void) | null = null;
 

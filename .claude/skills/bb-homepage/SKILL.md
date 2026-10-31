@@ -19,7 +19,7 @@ description: Book Builder's signed-out homepage and marketing content, covering 
 ### How the user wants it
 
 - **Lean.** "Keep it lean like it is now". When a feature ships, the user usually wants it showcased. Prefer adding a card or a line to an existing section over a new section. Add a section only for something big, and renumber the labels if you do.
-- **Coming soon.** `SOON` in `marketing/soon.ts` holds the user's planned features. It is empty now that Writing Goals has shipped, so the section and its nav link are hidden. Remove an entry when it ships. Only add entries the user asks for: it's their roadmap. While it's empty, the section and its nav link disappear on their own.
+- **Coming soon.** `SOON` in `marketing/soon.ts` holds the user's planned features (currently Export to PDF and Word, and Mentions). Remove an entry when it ships. Only add entries the user asks for: it's their roadmap. While it's empty, the section and its nav link disappear on their own.
 - **Real product.** Showcases depict the real product, so mirror the real UI's look (paper surface, statuses, covers) rather than inventing features that don't exist.
 - **Breakpoints.** Check it at 1440 and 390 in both themes (see the `bb-verify` skill). The hero book scales down on phones (`scale(0.56)`, then `0.5` under 420px).
 

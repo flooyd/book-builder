@@ -90,5 +90,11 @@ export async function goalsFor(userId: string, today: string): Promise<GoalsData
 		targeted.map((b) => b.id)
 	);
 
-	return { dailyWords: goal?.dailyWords ?? 0, today, days, bookWords };
+	return {
+		dailyWords: goal?.dailyWords ?? 0,
+		restDays: goal?.restDays ?? 0,
+		today,
+		days,
+		bookWords
+	};
 }

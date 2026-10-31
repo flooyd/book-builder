@@ -7,6 +7,8 @@
 	import RichEditor from '$lib/components/rich/RichEditor.svelte';
 	import Menu from '$lib/components/rich/Menu.svelte';
 	import SaveStatus from './SaveStatus.svelte';
+	import { goalsStore } from '$lib/stores';
+	import { wordsOn } from '$lib/goals';
 
 	// Focus mode: the story text alone on a full-screen page (Night or Paper, as on the writing
 	// surface). The line being written stays at eye level (typewriter), the other paragraphs can
@@ -53,6 +55,16 @@
 	let sprint = $state<{ minutes: number; endsAt: number } | null>(null);
 
 	const sessionWords = $derived(doc.words - startWords);
+
+	// Today's words toward the daily goal: what's saved so far, plus what's typed since the last
+	// save, so the bar moves as you write rather than a moment after the autosave.
+	const todayWords = $derived(
+		$goalsStore
+			? Math.max(0, wordsOn($goalsStore.days, $goalsStore.today) + doc.words - doc.savedWords)
+			: null
+	);
+	const dailyTarget = $derived($goalsStore?.dailyWords ?? 0);
+	const goalReached = $derived(todayWords !== null && dailyTarget > 0 && todayWords >= dailyTarget);
 	const elapsed = $derived(Math.floor((now - startedAt) / 1000));
 	const remaining = $derived(sprint ? Math.max(0, Math.ceil((sprint.endsAt - now) / 1000)) : null);
 	const sprintDone = $derived(remaining === 0);
@@ -150,6 +162,33 @@
 				>{sessionWords >= 0 ? '+' : '−'}{Math.abs(sessionWords).toLocaleString('en')} this session</span
 			>
 		</p>
+		{#if todayWords !== null}
+			<p class={['today', { reached: goalReached }]}>
+				{#if dailyTarget > 0}
+					<span
+						class="today-track"
+						role="progressbar"
+						aria-label="Today's goal"
+						aria-valuemin="0"
+						aria-valuemax={dailyTarget}
+						aria-valuenow={Math.min(todayWords, dailyTarget)}
+						aria-valuetext="{todayWords.toLocaleString('en')} of {dailyTarget.toLocaleString(
+							'en'
+						)} words today"
+						><span style:width="{Math.min(1, todayWords / dailyTarget) * 100}%"></span></span
+					>
+					<span class="today-text"
+						><span class="today-label">Today </span>{todayWords.toLocaleString('en')} / {dailyTarget.toLocaleString(
+							'en'
+						)}</span
+					>
+				{:else}
+					<span class="today-text"
+						><span class="today-label">Today </span>{todayWords.toLocaleString('en')} words</span
+					>
+				{/if}
+			</p>
+		{/if}
 		<button
 			type="button"
 			class={['tool', 'timer', { done: sprintDone }]}
@@ -317,6 +356,42 @@
 		font-weight: 600;
 	}
 
+	/* Today's goal: a short bar and the count, kept on phones where the stats are hidden. */
+	.today {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 13.5px;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+
+	.today-track {
+		display: block;
+		width: 64px;
+		height: 6px;
+		border-radius: var(--r-pill);
+		background: var(--bb-line-control);
+		overflow: hidden;
+	}
+
+	.today-track > span {
+		display: block;
+		height: 100%;
+		border-radius: var(--r-pill);
+		background: var(--bb-royal);
+		transition: width 0.4s ease;
+	}
+
+	.today.reached {
+		color: var(--ink-moss);
+		font-weight: 600;
+	}
+
+	.today.reached .today-track > span {
+		background: var(--ink-moss);
+	}
+
 	.timer {
 		font-variant-numeric: tabular-nums;
 	}
@@ -437,7 +512,8 @@
 		}
 
 		.stats,
-		.leave kbd {
+		.leave kbd,
+		.today-label {
 			display: none;
 		}
 
@@ -452,7 +528,8 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.dim :global(.rich-area > *) {
+		.dim :global(.rich-area > *),
+		.today-track > span {
 			transition: none;
 		}
 	}

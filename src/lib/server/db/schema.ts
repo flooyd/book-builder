@@ -212,6 +212,8 @@ export const writingGoal = pgTable('writing_goal', {
 		.primaryKey()
 		.references(() => user.id, { onDelete: 'cascade' }),
 	dailyWords: integer('daily_words').notNull().default(0),
+	//weekdays kept for rest, as a bit mask (Monday = 1 ... Sunday = 64): they never break a streak
+	restDays: integer('rest_days').notNull().default(0),
 	createdAt: timestamp('created_at').notNull().defaultNow(),
 	updatedAt: timestamp('updated_at')
 		.notNull()

@@ -1,34 +1,55 @@
 <script lang="ts">
 	import { goalsStore } from '$lib/stores';
 	import { putJSON } from '$lib/library';
-	import { MAX_DAILY_WORDS, recentDays, streakOf, wordsOn, type GoalsData } from '$lib/goals';
+	import {
+		MAX_DAILY_WORDS,
+		MAX_REST_DAYS,
+		isRestDay,
+		recentDays,
+		streakOf,
+		wordsOn,
+		type GoalsData
+	} from '$lib/goals';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
+	import WritingHistory from './WritingHistory.svelte';
 
 	// The writer's daily word goal and streak, on the library page: today's progress, the last
 	// two weeks as bars, and a small form to set or change the target.
 	const PRESETS = [250, 500, 1000, 2000];
 	const DAYS_SHOWN = 14;
+	const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 	const goals = $derived($goalsStore);
 	const target = $derived(goals?.dailyWords ?? 0);
+	const restDays = $derived(goals?.restDays ?? 0);
 	const today = $derived(goals ? wordsOn(goals.days, goals.today) : 0);
 	const fraction = $derived(target ? Math.min(1, today / target) : 0);
 	const reached = $derived(target > 0 && today >= target);
-	const streak = $derived(goals ? streakOf(goals.days, target, goals.today) : null);
+	const restingToday = $derived(goals ? isRestDay(goals.today, restDays) : false);
+	const streak = $derived(goals ? streakOf(goals.days, target, goals.today, restDays) : null);
 	const bars = $derived(goals ? recentDays(goals.days, goals.today, DAYS_SHOWN) : []);
 	const tallest = $derived(Math.max(target, ...bars.map((bar) => bar.words), 1));
 
 	let editing = $state(false);
+	let showHistory = $state(false);
 	// A number input hands back a number (or null when empty), so the draft isn't always a string.
 	let draft = $state<string | number | null>('');
+	let restDraft = $state(0);
 	let saving = $state(false);
 	let error = $state('');
 
 	function edit() {
 		draft = target ? String(target) : '';
+		restDraft = restDays;
 		error = '';
 		editing = true;
+	}
+
+	/** Keep or give up a weekday for rest; at least one weekday always stays for writing. */
+	function toggleRest(weekday: number) {
+		const next = restDraft ^ (1 << weekday);
+		if (next <= MAX_REST_DAYS) restDraft = next;
 	}
 
 	async function save(value: number) {
@@ -39,7 +60,9 @@
 		saving = true;
 		error = '';
 		try {
-			goalsStore.set(await putJSON<GoalsData>('/api/goals', { dailyWords: value }));
+			goalsStore.set(
+				await putJSON<GoalsData>('/api/goals', { dailyWords: value, restDays: restDraft })
+			);
 			editing = false;
 		} catch (problem) {
 			error = problem instanceof Error ? problem.message : "Couldn't save your goal.";
@@ -77,6 +100,8 @@
 					<p class="note">
 						{#if reached}
 							Goal reached. Anything more is a bonus.
+						{:else if restingToday}
+							Today's a rest day. Anything you write still counts.
 						{:else}
 							{number(target - today)} to go.
 						{/if}
@@ -102,7 +127,14 @@
 					<div class="bars" role="img" aria-label="Words written over the last {DAYS_SHOWN} days">
 						{#each bars as bar (bar.day)}
 							<span
-								class={['bar', { met: bar.words >= target, now: bar.day === goals.today }]}
+								class={[
+									'bar',
+									{
+										met: bar.words >= target,
+										now: bar.day === goals.today,
+										rest: bar.words === 0 && isRestDay(bar.day, restDays)
+									}
+								]}
 								style:height="{Math.max(6, (bar.words / tallest) * 100)}%"
 								title="{dayLabel(bar.day)}: {number(bar.words)} words"
 							></span>
@@ -110,14 +142,28 @@
 					</div>
 				{/if}
 				{#if !editing}
-					<Button variant="quiet" onclick={edit}>
-						<Icon name={target ? 'pen' : 'target'} size={16} />{target
-							? 'Change goal'
-							: 'Set a goal'}
-					</Button>
+					<div class="buttons">
+						<Button variant="quiet" onclick={edit}>
+							<Icon name={target ? 'pen' : 'target'} size={16} />{target
+								? 'Change goal'
+								: 'Set a goal'}
+						</Button>
+						<Button
+							variant="quiet"
+							aria-expanded={showHistory}
+							aria-controls="writing-history"
+							onclick={() => (showHistory = !showHistory)}
+						>
+							<Icon name="calendar" size={16} />{showHistory ? 'Hide history' : 'Writing history'}
+						</Button>
+					</div>
 				{/if}
 			</div>
 		</div>
+
+		{#if showHistory}
+			<div id="writing-history"><WritingHistory /></div>
+		{/if}
 
 		{#if editing}
 			<form
@@ -156,6 +202,20 @@
 				<p class="hint">
 					Leave it empty to turn the goal off. Your streak counts the days you reach it.
 				</p>
+				<div class="rest-days">
+					<span id="rest-label" class="rest-label">Rest days</span>
+					<div class="weekdays" role="group" aria-labelledby="rest-label">
+						{#each WEEKDAYS as name, weekday (name)}
+							<button
+								type="button"
+								class={['weekday', { chosen: ((restDraft >> weekday) & 1) === 1 }]}
+								aria-pressed={((restDraft >> weekday) & 1) === 1}
+								onclick={() => toggleRest(weekday)}>{name}</button
+							>
+						{/each}
+					</div>
+					<p class="hint">A rest day never breaks your streak. Write on one and it still counts.</p>
+				</div>
 				{#if error}
 					<p class="error" role="alert"><Icon name="alert-circle" size={15} />{error}</p>
 				{/if}
@@ -286,6 +346,12 @@
 		color: var(--bb-text-3);
 	}
 
+	.buttons {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0 6px;
+	}
+
 	.bars {
 		align-self: stretch;
 		display: flex;
@@ -307,6 +373,57 @@
 
 	.bar.now {
 		box-shadow: 0 0 0 1.5px var(--bb-sky);
+	}
+
+	.bar.rest {
+		background: transparent;
+		box-shadow: inset 0 0 0 1px var(--bb-line-control);
+	}
+
+	.bar.rest.now {
+		box-shadow:
+			inset 0 0 0 1px var(--bb-line-control),
+			0 0 0 1.5px var(--bb-sky);
+	}
+
+	.rest-days {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 8px;
+	}
+
+	.rest-label {
+		font-size: 13px;
+		font-weight: 700;
+		color: var(--bb-text-2);
+	}
+
+	.weekdays {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.weekday {
+		min-width: 52px;
+		min-height: 44px;
+		padding: 0 12px;
+		border-radius: var(--r-control);
+		border: 1px solid var(--bb-line-control);
+		background: var(--bb-panel);
+		color: var(--bb-text);
+		font: 600 14px var(--font-ui);
+	}
+
+	.weekday:hover {
+		background: var(--bb-hover);
+	}
+
+	.weekday.chosen {
+		background: var(--bb-sky-wash);
+		border-color: var(--bb-sky);
+		color: var(--bb-sky-text);
 	}
 
 	.edit {

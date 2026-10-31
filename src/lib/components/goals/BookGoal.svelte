@@ -15,7 +15,7 @@
 	const words = $derived(goals?.bookWords[bookId] ?? 0);
 	const today = $derived(goals?.today ?? dayIn(Intl.DateTimeFormat().resolvedOptions().timeZone));
 	const progress = $derived(
-		book ? bookProgress(words, book.targetWords, book.deadline, today) : null
+		book ? bookProgress(words, book.targetWords, book.deadline, today, goals?.restDays ?? 0) : null
 	);
 
 	let editing = $state(false);
@@ -127,7 +127,8 @@
 					You've reached the target. Everything from here is extra.
 				{:else if progress.perDay !== null}
 					{number(progress.wordsLeft)} to go: about {number(progress.perDay)}
-					{progress.perDay === 1 ? 'word' : 'words'} a day gets you there.
+					{progress.perDay === 1 ? 'word' : 'words'}
+					{goals?.restDays ? 'on each writing day' : 'a day'} gets you there.
 				{:else if progress.daysLeft !== null && progress.daysLeft < 0}
 					{number(progress.wordsLeft)} words short of the target. Move the deadline when you're ready.
 				{:else}
