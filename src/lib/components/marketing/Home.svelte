@@ -500,7 +500,8 @@
 <style>
 	.home {
 		position: relative;
-		overflow: hidden;
+		/* clip, unlike hidden, doesn't make a scroll container, so the sticky header still works. */
+		overflow: clip;
 		min-height: 100vh;
 		background: var(--bb-night);
 		color: var(--bb-text);
@@ -727,6 +728,8 @@
 		max-width: 1240px;
 		margin: 0 auto;
 		padding: 120px 32px 40px;
+		/* Keeps in-page links from landing under the sticky header. */
+		scroll-margin-top: 40px;
 	}
 
 	.overline {

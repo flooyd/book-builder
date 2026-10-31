@@ -16,37 +16,47 @@
 </script>
 
 <header class="site-header">
-	{#if onHome}
-		<a class="brand" href="#top"><Wordmark size={26} /></a>
-	{:else}
-		<a class="brand" href={resolve('/')}><Wordmark size={26} /></a>
-	{/if}
+	<div class="inner">
+		{#if onHome}
+			<a class="brand" href="#top"><Wordmark size={26} /></a>
+		{:else}
+			<a class="brand" href={resolve('/')}><Wordmark size={26} /></a>
+		{/if}
 
-	<nav aria-label="Primary">
-		{#each sections as section (section.id)}
-			{#if onHome}
-				<a href="#{section.id}">{section.label}</a>
-			{:else}
-				<a href="{resolve('/')}#{section.id}">{section.label}</a>
-			{/if}
-		{/each}
-		<a href="https://github.com/flooyd/book-builder">GitHub</a>
-	</nav>
+		<nav aria-label="Primary">
+			{#each sections as section (section.id)}
+				{#if onHome}
+					<a href="#{section.id}">{section.label}</a>
+				{:else}
+					<a href="{resolve('/')}#{section.id}">{section.label}</a>
+				{/if}
+			{/each}
+			<a href="https://github.com/flooyd/book-builder">GitHub</a>
+		</nav>
 
-	<div class="actions">
-		<ThemeToggle />
-		<a class="login" href={resolve('/login')}>Log in</a>
-		<a class="start" href={resolve('/login')}>Get started</a>
+		<div class="actions">
+			<ThemeToggle />
+			<a class="login" href={resolve('/login')}>Log in</a>
+			<a class="start" href={resolve('/login')}>Get started</a>
+		</div>
 	</div>
 </header>
 
 <style>
 	.site-header {
-		position: relative;
-		z-index: 5;
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		background: light-dark(rgba(245, 240, 230, 0.88), rgba(10, 15, 36, 0.9));
+		-webkit-backdrop-filter: blur(10px);
+		backdrop-filter: blur(10px);
+		border-bottom: 1px solid var(--bb-line-faint);
+	}
+
+	.inner {
 		max-width: 1240px;
 		margin: 0 auto;
-		padding: 22px 32px;
+		padding: 12px 32px;
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
@@ -118,8 +128,8 @@
 	}
 
 	@media (max-width: 600px) {
-		.site-header {
-			padding: 16px 20px;
+		.inner {
+			padding: 10px 20px;
 		}
 
 		nav {
