@@ -19,6 +19,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import Pill from '$lib/components/ui/Pill.svelte';
+	import DailyGoal from '$lib/components/goals/DailyGoal.svelte';
 
 	let { userName }: { userName: string } = $props();
 
@@ -133,6 +134,7 @@
 			<div class="skeleton"></div>
 		</div>
 	{:else}
+		<DailyGoal />
 		<section aria-labelledby="h-books" class="books">
 			<h2 id="h-books" class="label">Books</h2>
 			<div class="book-grid" class:empty={library.length === 0}>

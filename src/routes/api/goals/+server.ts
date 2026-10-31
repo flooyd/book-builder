@@ -1,0 +1,38 @@
+import { json, type RequestEvent } from '@sveltejs/kit';
+import { requireUser } from '$lib/server/auth-guard';
+import { db } from '$lib/server/db';
+import { writingGoal } from '$lib/server/db/schema';
+import { goalsFor, todayFor } from '$lib/server/goals';
+import { MAX_DAILY_WORDS } from '$lib/goals';
+
+/**
+ * The signed-in writer's goals: their daily target, the words they wrote on each recent day, and
+ * the progress of every book that has a word target.
+ */
+export const GET = async (event: RequestEvent) => {
+	const user = requireUser(event);
+	return json(await goalsFor(user.id, todayFor(event)));
+};
+
+/** Set the daily target: `dailyWords`, a whole number from 0 (no goal) up to the limit. */
+export const PUT = async (event: RequestEvent) => {
+	const user = requireUser(event);
+	const body = await event.request.json().catch(() => null);
+	const dailyWords = body?.dailyWords;
+
+	if (!Number.isInteger(dailyWords) || dailyWords < 0 || dailyWords > MAX_DAILY_WORDS) {
+		return json(
+			{
+				error: `A daily goal is a whole number of words, up to ${MAX_DAILY_WORDS.toLocaleString('en')}.`
+			},
+			{ status: 400 }
+		);
+	}
+
+	await db
+		.insert(writingGoal)
+		.values({ userId: user.id, dailyWords })
+		.onConflictDoUpdate({ target: writingGoal.userId, set: { dailyWords } });
+
+	return json(await goalsFor(user.id, todayFor(event)));
+};

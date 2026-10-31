@@ -12,6 +12,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import RichText from '$lib/components/rich/RichText.svelte';
+	import BookGoal from '$lib/components/goals/BookGoal.svelte';
 
 	// Sharing, characters and systems of one book (Book.dc.html aside).
 	let { bookId }: { bookId: number } = $props();
@@ -132,6 +133,8 @@
 				{/if}
 			</section>
 		{/if}
+
+		<BookGoal {bookId} />
 
 		<section aria-labelledby="h-characters" class="panel">
 			<div class="panel-head">

@@ -12,14 +12,14 @@ description: Book Builder's signed-out homepage and marketing content, covering 
    - `#features` **01 — How it's organized**: books, parts, chapters, characters, systems, with a sample tree card.
    - `#example` **02 — The editor**: a sample page of story text with formatting and a first letter.
    - `#outline` **03 — The outline**: a corkboard picture from the `board` array, with statuses in the outline's colours.
-   - `#focus` **04 — Focus and share**: focus mode, plus sharing and the author page (the "Oriel Vance" demo).
+   - `#focus` **04 — Focus, goals and share**: three cards: focus mode, the author page (the "Oriel Vance" picture, with a "See the demo author" link to the real Demo Author page) and writing goals (a picture of today's progress, a streak and two weeks of bars).
    - `#soon` **05 — On the shelf next**: the Coming soon shelf, rendered from `SOON`, and hidden (with its header link) when the list is empty.
 3. **Closing** call to action, then the footer.
 
 ### How the user wants it
 
 - **Lean.** "Keep it lean like it is now". When a feature ships, the user usually wants it showcased. Prefer adding a card or a line to an existing section over a new section. Add a section only for something big, and renumber the labels if you do.
-- **Coming soon.** `SOON` in `marketing/soon.ts` holds the user's planned features (currently Writing Goals). Remove an entry when it ships. Only add entries the user asks for: it's their roadmap. While it's empty, the section and its nav link disappear on their own.
+- **Coming soon.** `SOON` in `marketing/soon.ts` holds the user's planned features. It is empty now that Writing Goals has shipped, so the section and its nav link are hidden. Remove an entry when it ships. Only add entries the user asks for: it's their roadmap. While it's empty, the section and its nav link disappear on their own.
 - **Real product.** Showcases depict the real product, so mirror the real UI's look (paper surface, statuses, covers) rather than inventing features that don't exist.
 - **Breakpoints.** Check it at 1440 and 390 in both themes (see the `bb-verify` skill). The hero book scales down on phones (`scale(0.56)`, then `0.5` under 420px).
 

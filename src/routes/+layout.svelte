@@ -14,7 +14,7 @@
 	import CommandDock from '$lib/components/ui/CommandDock.svelte';
 	import { provideAppHeader } from '$lib/app-header.svelte';
 	import { THEME_COLOR, provideTheme } from '$lib/theme.svelte';
-	import { clearLibrary, loadLibrary } from '$lib/library';
+	import { clearLibrary, loadLibrary, syncTimeZone } from '$lib/library';
 	import { userStore, showMenuStore, modalStore, booksRefresh } from '$lib/stores';
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
@@ -46,8 +46,10 @@
 	// Load (and reload on booksRefresh) the signed-in user's books, parts and chapters.
 	$effect(() => {
 		void $booksRefresh;
-		if (userId) loadLibrary();
-		else clearLibrary();
+		if (userId) {
+			syncTimeZone(); // before the load, so the server's "today" is the writer's
+			loadLibrary();
+		} else clearLibrary();
 	});
 
 	// Define the motion elements once hydration is done (see $lib/motion).

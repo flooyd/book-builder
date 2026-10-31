@@ -4,6 +4,7 @@ import {
 	integer,
 	text,
 	boolean,
+	date,
 	timestamp,
 	primaryKey,
 	index
@@ -19,6 +20,9 @@ export const book = pgTable('book', {
 		.notNull(),
 	//random id in the book's public /read/<shareId> link; null while the book is private
 	shareId: text('share_id').unique(),
+	//writing goals: the book's word target and when it should be finished (null = none set)
+	targetWords: integer('target_words'),
+	deadline: date('deadline', { mode: 'string' }),
 	createdAt: timestamp('created_at').notNull().defaultNow(),
 	updatedAt: timestamp('updated_at')
 		.notNull()
@@ -201,5 +205,32 @@ export const profile = pgTable('profile', {
 		.defaultNow()
 		.$onUpdate(() => new Date())
 });
+
+//a writer's daily word target (0 = none set)
+export const writingGoal = pgTable('writing_goal', {
+	userId: text('user_id')
+		.primaryKey()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	dailyWords: integer('daily_words').notNull().default(0),
+	createdAt: timestamp('created_at').notNull().defaultNow(),
+	updatedAt: timestamp('updated_at')
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date())
+});
+
+//words written on one day, in the writer's own time zone: what saved story text added, less
+//what it took away (so it can dip below zero; readers of it use max(0, words))
+export const writingDay = pgTable(
+	'writing_day',
+	{
+		userId: text('user_id')
+			.references(() => user.id, { onDelete: 'cascade' })
+			.notNull(),
+		day: date('day', { mode: 'string' }).notNull(),
+		words: integer('words').notNull().default(0)
+	},
+	(table) => [primaryKey({ columns: [table.userId, table.day] })]
+);
 
 export * from './auth.schema';

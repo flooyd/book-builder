@@ -52,6 +52,11 @@
 
 	const GITHUB = 'https://github.com/flooyd/book-builder';
 
+	// The last two weeks in the writing goals picture, as words a day against a goal of 500. The
+	// twelve days before today all reached it, which is the streak shown.
+	const goalWords = [320, 560, 510, 640, 500, 720, 530, 600, 515, 880, 540, 505, 610, 412];
+	const goalTallest = Math.max(...goalWords);
+
 	const homeFor: { label: string; icon: IconName }[] = [
 		{ label: 'Books', icon: 'book' },
 		{ label: 'Parts', icon: 'layers' },
@@ -379,7 +384,7 @@
 	</section>
 
 	<section id="focus" class="section">
-		<p class="overline">04 — Focus and share</p>
+		<p class="overline">04 — Focus, goals and share</p>
 		<h2 class="section-title duo-title">
 			<motion-headline by="words">Close the door, then open the book.</motion-headline>
 		</h2>
@@ -438,6 +443,31 @@
 							See the demo author<Icon name="arrow-right" size={16} />
 						</Button>
 					</div>
+				</article>
+				<article class="duo-card">
+					<!-- A picture of the writing goal: today's words, the streak and the last two weeks. -->
+					<div class="goal-demo" aria-hidden="true">
+						<span class="goal-demo-over">Today</span>
+						<span class="goal-demo-figures"><strong>412</strong>of 500 words</span>
+						<span class="goal-demo-track"><span></span></span>
+						<span class="goal-demo-streak"
+							><Icon name="flame" size={18} strokeWidth={1.8} /><strong>12</strong>days in a row</span
+						>
+						<span class="goal-demo-bars">
+							{#each goalWords as words, i (i)}
+								<span
+									class:met={words >= 500}
+									class:now={i === goalWords.length - 1}
+									style:height="{(words / goalTallest) * 100}%"
+								></span>
+							{/each}
+						</span>
+					</div>
+					<h3>Writing goals</h3>
+					<p>
+						A daily word goal with a streak to keep, and a target and deadline for each book that
+						says how many words a day it will take.
+					</p>
 				</article>
 			</motion-stagger>
 		</div>
@@ -1067,7 +1097,7 @@
 		min-width: 0;
 	}
 
-	/* 04: focus mode and the author page, side by side. */
+	/* 04: focus mode, writing goals and the author page, side by side. */
 	.duo-title {
 		margin: 0 0 40px;
 		font-size: clamp(38px, 4.2vw, 56px);
@@ -1075,7 +1105,7 @@
 
 	.duo {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
 		gap: 18px;
 	}
 
@@ -1159,6 +1189,101 @@
 
 	.focus-demo-page .faded {
 		opacity: 0.28;
+	}
+
+	/* Writing goals */
+	.goal-demo {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 8px;
+		height: 280px;
+		padding: 18px 20px;
+		border-radius: 14px;
+		background: var(--bb-panel);
+		border: 1px solid var(--bb-line-faint);
+	}
+
+	.goal-demo-over {
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--bb-text-2);
+	}
+
+	.goal-demo-figures {
+		display: flex;
+		align-items: baseline;
+		gap: 10px;
+		font-size: 14px;
+		color: var(--bb-text-2);
+	}
+
+	.goal-demo-figures strong {
+		font-family: var(--font-display);
+		font-weight: 400;
+		font-size: 40px;
+		line-height: 1;
+		color: var(--bb-text-strong);
+	}
+
+	.goal-demo-track {
+		height: 9px;
+		border-radius: var(--r-pill);
+		background: var(--bb-line-faint);
+		overflow: hidden;
+	}
+
+	.goal-demo-track span {
+		display: block;
+		width: 82%;
+		height: 100%;
+		border-radius: var(--r-pill);
+		background: var(--bb-royal);
+	}
+
+	.goal-demo-streak {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-top: 6px;
+		font-size: 14px;
+		color: var(--bb-text-2);
+	}
+
+	.goal-demo-streak :global(svg) {
+		color: var(--bb-amber);
+	}
+
+	.goal-demo-streak strong {
+		font-family: var(--font-display);
+		font-weight: 400;
+		font-size: 22px;
+		color: var(--bb-text-strong);
+	}
+
+	.goal-demo-bars {
+		display: flex;
+		align-items: flex-end;
+		gap: 4px;
+		flex: 1;
+		min-height: 0;
+		margin-top: 4px;
+	}
+
+	.goal-demo-bars span {
+		flex: 1;
+		border-radius: 3px;
+		background: var(--bb-line-control);
+	}
+
+	.goal-demo-bars .met {
+		background: var(--ink-moss);
+	}
+
+	.goal-demo-bars .now {
+		box-shadow: 0 0 0 1.5px var(--bb-sky);
 	}
 
 	/* The author page */

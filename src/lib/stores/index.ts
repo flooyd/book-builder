@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
 import type { User } from 'better-auth';
+import type { GoalsData } from '$lib/goals';
 
 export type ModalType = 'create' | 'edit' | 'delete';
 export type ModalCategory = 'book' | 'part' | 'chapter' | 'character' | 'system';
@@ -12,6 +13,10 @@ export type Book = {
 	userId: string;
 	/** Random id in the public /read/<shareId> link; null while the book is private. */
 	shareId: string | null;
+	/** Words the book should reach (see $lib/goals); null when no target is set. */
+	targetWords: number | null;
+	/** The day ('YYYY-MM-DD') the book should be finished by; null when none is set. */
+	deadline: string | null;
 	createdAt: string;
 	updatedAt: string;
 };
@@ -89,6 +94,8 @@ export const partsStore = writable<Part[]>([]);
 export const chaptersStore = writable<Chapter[]>([]);
 export const charactersStore = writable<Character[]>([]);
 export const systemsStore = writable<System[]>([]);
+/** The writer's daily target, recent days and book progress; null until loaded (see $lib/goals). */
+export const goalsStore = writable<GoalsData | null>(null);
 /** 'loading' until the first load finishes; stays 'ready' during background refreshes. */
 export const libraryStatus = writable<'loading' | 'ready' | 'error'>('loading');
 

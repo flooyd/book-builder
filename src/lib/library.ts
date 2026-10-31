@@ -5,6 +5,7 @@ import {
 	chaptersStore,
 	charactersStore,
 	systemsStore,
+	goalsStore,
 	libraryStatus,
 	type Book,
 	type Chapter,
@@ -12,6 +13,7 @@ import {
 	type Part,
 	type System
 } from '$lib/stores';
+import { TIME_ZONE_COOKIE, type GoalsData } from '$lib/goals';
 
 async function getJSON<T>(url: string): Promise<T> {
 	const response = await fetch(url);
@@ -43,10 +45,12 @@ let generation = 0;
 /** Fetch the signed-in user's books, parts, chapters, characters and systems into the stores. */
 export async function loadLibrary() {
 	const run = ++generation;
-	// Characters and systems are extras: if they fail to load, the rest of the library still works.
+	// Characters, systems and goals are extras: if they fail to load, the rest of the library
+	// still works.
 	const extras = Promise.allSettled([
 		getJSON<Character[]>('/api/characters'),
-		getJSON<System[]>('/api/systems')
+		getJSON<System[]>('/api/systems'),
+		getJSON<GoalsData>('/api/goals')
 	]);
 	try {
 		const [books, parts, chapters] = await Promise.all([
@@ -54,13 +58,14 @@ export async function loadLibrary() {
 			getJSON<Part[]>('/api/parts'),
 			getJSON<Chapter[]>('/api/chapters')
 		]);
-		const [characters, systems] = await extras;
+		const [characters, systems, goals] = await extras;
 		if (run !== generation) return; // superseded by a newer load or a sign-out
 		booksStore.set(books);
 		partsStore.set(parts);
 		chaptersStore.set(chapters);
 		if (characters.status === 'fulfilled') charactersStore.set(characters.value);
 		if (systems.status === 'fulfilled') systemsStore.set(systems.value);
+		if (goals.status === 'fulfilled') goalsStore.set(goals.value);
 		libraryStatus.set('ready');
 	} catch {
 		if (run !== generation) return;
@@ -91,7 +96,40 @@ export function clearLibrary() {
 	chaptersStore.set([]);
 	charactersStore.set([]);
 	systemsStore.set([]);
+	goalsStore.set(null);
 	libraryStatus.set('loading');
+}
+
+/**
+ * A save added `delta` words to a chapter (or story-text part) and brought today's tally to
+ * `today`, as the server counted. Today's tally and the book's progress follow at once.
+ */
+export function recordWriting(
+	target: 'part' | 'chapter',
+	id: number,
+	writing: { day: string; delta: number; today: number }
+) {
+	const partId =
+		target === 'part' ? id : get(chaptersStore).find((chapter) => chapter.id === id)?.partId;
+	const bookId = get(partsStore).find((part) => part.id === partId)?.bookId;
+	goalsStore.update((goals) => {
+		if (!goals) return goals;
+		const bookWords = { ...goals.bookWords };
+		if (bookId !== undefined && bookId in bookWords) bookWords[bookId] += writing.delta;
+		return {
+			...goals,
+			today: writing.day,
+			days: { ...goals.days, [writing.day]: writing.today },
+			bookWords
+		};
+	});
+}
+
+/** Tell the server which time zone the writer is in, so "today" means their today. */
+export function syncTimeZone() {
+	const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+	if (!zone) return;
+	document.cookie = `${TIME_ZONE_COOKIE}=${encodeURIComponent(zone)}; path=/; max-age=31536000; samesite=lax`;
 }
 
 /** Up to two initials for a monogram, e.g. "Juno Halley" -> "JH". */
