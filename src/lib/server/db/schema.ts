@@ -190,4 +190,22 @@ export const storyText = pgTable('story_text', {
 		.$onUpdate(() => new Date())
 });
 
+//an author's page: settings, and whether it is public at /author/<handle>
+export const profile = pgTable('profile', {
+	userId: text('user_id')
+		.primaryKey()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	//the address of the public page: lowercase letters, digits and dashes
+	handle: text('handle').unique(),
+	//formatted like a description (see $lib/rich)
+	bio: text('bio').notNull().default(''),
+	website: text('website').notNull().default(''),
+	isPublic: boolean('is_public').notNull().default(false),
+	createdAt: timestamp('created_at').notNull().defaultNow(),
+	updatedAt: timestamp('updated_at')
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date())
+});
+
 export * from './auth.schema';

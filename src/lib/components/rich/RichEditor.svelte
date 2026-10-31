@@ -25,6 +25,8 @@
 		delay = 300,
 		boxed = false,
 		italic = false,
+		toolbar = true,
+		ontransaction,
 		class: className = '',
 		onescape,
 		onblur
@@ -43,6 +45,10 @@
 		boxed?: boolean;
 		/** Set in italic: emphasis inside it turns roman. */
 		italic?: boolean;
+		/** Show the formatting toolbar (keyboard shortcuts work either way). */
+		toolbar?: boolean;
+		/** After every change of text or selection, with the editor (focus mode's typewriter). */
+		ontransaction?: (editor: Editor) => void;
 		class?: string;
 		onescape?: () => void;
 		onblur?: () => void;
@@ -109,7 +115,10 @@
 						},
 						transformPastedHTML: cleanPastedHTML
 					},
-					onTransaction: () => version++,
+					onTransaction: ({ editor }) => {
+						version++;
+						ontransaction?.(editor);
+					},
 					onUpdate: () => {
 						pending = true;
 						clearTimeout(timer);
@@ -133,7 +142,7 @@
 </script>
 
 <div class={['rich-editor', kind, { boxed }, className]}>
-	{#if editor}
+	{#if editor && toolbar}
 		<div class="bar">
 			<Toolbar {editor} {version} {kind} />
 		</div>
@@ -155,6 +164,12 @@
 	.area :global(.rich-area) {
 		outline: none;
 		white-space: pre-wrap;
+	}
+
+	/* The page itself is the writing area: no focus ring around it (boxed fields have their own). */
+	.area :global(.rich-area:focus-visible) {
+		outline: none;
+		box-shadow: none;
 	}
 
 	.area :global(.rich-area p.is-editor-empty:first-child::before) {

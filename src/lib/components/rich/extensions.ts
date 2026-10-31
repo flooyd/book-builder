@@ -6,7 +6,7 @@ import { Color, FontFamily, FontSize, TextStyle } from '@tiptap/extension-text-s
 import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
 import Typography from '@tiptap/extension-typography';
-import { Placeholder } from '@tiptap/extensions';
+import { Focus, Placeholder } from '@tiptap/extensions';
 import { FONTS, HIGHLIGHTS, INKS, SIZES, highlightVar, inkVar, type RichKind } from '$lib/rich';
 
 /** The document keeps the story's first-letter settings (see $lib/rich DropCap). */
@@ -83,6 +83,8 @@ export function extensionsFor(kind: RichKind, placeholder: string, onescape?: ()
 		...(story ? [TextAlign.configure({ types: ['heading', 'paragraph'] })] : []),
 		Typography,
 		Placeholder.configure({ placeholder }),
+		// Marks the paragraph being written (.has-focus): focus mode can dim the rest.
+		...(story ? [Focus.configure({ className: 'has-focus', mode: 'shallowest' })] : []),
 		EscapeKey(onescape)
 	];
 }

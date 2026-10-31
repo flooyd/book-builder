@@ -115,7 +115,7 @@
 		</TitleBlock>
 
 		{#if holdsText}
-			<StorySurface {doc} />
+			<StorySurface {doc} title={part.title} />
 		{:else}
 			<section aria-labelledby="h-chapters" class="chapters">
 				<h2 id="h-chapters">Chapters</h2>

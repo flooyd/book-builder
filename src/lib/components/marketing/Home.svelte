@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon, { type IconName } from '$lib/components/ui/Icon.svelte';
+	import BookCover from '$lib/components/ui/BookCover.svelte';
 	import AnimatedBook from './AnimatedBook.svelte';
 	import SiteHeader from './SiteHeader.svelte';
 	import SiteFooter from './SiteFooter.svelte';
@@ -249,8 +250,8 @@
 				<motion-headline by="words">Write where the story lives.</motion-headline>
 			</h2>
 			<p class="example-lede">
-				Open a chapter and write in an editor set like the finished page, in a typeface made for
-				long reading. Then read it back, or share it, in reading mode.
+				Open a chapter and write in an editor set like the finished page, or go full screen in focus
+				mode. Then read it back, or share it, in reading mode.
 			</p>
 			<div class="checks">
 				<motion-stagger interval={0.1} delay={0.2}>
@@ -375,9 +376,67 @@
 		</div>
 	</section>
 
+	<section id="focus" class="section">
+		<p class="overline">04 — Focus and share</p>
+		<h2 class="section-title duo-title">
+			<motion-headline by="words">Close the door, then open the book.</motion-headline>
+		</h2>
+		<div class="duo">
+			<motion-stagger interval={0.12}>
+				<article class="duo-card">
+					<!-- A picture of focus mode: the page alone, the line being written bright. -->
+					<div class="focus-demo" data-scheme="dark" aria-hidden="true">
+						<div class="focus-demo-bar">
+							<span><Icon name="arrow-left" size={13} />Leave</span>
+							<span class="focus-demo-stats"
+								><span class="up">+412 this session</span><span
+									><Icon name="clock" size={13} />24:12</span
+								></span
+							>
+						</div>
+						<div class="focus-demo-page">
+							<p class="faded">The tide had turned twice before she reached the ferry.</p>
+							<p>
+								Maren counted the bells again, and this time she was sure<span class="caret"></span>
+							</p>
+							<p class="faded">Behind her, the harbour lights went out one by one.</p>
+						</div>
+					</div>
+					<h3>Focus mode</h3>
+					<p>
+						A full-screen page with nothing but your words: typewriter scrolling, dimmed paragraphs,
+						and a timer for writing sprints.
+					</p>
+				</article>
+
+				<article class="duo-card">
+					<!-- A picture of a public author page. -->
+					<div class="author-demo" aria-hidden="true">
+						<span class="author-demo-face">WA</span>
+						<span class="author-demo-name">Wren Ashby</span>
+						<span class="author-demo-bio">Writes about salt, bells and the sea.</span>
+						<span class="author-demo-address"
+							><Icon name="globe" size={13} />book-builder/author/wren-ashby</span
+						>
+						<span class="author-demo-books">
+							<BookCover id={2} title="The War of Nine" size="sm" />
+							<BookCover id={3} title="Glass Harbor" size="sm" />
+							<BookCover id={5} title="Tidewater" size="sm" />
+						</span>
+					</div>
+					<h3>Your author page</h3>
+					<p>
+						Your name, a short bio and every book you've shared, at an address of your own. Private
+						until you switch it on.
+					</p>
+				</article>
+			</motion-stagger>
+		</div>
+	</section>
+
 	{#if SOON.length > 0}
 		<section id="soon" class="section">
-			<p class="overline">04 — On the shelf next</p>
+			<p class="overline">05 — On the shelf next</p>
 			<h2 class="section-title soon-title">
 				<motion-headline by="words">Coming soon.</motion-headline>
 			</h2>
@@ -994,6 +1053,166 @@
 	.board-reveal {
 		flex: 1 1 620px;
 		min-width: 0;
+	}
+
+	/* 04: focus mode and the author page, side by side. */
+	.duo-title {
+		margin: 0 0 40px;
+		font-size: clamp(38px, 4.2vw, 56px);
+	}
+
+	.duo {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+		gap: 18px;
+	}
+
+	.duo-card {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 18px 18px 24px;
+		border-radius: var(--r-card);
+		background: var(--bb-ink);
+		border: 1px solid var(--bb-line-soft);
+	}
+
+	.duo-card h3 {
+		margin: 10px 8px 0;
+		font-family: var(--font-display);
+		font-weight: 400;
+		font-size: 26px;
+		color: var(--bb-text-strong);
+	}
+
+	.duo-card > p {
+		margin: 0 8px;
+		font-size: 15.5px;
+		line-height: 1.6;
+		color: var(--bb-text-2);
+	}
+
+	/* Focus mode: always a night page, as on a dark screen. */
+	.focus-demo {
+		display: flex;
+		flex-direction: column;
+		height: 280px;
+		border-radius: 14px;
+		background: var(--bb-night);
+		border: 1px solid var(--bb-line-soft);
+		overflow: hidden;
+	}
+
+	.focus-demo-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 10px 14px;
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--bb-text-3);
+	}
+
+	.focus-demo-bar span,
+	.focus-demo-stats > span {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+	}
+
+	.focus-demo-stats {
+		gap: 12px;
+	}
+
+	.focus-demo-stats .up {
+		color: var(--bb-sky-text);
+	}
+
+	.focus-demo-page {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 10px;
+		padding: 0 30px 18px;
+		font-family: var(--font-read);
+		font-size: 17px;
+		line-height: 1.5;
+		color: var(--bb-text-read);
+	}
+
+	.focus-demo-page .faded {
+		opacity: 0.28;
+	}
+
+	/* The author page */
+	.author-demo {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		height: 280px;
+		padding: 16px;
+		justify-content: center;
+		border-radius: 14px;
+		background: var(--bb-panel);
+		border: 1px solid var(--bb-line-faint);
+		text-align: center;
+	}
+
+	.author-demo-face {
+		display: grid;
+		place-items: center;
+		width: 52px;
+		height: 52px;
+		margin-bottom: 4px;
+		border-radius: 50%;
+		background: light-dark(#141c45, var(--bb-paper));
+		color: light-dark(var(--bb-paper), #141c45);
+		font-family: var(--font-display);
+		font-size: 19px;
+		box-shadow:
+			0 0 0 3px var(--bb-panel),
+			0 0 0 4px var(--bb-sky);
+	}
+
+	.author-demo-name {
+		font-family: var(--font-display);
+		font-size: 24px;
+		color: var(--bb-text-strong);
+	}
+
+	.author-demo-bio {
+		font-family: var(--font-read);
+		font-style: italic;
+		font-size: 15px;
+		color: var(--bb-text-desc);
+	}
+
+	.author-demo-address {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		margin-top: 2px;
+		padding: 3px 10px;
+		border-radius: var(--r-pill);
+		background: var(--bb-sky-wash);
+		font-size: 11.5px;
+		font-weight: 600;
+		color: var(--bb-sky-text);
+	}
+
+	.author-demo-books {
+		display: flex;
+		gap: 8px;
+		margin-top: 8px;
+	}
+
+	@media (max-width: 600px) {
+		.focus-demo-page {
+			padding: 0 18px 14px;
+			font-size: 15px;
+		}
 	}
 
 	/* A picture of the corkboard: status colours as in the outline. */

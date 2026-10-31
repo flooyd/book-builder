@@ -359,7 +359,13 @@
 					<motion-headline by="words" interval={0.07}>{data.book.title}</motion-headline>
 				</h1>
 			{/key}
-			{#if data.author}<p class="byline">by {data.author}</p>{/if}
+			{#if data.author}
+				<p class="byline">
+					by {#if data.authorHandle}<a
+							href={resolve('/author/[handle]', { handle: data.authorHandle })}>{data.author}</a
+						>{:else}{data.author}{/if}
+				</p>
+			{/if}
 			{#if data.book.description}
 				<p class="blurb"><RichText value={data.book.description} italic /></p>
 			{/if}
@@ -747,6 +753,16 @@
 		letter-spacing: -0.015em;
 		color: var(--bb-text-strong);
 		text-wrap: balance;
+	}
+
+	.byline a {
+		color: inherit;
+		text-decoration-thickness: 1px;
+		text-underline-offset: 4px;
+	}
+
+	.byline a:hover {
+		color: var(--bb-sky);
 	}
 
 	.byline {

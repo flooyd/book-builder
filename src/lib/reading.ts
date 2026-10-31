@@ -71,6 +71,8 @@ export type ReaderData = {
 	/** Story text by section anchor: "part-3", "chapter-12". */
 	texts: Record<string, string>;
 	author: string;
+	/** The author's public page address (/author/<handle>), when it is on. */
+	authorHandle: string | null;
 	/** The signed-in owner (edit links) rather than a reader with the public link. */
 	owner: boolean;
 	prefs: ReaderPrefs;

@@ -113,7 +113,7 @@
 			{/snippet}
 		</TitleBlock>
 
-		<StorySurface {doc} />
+		<StorySurface {doc} title={chapter.title} />
 	</PageFrame>
 {:else}
 	<Missing noun="chapter" />

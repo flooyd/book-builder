@@ -59,7 +59,12 @@
 					Create
 				</button>
 				<a class="logout" href={resolve('/logout')} data-sveltekit-reload>Log out</a>
-				<span class="avatar" role="img" aria-label="Signed in as {user.name}">{initial}</span>
+				<a
+					class="avatar"
+					href={resolve('/settings')}
+					aria-label="Your profile and settings ({user.name})"
+					title="Your profile and settings">{initial}</a
+				>
 			{/if}
 		</div>
 	</div>
@@ -206,6 +211,12 @@
 		color: light-dark(var(--bb-paper), #141c45);
 		font-family: var(--font-display);
 		font-size: 16px;
+		text-decoration: none;
+	}
+
+	.avatar:hover {
+		color: light-dark(var(--bb-paper), #141c45);
+		box-shadow: 0 0 0 3px var(--bb-line-control);
 	}
 
 	@media (max-width: 600px) {

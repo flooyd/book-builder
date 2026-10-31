@@ -6,16 +6,32 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import RichEditor from '$lib/components/rich/RichEditor.svelte';
+	import FocusMode from './FocusMode.svelte';
 
-	// The writing surface: the rich text editor with its toolbar, live word count, Night / Paper.
-	let { doc }: { doc: StoryTextDoc } = $props();
+	// The writing surface: the rich text editor with its toolbar, live word count, Night / Paper,
+	// and focus mode.
+	let { doc, title }: { doc: StoryTextDoc; title: string } = $props();
 
 	let editor = $state<RichEditor>();
-	// Saving and leaving collect the last keystrokes first.
+	let focusing = $state(false);
+	let focusView = $state<FocusMode>();
+	// Saving and leaving collect the last keystrokes first, from whichever editor is open.
 	$effect(() => {
-		doc.flush = () => editor?.flush();
+		doc.flush = () => (focusing ? focusView?.flush() : editor?.flush());
 		return () => (doc.flush = null);
 	});
+
+	function enterFocus() {
+		editor?.flush();
+		focusing = true;
+	}
+
+	function leaveFocus() {
+		if (!focusing) return;
+		focusView?.flush();
+		if (doc.dirty) doc.save();
+		focusing = false;
+	}
 
 	const theme = getTheme();
 
@@ -48,6 +64,14 @@
 			<span class="surface-label" id="story-label">Story text</span>
 			<div class="surface-tools">
 				<span class="words">{plural(doc.words, 'word')}</span>
+				{#if doc.status !== 'loading' && doc.status !== 'load-error'}
+					<button
+						type="button"
+						class="focus-button"
+						title="Write full screen, with nothing else on the page"
+						onclick={enterFocus}><Icon name="focus" size={15} />Focus</button
+					>
+				{/if}
 				<div class="toggle" role="group" aria-label="Writing surface">
 					<button type="button" aria-pressed={!paper} onclick={() => setSurface(false)}
 						>Night</button
@@ -63,11 +87,14 @@
 			</div>
 		{:else if doc.status === 'loading'}
 			<p class="loading" aria-busy="true">Loading…</p>
+		{:else if focusing}
+			<p class="loading">Writing in focus mode…</p>
+			<FocusMode bind:this={focusView} {doc} {title} {paper} onexit={leaveFocus} />
 		{:else}
 			<RichEditor
 				bind:this={editor}
 				id="story"
-				class="story"
+				class="surface-editor"
 				value={doc.content}
 				onchange={(value) => (doc.content = value)}
 				label="Story text"
@@ -128,6 +155,24 @@
 		color: var(--surface-muted);
 	}
 
+	.focus-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		min-height: 32px;
+		padding: 0 10px;
+		border: 1px solid var(--surface-line);
+		border-radius: 10px;
+		background: transparent;
+		color: var(--surface-muted);
+		font: 600 12.5px var(--font-ui);
+	}
+
+	.focus-button:hover {
+		border-color: var(--bb-sky);
+		color: var(--surface-text);
+	}
+
 	.surface-tools {
 		display: flex;
 		align-items: center;
@@ -162,7 +207,7 @@
 	}
 
 	/* The toolbar stays in view under the app header while writing a long chapter. */
-	.surface :global(.story > .bar) {
+	.surface :global(.surface-editor > .bar) {
 		position: sticky;
 		top: var(--app-header-h, 69px);
 		z-index: 4;
@@ -173,7 +218,7 @@
 		box-shadow: 0 1px 0 var(--surface-line);
 	}
 
-	.surface :global(.story .rich-area) {
+	.surface :global(.surface-editor .rich-area) {
 		min-height: 520px;
 		color: var(--surface-text);
 		caret-color: var(--surface-caret);
@@ -213,12 +258,12 @@
 			border-radius: 18px;
 		}
 
-		.surface :global(.story .rich-area) {
+		.surface :global(.surface-editor .rich-area) {
 			min-height: 400px;
 			font-size: 18px;
 		}
 
-		.surface :global(.story > .bar) {
+		.surface :global(.surface-editor > .bar) {
 			margin: -6px -8px 18px;
 			padding: 6px 8px;
 		}

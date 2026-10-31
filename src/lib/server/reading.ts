@@ -2,6 +2,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { book, chapter, part, user } from '$lib/server/db/schema';
 import { storyTexts } from '$lib/server/outline';
+import { publicHandleOf } from '$lib/server/profile';
 
 const iso = (date: Date) => date.toISOString();
 
@@ -48,7 +49,9 @@ export async function readableBook(found: typeof book.$inferSelect) {
 			createdAt: iso(c.createdAt)
 		})),
 		texts,
-		author: author?.name ?? ''
+		author: author?.name ?? '',
+		/** The author's public page, if it is on. */
+		authorHandle: await publicHandleOf(found.userId)
 	};
 }
 
