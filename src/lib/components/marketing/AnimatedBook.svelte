@@ -3,8 +3,78 @@
 	3D rules: `perspective` lives on .bob (the book's direct parent), and nothing on .bob, .book or
 	a .leaf may use filter, opacity < 1 or overflow: hidden, because each of those flattens
 	preserve-3d. Leaves stack by animating translateZ together with rotateY.
+	The story on the pages lives in hero-book.ts.
 -->
-<div class="stage-wrap" aria-hidden="true">
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { isMark, layOut, pieceClass, roughFits, type Fits, type Piece } from './hero-book';
+
+	let stage = $state<HTMLElement>();
+	let layout = $state(layOut(roughFits));
+
+	// Measures against the real page bodies: a hidden copy of each body takes trial pieces.
+	function measure(root: HTMLElement) {
+		const probes: Record<number, { body: HTMLElement; probe: HTMLElement }> = {};
+		const fits: Fits = (page, pieces) => {
+			let entry = probes[page];
+			if (!entry) {
+				const body = root.querySelector<HTMLElement>(`.pb[data-page="${page}"]`)!;
+				const probe = body.cloneNode(false) as HTMLElement;
+				probe.style.cssText = `position:absolute;visibility:hidden;width:${body.clientWidth}px;height:auto;flex:none`;
+				body.after(probe);
+				entry = probes[page] = { body, probe };
+			}
+			entry.probe.replaceChildren(...pieces.map(element));
+			return entry.probe.offsetHeight <= entry.body.clientHeight;
+		};
+		const measured = layOut(fits);
+		for (const { probe } of Object.values(probes)) probe.remove();
+		return measured;
+	}
+
+	function element(piece: Piece) {
+		if (isMark(piece)) {
+			const mark = document.createElement('div');
+			mark.className = `mark ${piece.kind}`;
+			const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+			svg.setAttribute('width', '40');
+			svg.setAttribute('height', '8');
+			mark.append(svg);
+			return mark;
+		}
+		const paragraph = document.createElement('p');
+		paragraph.className = pieceClass(piece);
+		paragraph.textContent = piece.text;
+		return paragraph;
+	}
+
+	onMount(() => {
+		document.fonts.ready.then(() => {
+			if (stage) layout = measure(stage);
+		});
+	});
+</script>
+
+{#snippet body(page: number)}
+	<div class="pb" data-page={page}>
+		{#each layout[page] as piece, i (i)}
+			{#if isMark(piece)}
+				<div class="mark {piece.kind}">
+					<svg width="40" height="8" viewBox="0 0 40 8"
+						><circle cx="8" cy="4" r="1.4" fill="#9C8F74" /><path
+							d="M20 0l4 4-4 4-4-4z"
+							fill="#2B63F5"
+						/><circle cx="32" cy="4" r="1.4" fill="#9C8F74" /></svg
+					>
+				</div>
+			{:else}
+				<p class={pieceClass(piece)}>{piece.text}</p>
+			{/if}
+		{/each}
+	</div>
+{/snippet}
+
+<div class="stage-wrap" aria-hidden="true" bind:this={stage}>
 	<div class="stage">
 		<div class="glow"></div>
 		<div class="bob">
@@ -13,84 +83,25 @@
 
 				<div class="pg pg-l">
 					<div class="rh">The Glass Armada</div>
-					<div class="pb">
-						<p>
-							The Meridian came out of the lane with her running lights dark and her hull still
-							ringing from the jump. Below her turned Kesh, a drowned moon under a skin of frozen
-							sea, and above it, where no beacon had any right to be, something was still calling.
-						</p>
-						<p>
-							Juno Halley had flown salvage for eleven years. She knew the sound of a dead ship, the
-							slow tick of cooling metal, the hush of air with nowhere left to go. This was not
-							that. This was a voice, patient and precise, repeating the same seven notes.
-						</p>
-						<p>
-							“Tell me that's an echo,” she said, and Ade did not answer, which was its own kind of
-							answer. On the long screen the signal climbed and fell like breath, and the stars
-							behind it seemed, for one unsteady moment, to lean in and listen.
-						</p>
-					</div>
+					{@render body(2)}
 					<div class="pn">2</div>
 				</div>
 
 				<div class="pg pg-r">
 					<div class="rh">The Drowned Moon</div>
-					<div class="pb">
-						<p>
-							The Lantern Gate had been closed for three centuries. Every chart in the Armada said
-							so, every pilot's song ended at its edge, and every child on Vesper Station knew the
-							story of the ships that had sailed through and come back singing.
-						</p>
-						<div class="orn" style:margin="12px 0">
-							<svg width="40" height="8" viewBox="0 0 40 8"
-								><circle cx="8" cy="4" r="1.4" fill="#9C8F74" /><path
-									d="M20 0l4 4-4 4-4-4z"
-									fill="#2B63F5"
-								/><circle cx="32" cy="4" r="1.4" fill="#9C8F74" /></svg
-							>
-						</div>
-						<p>
-							Juno had never believed the story. She believed in fuel margins and hull integrity and
-							the plain arithmetic of distance. But when the gate began to glow, faint as breath on
-							glass, she found she was holding very still, as if the light might notice her.
-						</p>
-					</div>
+					{@render body(11)}
 					<div class="pn">11</div>
 				</div>
 
 				<div class="leaf l4">
 					<div class="pg pg-r face">
 						<div class="rh">The Drowned Moon</div>
-						<div class="pb">
-							<p>
-								Ade ran the numbers twice and then a third time, lips moving, the way he did when he
-								did not trust the answer. The beacon was not on the moon. It was inside it, under
-								eleven kilometres of ice, and it had been built by someone who expected to be found.
-							</p>
-							<p>“So we leave.”</p>
-							<p>
-								Nobody moved. Outside, the drowned moon turned its white face toward them, slow and
-								incurious, and somewhere beneath the ice the seven notes began again, closer now, as
-								if the voice had heard them talking and wanted to be part of it.
-							</p>
-						</div>
+						{@render body(9)}
 						<div class="pn">9</div>
 					</div>
 					<div class="pg pg-l face back">
 						<div class="rh">The Glass Armada</div>
-						<div class="pb">
-							<p>
-								There were rules for this. Juno had written half of them herself, in the years after
-								Tamsin, when the crew needed something firmer than her word. Never answer a signal
-								you cannot name. Never follow a light into the dark. Never trust a map made by the
-								dead.
-							</p>
-							<p>
-								She broke the first rule before breakfast. By the second watch she had broken the
-								second, and the third lay open on the chart table between them: a map of dead stars,
-								drawn in a hand that was not quite human, and still faintly warm.
-							</p>
-						</div>
+						{@render body(10)}
 						<div class="pn">10</div>
 					</div>
 				</div>
@@ -98,35 +109,12 @@
 				<div class="leaf l3">
 					<div class="pg pg-r face">
 						<div class="rh">The Drowned Moon</div>
-						<div class="pb">
-							<p>
-								The map should not have worked. Half its stars had burned out before the Armada was
-								built, and the rest had wandered so far that no pilot alive could have sung a course
-								between them. Yet when Ade laid it over the live sky, every line held.
-							</p>
-							<p>
-								Every one of them pointed inward, toward the gate, and the gate, as if it had been
-								waiting for exactly this, began to open. The light that came through was older than
-								the station, older than the fleet, and it sounded like a choir heard through water.
-							</p>
-							<p>“Did you do that?”</p>
-						</div>
+						{@render body(7)}
 						<div class="pn">7</div>
 					</div>
 					<div class="pg pg-l face back">
 						<div class="rh">The Glass Armada</div>
-						<div class="pb">
-							<p>
-								“I didn't do anything,” Ade said. “I put a map on a screen.” His voice was steady.
-								His hands were not. Juno watched the gate widen by degrees, slow as a tide, and felt
-								the old fear rise in her, the one she had spent eleven years outrunning.
-							</p>
-							<p>
-								She thought of Tamsin, and of the ship that had come back singing. Then she thought
-								of the crew, and the fuel, and the long way home, and found that none of it mattered
-								quite as much as she had always told herself it did.
-							</p>
-						</div>
+						{@render body(8)}
 						<div class="pn">8</div>
 					</div>
 				</div>
@@ -143,34 +131,12 @@
 								/></svg
 							>
 						</div>
-						<div class="pb">
-							<p class="dc">
-								Salvage law was older than the Armada and simpler than its pilots liked to admit. A
-								ship that stopped singing belonged to whoever found it. Juno had built a life on
-								that one sentence, and on the quiet hours it bought her between wrecks.
-							</p>
-							<p>
-								The beacon did not care about salvage law. It had been waiting a long time for
-								someone to come.
-							</p>
-						</div>
+						{@render body(5)}
 						<div class="pn">5</div>
 					</div>
 					<div class="pg pg-l face back">
 						<div class="rh">The Glass Armada</div>
-						<div class="pb">
-							<p>
-								It reached them on the edge of Kesh space, eleven hours out from Vesper, a thread of
-								sound so faint that the hull had to be listening for it. Ade caught it first. He
-								always did. He had the kind of ear that heard engines dying a week before they died.
-							</p>
-							<p>“That isn't a distress call,” Juno said, though no one had asked her.</p>
-							<p>
-								On the long screen the signal turned over and over, seven notes, never the same
-								twice and never quite different, like a word in a language that had been waiting a
-								very long time for someone to answer it.
-							</p>
-						</div>
+						{@render body(6)}
 						<div class="pn">6</div>
 					</div>
 				</div>
@@ -178,47 +144,12 @@
 				<div class="leaf l1">
 					<div class="pg pg-r face">
 						<div class="rh">Prologue</div>
-						<div class="pb">
-							<p>
-								Three hundred years before the Meridian, a fleet of glass ships sailed out from the
-								inner worlds to find the edge of the sky. They navigated by song, each pilot singing
-								her ship from star to star, and for a hundred years the songs came back.
-							</p>
-							<p>
-								Then one season they did not. The last message from the Glass Armada was seven
-								notes, sent from somewhere past the Lantern Gate, and after that there was nothing
-								at all.
-							</p>
-							<p>
-								The inner worlds mourned, and then forgot. The gate was sealed. The songs became
-								stories. And far out in the cold, on a drowned moon nobody visited, something went
-								on singing to itself.
-							</p>
-						</div>
+						{@render body(3)}
 						<div class="pn">3</div>
 					</div>
 					<div class="pg pg-l face back">
 						<div class="rh">The Glass Armada</div>
-						<div class="pb">
-							<p>
-								It sang for three centuries. It sang through the fall of the inner worlds and the
-								rise of the free stations, through wars no one now remembered and treaties no one
-								now kept. It sang to empty space, patient and precise.
-							</p>
-							<p>
-								Then, one ordinary morning, a salvage ship came out of the lane with her running
-								lights dark, and something under the ice of Kesh stopped singing, and began, very
-								carefully, to listen.
-							</p>
-							<div class="orn" style:margin="14px 0 0">
-								<svg width="40" height="8" viewBox="0 0 40 8"
-									><circle cx="8" cy="4" r="1.4" fill="#9C8F74" /><path
-										d="M20 0l4 4-4 4-4-4z"
-										fill="#2B63F5"
-									/><circle cx="32" cy="4" r="1.4" fill="#9C8F74" /></svg
-								>
-							</div>
-						</div>
+						{@render body(4)}
 						<div class="pn">4</div>
 					</div>
 				</div>
@@ -457,15 +388,43 @@
 		overflow: hidden;
 	}
 
-	.pb p {
+	/* Page body pieces are :global so the hidden measuring copies get the same styles. */
+	.pb :global(p) {
 		margin: 0;
 		text-align: justify;
 		-webkit-hyphens: auto;
 		hyphens: auto;
+		text-indent: 1.5em;
 	}
 
-	.pb p + p {
-		text-indent: 1.5em;
+	/* No indent where a section opens, after a break, or where a paragraph carries over. */
+	.pb :global(p.open),
+	.pb :global(p.dc),
+	.pb :global(p.cont),
+	.pb :global(.mark + p) {
+		text-indent: 0;
+	}
+
+	/* A paragraph that carries on overleaf sets its last line full width. */
+	.pb :global(p.runs-on) {
+		text-align-last: justify;
+	}
+
+	.pb :global(.mark) {
+		display: flex;
+		justify-content: center;
+	}
+
+	.pb :global(.mark svg) {
+		display: block;
+	}
+
+	.pb :global(.mark.break) {
+		margin: 12px 0;
+	}
+
+	.pb :global(.mark.end) {
+		margin: 14px 0 0;
 	}
 
 	.pn {
@@ -507,7 +466,7 @@
 		display: block;
 	}
 
-	.dc::first-letter {
+	.pb :global(p.dc::first-letter) {
 		font-family: var(--font-display);
 		float: left;
 		font-size: 38px;
