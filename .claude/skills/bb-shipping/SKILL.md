@@ -20,7 +20,7 @@ description: How work on Book Builder gets finished, committed and shipped, and 
 - **Before committing**:
   1. `yarn run check` and `yarn lint` pass.
   2. `git status --short` to see everything.
-  3. Stage **named files only** (`git add src/... drizzle/manual/...`), never `git add -A` or `git add .`. The user keeps untracked files in the repo (`book-builder-redesign-handoff/`, `.zip`) that must not be committed.
+  3. Stage **named files only** (`git add src/... drizzle/manual/...`), never `git add -A` or `git add .`. The user may keep their own untracked files in the repo, and those must not be committed or deleted.
   4. If `package.json` shows as modified with no real change (CRLF), leave it out: `git reset -q package.json`.
 - **After pushing**, report the short hash (`git log --oneline -1`) and mention anything you deliberately left uncommitted.
 

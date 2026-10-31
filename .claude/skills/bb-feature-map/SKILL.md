@@ -44,8 +44,6 @@ politics, trade) belong to the user and can be linked to many books. A chapter's
 | Signed-in header          | all app pages                         | `lib/components/ui/AppHeader.svelte`, crumbs via `useAppHeader` in `lib/app-header.svelte.ts`                                                                                                                                                                                                                                               |
 | Motion                    | site-wide                             | `lib/motion.ts` (registers motion-components after hydration)                                                                                                                                                                                                                                                                               |
 
-`routes/demo/*` is leftover scaffolding from the SvelteKit template.
-
 ## How data reaches pages
 
 - **App pages.** Book, part and chapter pages mostly read the client stores (`lib/stores`), filled by `loadLibrary()` from the `/api/*` list endpoints, and write through `sendJSON` / `putJSON`. After a write they update the stores in place rather than reloading.

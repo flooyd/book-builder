@@ -118,7 +118,7 @@
 {/if}
 
 <style>
-	/* Leftover signed-out pages (e.g. /demo) that don't lay themselves out. */
+	/* Other signed-out pages (an author's public page, errors) sit under the site header. */
 	.padded {
 		padding: 16px;
 	}

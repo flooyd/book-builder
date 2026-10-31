@@ -8,6 +8,3 @@ bun.lockb
 # Miscellaneous
 /static/
 /drizzle/
-
-# Local design handoff (mockups are exported HTML, not source)
-/book-builder-redesign-handoff/

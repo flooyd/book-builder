@@ -110,6 +110,6 @@ The code reads like a careful book: plain words, comments that explain _why_. Ma
 ## Git working-copy quirks
 
 - **`package.json`.** Tooling sometimes rewrites it with CRLF line endings and no real change. If `git diff package.json` shows nothing meaningful, leave it out of the commit (`git reset -q package.json`).
-- **Handoff files.** `book-builder-redesign-handoff/` and `.zip` are the user's untracked files. Never commit or delete them.
+- **Untracked files.** Untracked files you didn't create belong to the user. Never commit or delete them without asking.
 
 For committing and pushing, see the `bb-shipping` skill.
