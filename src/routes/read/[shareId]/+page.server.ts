@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { book } from '$lib/server/db/schema';
 import { readableBook } from '$lib/server/reading';
+import { readerSeries } from '$lib/server/series';
 import { READER_COOKIE, parseReaderPrefs } from '$lib/reading';
 import type { PageServerLoad } from './$types';
 
@@ -16,6 +17,7 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 
 	return {
 		...(await readableBook(found)),
+		series: await readerSeries(found, false),
 		owner: false,
 		prefs: parseReaderPrefs(cookies.get(READER_COOKIE))
 	};

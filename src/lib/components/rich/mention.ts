@@ -5,7 +5,7 @@ import { mergeAttributes } from '@tiptap/core';
 import Mention from '@tiptap/extension-mention';
 import type { SuggestionKeyDownProps, SuggestionProps } from '@tiptap/suggestion';
 import { get } from 'svelte/store';
-import { charactersStore, placesStore, systemsStore } from '$lib/stores';
+import { booksStore, charactersStore, placesStore, systemsStore } from '$lib/stores';
 import {
 	ENTRY_TYPES,
 	namesEntry,
@@ -13,6 +13,7 @@ import {
 	type EntryType,
 	type MentionChoice
 } from '$lib/bible';
+import { seriesSiblings } from '$lib/series';
 
 /** A row of the menu: an entry to mention, or an offer to add a new one by that name. */
 export type MentionRow = ({ add?: undefined } & MentionChoice) | { add: EntryType; label: string };
@@ -38,7 +39,8 @@ export function mentionRows(query: string, bookId: number): MentionRow[] {
 		...get(placesStore).map((entry) => ({ ...entry, type: 'place' as const })),
 		...get(systemsStore).map((entry) => ({ ...entry, type: 'system' as const }))
 	];
-	const choices = searchEntries(entries, query, bookId);
+	const family = seriesSiblings(bookId, get(booksStore)).map((book) => book.id);
+	const choices = searchEntries(entries, query, bookId, family);
 	const name = query.trim();
 	if (!name || namesEntry(choices, name)) return choices;
 	return [...choices, ...ENTRY_TYPES.map((type) => ({ add: type, label: name }))];

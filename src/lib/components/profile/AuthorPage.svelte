@@ -6,17 +6,24 @@
 	import BookCover from '$lib/components/ui/BookCover.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import RichText from '$lib/components/rich/RichText.svelte';
+	import SeriesCovers from '$lib/components/series/SeriesCovers.svelte';
 
-	// An author's public page: who they are, and the books they share by link.
+	type SharedBook = { id: number; title: string; description: string; shareId: string };
+
+	// An author's public page: who they are, their series and the books they share by link. A book
+	// in a series is found through the series, so the Books shelf holds the ones on their own.
 	let {
-		author
+		author,
+		handle
 	}: {
 		author: {
 			name: string;
 			bio: string;
 			website: string;
-			books: { id: number; title: string; description: string; shareId: string }[];
+			series: { id: number; title: string; description: string; books: SharedBook[] }[];
+			books: SharedBook[];
 		};
+		handle: string;
 	} = $props();
 </script>
 
@@ -44,31 +51,63 @@
 		{/if}
 	</header>
 
-	<section class="shelf" aria-labelledby="h-books">
-		<h2 id="h-books">
-			Books <span class="count">{plural(author.books.length, 'book')}</span>
-		</h2>
-		{#if author.books.length > 0}
+	{#if author.series.length > 0}
+		<section class="shelf" aria-labelledby="h-series">
+			<h2 id="h-series">
+				Series <span class="count">{plural(author.series.length, 'series', 'series')}</span>
+			</h2>
 			<div class="books">
 				<motion-stagger interval={0.08}>
-					{#each author.books as book (book.id)}
-						<a class="book" href={resolve('/read/[shareId]', { shareId: book.shareId })}>
-							<BookCover id={book.id} title={book.title} author={author.name} tilt />
+					{#each author.series as series (series.id)}
+						<a
+							class="book"
+							href={resolve('/author/[handle]/series/[id]', { handle, id: String(series.id) })}
+						>
+							<SeriesCovers books={series.books} author={author.name} />
 							<span class="book-text">
-								<span class="book-title">{book.title}</span>
-								{#if book.description}
-									<span class="book-desc"><RichText value={book.description} italic /></span>
+								<span class="book-title">{series.title}</span>
+								{#if series.description}
+									<span class="book-desc"><RichText value={series.description} italic /></span>
 								{/if}
-								<span class="read">Read <Icon name="arrow-right" size={15} /></span>
+								<span class="read">
+									{plural(series.books.length, 'book')}
+									<Icon name="arrow-right" size={15} />
+								</span>
 							</span>
 						</a>
 					{/each}
 				</motion-stagger>
 			</div>
-		{:else}
-			<p class="empty">No books shared yet.</p>
-		{/if}
-	</section>
+		</section>
+	{/if}
+
+	{#if author.books.length > 0 || author.series.length === 0}
+		<section class="shelf" aria-labelledby="h-books">
+			<h2 id="h-books">
+				Books <span class="count">{plural(author.books.length, 'book')}</span>
+			</h2>
+			{#if author.books.length > 0}
+				<div class="books">
+					<motion-stagger interval={0.08}>
+						{#each author.books as book (book.id)}
+							<a class="book" href={resolve('/read/[shareId]', { shareId: book.shareId })}>
+								<BookCover id={book.id} title={book.title} author={author.name} tilt />
+								<span class="book-text">
+									<span class="book-title">{book.title}</span>
+									{#if book.description}
+										<span class="book-desc"><RichText value={book.description} italic /></span>
+									{/if}
+									<span class="read">Read <Icon name="arrow-right" size={15} /></span>
+								</span>
+							</a>
+						{/each}
+					</motion-stagger>
+				</div>
+			{:else}
+				<p class="empty">No books shared yet.</p>
+			{/if}
+		</section>
+	{/if}
 </main>
 
 <style>

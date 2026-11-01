@@ -8,11 +8,12 @@
 	import RichText from '$lib/components/rich/RichText.svelte';
 	import BookGoal from '$lib/components/goals/BookGoal.svelte';
 	import BookHeadings from './BookHeadings.svelte';
+	import BookSeries from './BookSeries.svelte';
 	import ExportButtons from './ExportButtons.svelte';
 	import Monogram from '$lib/components/bible/Monogram.svelte';
 
-	// Sharing, export, goal, headings, characters, places and systems of one book (Book.dc.html
-	// aside).
+	// Sharing, series, export, goal, headings, characters, places and systems of one book
+	// (Book.dc.html aside).
 	let { bookId }: { bookId: number } = $props();
 
 	// ---- Readers: the public link ------------------------------------------------------------
@@ -131,6 +132,8 @@
 				{/if}
 			</section>
 		{/if}
+
+		<BookSeries {bookId} />
 
 		{#if book}
 			<section aria-labelledby="h-export" class="panel">

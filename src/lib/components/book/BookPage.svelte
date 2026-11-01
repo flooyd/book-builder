@@ -9,6 +9,7 @@
 		libraryStatus,
 		modalStore,
 		partsStore,
+		seriesStore,
 		userStore,
 		type Book,
 		type Chapter,
@@ -16,6 +17,7 @@
 	} from '$lib/stores';
 	import { bookOutline, latestChapterId, plural, relativeDay } from '$lib/library';
 	import { partHeading } from '$lib/headings';
+	import { placeInSeries, seriesSiblings } from '$lib/series';
 	import BookCover from '$lib/components/ui/BookCover.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
@@ -36,6 +38,9 @@
 	const isOwner = $derived(!!book && $userStore?.id === book.userId);
 	// "Add a chapter" goes into the newest part that holds chapters.
 	const chapterTarget = $derived(outline.findLast((entry) => entry.label)?.part);
+	const place = $derived(book ? placeInSeries(book, $booksStore, $seriesStore) : null);
+	// Deleting a book leaves its series' story bible as it was, when the series has others to hold it.
+	const seriesKeepsEntries = $derived(seriesSiblings(id, $booksStore).length > 0);
 
 	const partHref = (part: Part) => resolve('/part/[id]', { id: String(part.id) });
 	const chapterHref = (chapter: Chapter) => resolve('/chapter/[id]', { id: String(chapter.id) });
@@ -170,6 +175,11 @@
 						</div>
 					</form>
 				{:else}
+					{#if place}
+						<a class="series-line" href={resolve('/series/[id]', { id: String(place.series.id) })}>
+							Book {place.number} of {place.series.title}
+						</a>
+					{/if}
 					<!-- Re-created when the title changes: the headline splits its text once. -->
 					{#key book.title}
 						<h1><motion-headline by="words" interval={0.07}>{book.title}</motion-headline></h1>
@@ -276,10 +286,17 @@
 		<Dialog labelledby="delete-title" width={460} onclose={() => (confirmingDelete = false)}>
 			<div class="confirm">
 				<h2 id="delete-title">Delete <em>{book.title}</em>?</h2>
-				<p>
-					This removes its parts, chapters and story text, and any characters, places or systems
-					that appear only in this book.
-				</p>
+				{#if seriesKeepsEntries}
+					<p>
+						This removes its parts, chapters and story text. Characters, places and systems that
+						appear only in this book stay in the series' story bible.
+					</p>
+				{:else}
+					<p>
+						This removes its parts, chapters and story text, and any characters, places or systems
+						that appear only in this book.
+					</p>
+				{/if}
 				{#if deleteError}
 					<p class="error" role="alert"><Icon name="alert-circle" size={16} />{deleteError}</p>
 				{/if}
@@ -358,6 +375,22 @@
 
 	.crumbs [aria-current='page'] {
 		color: var(--bb-text);
+	}
+
+	.series-line {
+		align-self: flex-start;
+		min-height: 24px;
+		font-size: 12px;
+		font-weight: 700;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		text-decoration: none;
+		color: var(--bb-sky);
+		overflow-wrap: anywhere;
+	}
+
+	.series-line:hover {
+		color: var(--bb-sky-hover);
 	}
 
 	h1 {

@@ -8,13 +8,16 @@
 		libraryStatus,
 		modalStore,
 		partsStore,
+		seriesStore,
 		showMenuStore,
 		type Book,
 		type Chapter,
 		type Part
 	} from '$lib/stores';
 	import { bookOutline, plural, relativeDay } from '$lib/library';
+	import { booksInSeries, placeInSeries } from '$lib/series';
 	import BookCover from '$lib/components/ui/BookCover.svelte';
+	import SeriesCovers from '$lib/components/series/SeriesCovers.svelte';
 	import RichText from '$lib/components/rich/RichText.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
@@ -36,6 +39,16 @@
 			return { book, outline, chapterCount };
 		})
 	);
+
+	const shelves = $derived(
+		$seriesStore.map((series) => ({ series, books: booksInSeries(series.id, $booksStore) }))
+	);
+
+	/** "Book 2 · The Lantern Gate Cycle" for a book in a series. */
+	function seriesLine(book: Book) {
+		const place = placeInSeries(book, $booksStore, $seriesStore);
+		return place ? `Book ${place.number} · ${place.series.title}` : null;
+	}
 
 	const partRows = $derived(
 		library.flatMap(({ book, outline }) => outline.map((entry) => ({ ...entry, book })))
@@ -135,6 +148,29 @@
 		</div>
 	{:else}
 		<DailyGoal />
+		{#if shelves.length > 0}
+			<section aria-labelledby="h-series" class="books">
+				<h2 id="h-series" class="label">Series</h2>
+				<div class="book-grid series-grid">
+					<motion-stagger interval={0.08} y={20}>
+						{#each shelves as { series, books } (series.id)}
+							<a class="book-card" href={resolve('/series/[id]', { id: String(series.id) })}>
+								<SeriesCovers {books} author={userName} />
+								<span class="book-text">
+									<span class="book-title">{series.title}</span>
+									{#if series.description}
+										<span class="book-desc"><RichText value={series.description} italic /></span>
+									{/if}
+									<span class="book-meta">
+										<Pill variant="count" size="sm">{plural(books.length, 'book')}</Pill>
+									</span>
+								</span>
+							</a>
+						{/each}
+					</motion-stagger>
+				</div>
+			</section>
+		{/if}
 		<section aria-labelledby="h-books" class="books">
 			<h2 id="h-books" class="label">Books</h2>
 			<div class="book-grid" class:empty={library.length === 0}>
@@ -143,6 +179,9 @@
 						<a class="book-card" href={bookHref(book)}>
 							<BookCover id={book.id} title={book.title} author={userName} tilt />
 							<span class="book-text">
+								{#if seriesLine(book)}
+									<span class="book-series">{seriesLine(book)}</span>
+								{/if}
 								<span class="book-title">{book.title}</span>
 								{#if book.description}
 									<span class="book-desc"><RichText value={book.description} italic /></span>
@@ -332,6 +371,11 @@
 		gap: 18px;
 	}
 
+	/* One series stays the width of a book, rather than filling the row. */
+	.series-grid {
+		grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
+	}
+
 	.skeleton {
 		height: 212px;
 		border-radius: var(--r-card);
@@ -362,6 +406,16 @@
 		gap: 10px;
 		min-width: 0;
 		padding-top: 4px;
+	}
+
+	.book-series {
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.16em;
+		line-height: 1.4;
+		text-transform: uppercase;
+		color: var(--bb-sky);
+		overflow-wrap: anywhere;
 	}
 
 	.book-title {

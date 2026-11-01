@@ -17,7 +17,7 @@ idea with that number here. If they name a number, start from its entry.
 - **Adding ideas.** Add them when the user asks for ideas or agrees to one. Say which are new.
 - **The public shelf is separate.** `src/lib/components/marketing/soon.ts` is what visitors see.
   Only add to it when the user asks, and take an entry off when it ships (see the `bb-homepage`
-  skill). An idea here isn't a promise there. The shelf holds 4, 8 and 15 at the moment.
+  skill). An idea here isn't a promise there. The shelf holds 4 and 15 at the moment.
 - **Check before trusting it.** Copilot also commits to this repo, so read `git log` and glance at
   the code before calling something unbuilt.
 
@@ -37,14 +37,14 @@ Statuses: **Not started**, **In progress**, **Shipped**, **Dropped**.
 
 ### Build the world
 
-| #   | Idea                           | Status      | What it is                                                                                                                                                           |
-| --- | ------------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 6   | Mentions and story bible       | In progress | `@` links in story text, and a real page for every character, place and system. See "Idea 6" below for what's done and what's left.                                  |
-| 7   | Find and replace across a book | Not started | Rename a character everywhere, with a preview of each match. Mentions already follow a rename; this covers the plain text around them.                               |
-| 8   | Series                         | Not started | Reading order, a shared bible and a series page on the author profile. Characters, places and systems already span books, but nothing connects the books themselves. |
-| 9   | Plot threads                   | Not started | A grid of subplots against chapters, showing where a thread goes quiet.                                                                                              |
-| 10  | Scenes                         | Not started | Smaller units inside chapters, each with its own point of view, location and status. A big change to both the data and the editor.                                   |
-| 11  | Timeline                       | Not started | Put events on an in-world calendar and warn when a character is in two places at once.                                                                               |
+| #   | Idea                           | Status      | What it is                                                                                                                                                                                                                                                                                               |
+| --- | ------------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 6   | Mentions and story bible       | In progress | `@` links in story text, and a real page for every character, place and system. See "Idea 6" below for what's done and what's left.                                                                                                                                                                      |
+| 7   | Find and replace across a book | Not started | Rename a character everywhere, with a preview of each match. Mentions already follow a rename; this covers the plain text around them.                                                                                                                                                                   |
+| 8   | Series                         | Shipped     | Books grouped in a reading order, with a story bible worked out from their entries, an owner's page and a public page on the author profile, plus links between books in reading mode. Left out: an omnibus export, "Book 2 of…" on exported title pages, and series-wide goals, outlines and timelines. |
+| 9   | Plot threads                   | Not started | A grid of subplots against chapters, showing where a thread goes quiet.                                                                                                                                                                                                                                  |
+| 10  | Scenes                         | Not started | Smaller units inside chapters, each with its own point of view, location and status. A big change to both the data and the editor.                                                                                                                                                                       |
+| 11  | Timeline                       | Not started | Put events on an in-world calendar and warn when a character is in two places at once.                                                                                                                                                                                                                   |
 
 ### Readers and collaborators
 

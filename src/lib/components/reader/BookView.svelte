@@ -10,6 +10,7 @@
 		type ReadingPosition
 	} from '$lib/reading';
 	import { plainText } from '$lib/rich';
+	import { nextBookHref, seriesHref } from '$lib/series';
 	import RichText from '$lib/components/rich/RichText.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import {
@@ -97,6 +98,9 @@
 	});
 
 	const bookHref = $derived(resolve('/book/[id]', { id: String(data.book.id) }));
+	const seriesPage = $derived(
+		data.series ? seriesHref(data.series.id, data.owner, data.authorHandle) : null
+	);
 
 	// ---- Layout --------------------------------------------------------------------------------
 	let area = $state<HTMLElement>();
@@ -530,6 +534,17 @@
 									>{:else}{data.author}{/if}
 							</p>
 						{/if}
+						{#if data.series}
+							<p class="tp-series">
+								Book {data.series.number} of
+								{#if seriesPage}
+									<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- seriesPage is resolve()d -->
+									<a href={seriesPage}>{data.series.title}</a>
+								{:else}
+									{data.series.title}
+								{/if}
+							</p>
+						{/if}
 						{@render ornament()}
 						{#if data.book.description}
 							<p class="tp-blurb"><RichText value={data.book.description} italic /></p>
@@ -568,6 +583,13 @@
 					<div class="centered end-page">
 						{@render ornament()}
 						<p class="the-end">The End</p>
+						{#if data.series?.next}
+							<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- nextBookHref resolve()s it -->
+							<a class="next-book" href={nextBookHref(data.series.next, data.owner)}>
+								<span class="next-over">Next in the series</span>
+								<span class="next-title">{data.series.next.title}</span>
+							</a>
+						{/if}
 						<div class="tp-actions">
 							{#if data.owner}<a class="paper-button" href={bookHref}>Back to the book</a>{/if}
 							<button type="button" class="paper-button" onclick={() => show(0)}>
@@ -974,7 +996,8 @@
 
 	.no-text a,
 	.made a,
-	.tp-by a {
+	.tp-by a,
+	.tp-series a {
 		color: inherit;
 		text-underline-offset: 3px;
 	}
@@ -1100,6 +1123,12 @@
 		color: var(--bb-text-3);
 	}
 
+	.tp-series {
+		font-style: italic;
+		font-size: 0.85em;
+		color: var(--bb-text-2);
+	}
+
 	.tp-blurb {
 		max-width: 22em;
 		font-size: 0.95em;
@@ -1117,6 +1146,39 @@
 		justify-content: center;
 		gap: 0.5em;
 		margin-top: 0.4em;
+	}
+
+	.next-book {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.25em;
+		max-width: 100%;
+		margin: 0.4em 0;
+		color: var(--bb-text-strong);
+		text-decoration: none;
+	}
+
+	.next-book:hover {
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+
+	.next-over {
+		font-family: var(--font-ui);
+		font-size: 0.6em;
+		font-weight: 700;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--bb-text-3);
+	}
+
+	.next-title {
+		font-family: var(--font-display);
+		font-size: 1.35em;
+		line-height: 1.1;
+		text-wrap: balance;
+		overflow-wrap: anywhere;
 	}
 
 	.paper-button {

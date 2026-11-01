@@ -11,6 +11,7 @@
 		modalStore,
 		partsStore,
 		placesStore,
+		seriesStore,
 		systemsStore,
 		type Book,
 		type Chapter,
@@ -18,10 +19,12 @@
 		type ModalCategory,
 		type Part,
 		type Place,
+		type Series,
 		type System
 	} from '$lib/stores';
 	import { KIND_SUGGESTIONS, type EntryType } from '$lib/bible';
 	import { bookOutline, putJSON } from '$lib/library';
+	import { withSeriesBooks } from '$lib/series';
 	import Dialog from './Dialog.svelte';
 	import Button from './Button.svelte';
 	import Icon from './Icon.svelte';
@@ -37,6 +40,14 @@
 			'e.g. The Glass Armada',
 			'What is this book about?',
 			'Create book'
+		],
+		series: [
+			'New series',
+			'Books that belong together, with a reading order and a shared story bible.',
+			'Title',
+			'e.g. The Lantern Gate Cycle',
+			'What ties these books together?',
+			'Create series'
 		],
 		part: [
 			'New part',
@@ -82,6 +93,7 @@
 
 	const TABS: { id: ModalCategory; label: string }[] = [
 		{ id: 'book', label: 'Book' },
+		{ id: 'series', label: 'Series' },
 		{ id: 'part', label: 'Part' },
 		{ id: 'chapter', label: 'Chapter' },
 		{ id: 'character', label: 'Character' },
@@ -146,20 +158,26 @@
 	let bookId = $state(opened?.bookId ? String(opened.bookId) : onlyBookId);
 	let partId = $state(defaultPartId());
 	let kind = $state(editing?.kind ?? '');
-	// Books chosen for a character or place ("Appears in") or a system ("Used in").
+	// The series a new book joins; empty leaves it on its own.
+	let seriesId = $state(opened?.seriesId ? String(opened.seriesId) : '');
+	// Books chosen for a character or place ("Appears in"), a system ("Used in") or a new series.
 	let selectedBooks = $state<string[]>(
 		editing
 			? editing.bookIds.map(String)
-			: opened?.bookId
-				? [String(opened.bookId)]
-				: onlyBookId
-					? [onlyBookId]
-					: []
+			: opened?.bookIds
+				? opened.bookIds.map(String)
+				: opened?.bookId
+					? [String(opened.bookId)]
+					: onlyBookId
+						? [onlyBookId]
+						: []
 	);
 
 	const isEntry = $derived(
 		category === 'character' || category === 'place' || category === 'system'
 	);
+
+	const seriesTitle = (id: number | null) => $seriesStore.find((item) => item.id === id)?.title;
 
 	/** The book a new entry's page belongs to: the one it was created from, else the first. */
 	function bookToShow() {
@@ -171,8 +189,9 @@
 	const openEntry = (type: EntryType, id: number) => async () => {
 		if (opened?.oncreate) return opened.oncreate(type, id);
 		const href = resolve('/bible/[type]/[id]', { type, id: String(id) });
+		const from = opened?.seriesId ? `series=${opened.seriesId}` : `book=${bookToShow()}`;
 		// eslint-disable-next-line svelte/no-navigation-without-resolve -- href is resolve()d
-		return goto(`${href}?book=${bookToShow()}`);
+		return goto(`${href}?${from}`);
 	};
 
 	let errors = $state<{
@@ -232,9 +251,18 @@
 			let navigate: (() => Promise<void>) | null = null;
 
 			if (category === 'book') {
-				const book = await post<Book>('/api/books', fields);
+				const book = await post<Book>('/api/books', {
+					...fields,
+					seriesId: seriesId ? Number(seriesId) : null
+				});
 				booksStore.update((list) => [...list, book]);
 				navigate = () => goto(resolve('/book/[id]', { id: String(book.id) }));
+			} else if (category === 'series') {
+				const bookIds = selectedBooks.map(Number);
+				const series = await post<Series>('/api/series', { ...fields, bookIds });
+				seriesStore.update((list) => [...list, series]);
+				booksStore.update((list) => withSeriesBooks(list, series.id, bookIds));
+				navigate = () => goto(resolve('/series/[id]', { id: String(series.id) }));
 			} else if (category === 'part') {
 				const part = await post<Part>('/api/parts', {
 					...fields,
@@ -361,6 +389,18 @@
 			{/if}
 		</div>
 
+		{#if category === 'book' && $seriesStore.length > 0}
+			<div class="field">
+				<label for="create-series">Series <span class="hint">Optional</span></label>
+				<select bind:value={seriesId} id="create-series" class="bb-field">
+					<option value="">No series</option>
+					{#each $seriesStore as item (item.id)}
+						<option value={String(item.id)}>{item.title}</option>
+					{/each}
+				</select>
+			</div>
+		{/if}
+
 		{#if category === 'part'}
 			<fieldset class="holds">
 				<legend>What will this part hold?</legend>
@@ -472,25 +512,37 @@
 			</div>
 		{/if}
 
-		{#if isEntry}
+		{#if isEntry || category === 'series'}
 			<fieldset class="appears" aria-describedby={errors.books ? 'create-books-error' : undefined}>
-				<legend>{category === 'system' ? 'Used in' : 'Appears in'}</legend>
+				<legend>
+					{#if category === 'series'}
+						Books <span class="hint">Optional, and you can add more later</span>
+					{:else}
+						{category === 'system' ? 'Used in' : 'Appears in'}
+					{/if}
+				</legend>
 				<div class="checks">
 					{#each $booksStore as book (book.id)}
 						<label class="check">
-							<input
-								type="checkbox"
-								value={String(book.id)}
-								bind:group={selectedBooks}
-							/>{book.title}
+							<input type="checkbox" value={String(book.id)} bind:group={selectedBooks} />
+							<span class="check-text">
+								{book.title}
+								{#if category === 'series' && seriesTitle(book.seriesId)}
+									<span class="hint">moves from {seriesTitle(book.seriesId)}</span>
+								{/if}
+							</span>
 						</label>
 					{:else}
 						<p class="notice">
-							You don't have a book yet. <button
-								type="button"
-								class="link"
-								onclick={() => pick('book')}>Create one first.</button
-							>
+							{#if category === 'series'}
+								You don't have a book yet, but you can add books to the series later.
+							{:else}
+								You don't have a book yet. <button
+									type="button"
+									class="link"
+									onclick={() => pick('book')}>Create one first.</button
+								>
+							{/if}
 						</p>
 					{/each}
 				</div>
@@ -542,12 +594,12 @@
 	.tab {
 		position: relative;
 		min-height: 36px;
-		padding: 0 12px;
+		padding: 0 10px;
 		border: none;
 		border-radius: 9px;
 		background: transparent;
 		color: var(--bb-text-2);
-		font: 600 13.5px var(--font-ui);
+		font: 600 13px var(--font-ui);
 	}
 
 	/* 36px to the eye (as designed), 44px to the finger. */
@@ -794,9 +846,19 @@
 	}
 
 	.check input {
+		flex: none;
 		width: 18px;
 		height: 18px;
 		accent-color: var(--bb-royal);
+	}
+
+	.check-text {
+		min-width: 0;
+		padding: 6px 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0 8px;
+		line-height: 1.35;
 	}
 
 	.field > .show {

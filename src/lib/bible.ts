@@ -144,6 +144,8 @@ export type MentionChoice = {
 	label: string;
 	/** It isn't in this book yet: mentioning it brings it in. */
 	elsewhere: boolean;
+	/** Elsewhere, but in another book of this one's series. */
+	series: boolean;
 };
 
 /** How well `text` answers `query`: 0 is no match, higher is better. */
@@ -159,14 +161,19 @@ export type SearchableEntry = Pick<EntryFields, 'id' | 'name' | 'aliases' | 'boo
 	type: EntryType;
 };
 
+/** How far an entry is from the book: its own, its series', or somewhere else altogether. */
+const distance = (choice: MentionChoice) => (!choice.elsewhere ? 0 : choice.series ? 1 : 2);
+
 /**
- * What a query after @ could mean, best first, with this book's entries ahead of others. Short
- * names only appear once the query reaches them, so a bare @ lists each entry once.
+ * What a query after @ could mean, best first: this book's entries, then those in `family` (the
+ * other books in its series), then the rest. Short names only appear once the query reaches them,
+ * so a bare @ lists each entry once, and only the entries from this book and its series.
  */
 export function searchEntries(
 	entries: SearchableEntry[],
 	query: string,
 	bookId: number,
+	family: number[] = [],
 	limit = 8
 ): MentionChoice[] {
 	const needle = query.trim().toLowerCase();
@@ -174,15 +181,17 @@ export function searchEntries(
 
 	entries.forEach((entry, order) => {
 		const elsewhere = !entry.bookIds.includes(bookId);
+		const series = elsewhere && entry.bookIds.some((id) => family.includes(id));
 		const choice = (label: string): MentionChoice => ({
 			type: entry.type,
 			id: entry.id,
 			name: entry.name,
 			label,
-			elsewhere
+			elsewhere,
+			series
 		});
 		if (!needle) {
-			if (!elsewhere) ranked.push({ choice: choice(entry.name), score: 0, order });
+			if (!elsewhere || series) ranked.push({ choice: choice(entry.name), score: 0, order });
 			return;
 		}
 		const score = matchScore(entry.name, needle);
@@ -198,10 +207,7 @@ export function searchEntries(
 
 	return ranked
 		.sort(
-			(a, b) =>
-				Number(a.choice.elsewhere) - Number(b.choice.elsewhere) ||
-				b.score - a.score ||
-				a.order - b.order
+			(a, b) => distance(a.choice) - distance(b.choice) || b.score - a.score || a.order - b.order
 		)
 		.slice(0, limit)
 		.map((item) => item.choice);

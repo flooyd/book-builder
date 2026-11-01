@@ -10,7 +10,7 @@ import {
 	system,
 	systemBook
 } from '$lib/server/db/schema';
-import { forgetEntry } from '$lib/server/bible';
+import { forgetEntry, passEntriesOn } from '$lib/server/bible';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { and, eq, exists, notExists, ne } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
@@ -119,6 +119,16 @@ export const DELETE = async (event: RequestEvent) => {
 	}
 
 	await db.transaction(async (tx) => {
+		// The rest of a series keeps its story bible, whatever happens to one book in it.
+		const [heir] = bookData[0].seriesId
+			? await tx
+					.select({ id: book.id })
+					.from(book)
+					.where(and(eq(book.seriesId, bookData[0].seriesId), ne(book.id, id)))
+					.limit(1)
+			: [];
+		if (heir) await passEntriesOn(tx, id, heir.id);
+
 		// Story bible entries that belong only to this book go with it; ones shared with other books
 		// stay (their link to this book is removed by the cascade). One taken off another book can
 		// still be mentioned there, so each goes through forgetEntry.

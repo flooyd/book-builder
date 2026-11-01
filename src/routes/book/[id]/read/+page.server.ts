@@ -1,6 +1,7 @@
 import { error, redirect } from '@sveltejs/kit';
 import { findOwnedBook } from '$lib/server/ownership';
 import { readableBook } from '$lib/server/reading';
+import { readerSeries } from '$lib/server/series';
 import { READER_COOKIE, parseReaderPrefs } from '$lib/reading';
 import type { PageServerLoad } from './$types';
 
@@ -14,6 +15,7 @@ export const load: PageServerLoad = async ({ locals, params, cookies }) => {
 
 	return {
 		...(await readableBook(found)),
+		series: await readerSeries(found, true),
 		owner: true,
 		prefs: parseReaderPrefs(cookies.get(READER_COOKIE))
 	};

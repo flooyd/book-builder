@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
 	import {
 		DETAIL_SUGGESTIONS,
 		ENTRY_COPY,
@@ -30,14 +29,14 @@
 		entry,
 		appearances,
 		connections,
-		backBookId
+		backHref
 	}: {
 		type: EntryType;
 		entry: Entry;
 		appearances: Appearance[];
 		connections: Connection[];
-		/** The book to go back to after deleting. */
-		backBookId?: number;
+		/** Where to go after deleting (already resolved). */
+		backHref: string;
 	} = $props();
 
 	const copy = $derived(ENTRY_COPY[type]);
@@ -144,9 +143,8 @@
 		deleteError = '';
 		try {
 			await sendJSON('DELETE', url);
-			await goto(
-				backBookId ? resolve('/book/[id]/bible', { id: String(backBookId) }) : resolve('/')
-			);
+			// eslint-disable-next-line svelte/no-navigation-without-resolve -- backHref is resolve()d
+			await goto(backHref);
 			entryStores[type].update((list) => list.filter((e) => e.id !== entry.id));
 		} catch (cause) {
 			deleteError = cause instanceof Error ? cause.message : `Couldn't delete this ${copy.one}.`;

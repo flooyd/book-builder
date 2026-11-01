@@ -1,6 +1,8 @@
 import { and, desc, eq, isNotNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { book, profile, user } from '$lib/server/db/schema';
+import { seriesOf } from '$lib/server/series';
+import { booksInSeries } from '$lib/series';
 
 export type ProfileSettings = {
 	handle: string | null;
@@ -30,23 +32,47 @@ export async function publicAuthor(handle: string) {
 		.limit(1);
 	if (!row) return null;
 
-	const books = await db
+	const shared = await db
 		.select({
 			id: book.id,
 			title: book.title,
 			description: book.description,
 			shareId: book.shareId,
+			seriesId: book.seriesId,
+			seriesPosition: book.seriesPosition,
+			createdAt: book.createdAt,
 			updatedAt: book.updatedAt
 		})
 		.from(book)
 		.where(and(eq(book.userId, row.userId), isNotNull(book.shareId)))
 		.orderBy(desc(book.updatedAt));
 
+	const card = (b: (typeof shared)[number]) => ({
+		id: b.id,
+		title: b.title,
+		description: b.description,
+		shareId: b.shareId!
+	});
+
+	// A series only shows once a book in it is shared, and only with the books that are.
+	const collections = await seriesOf(row.userId);
 	return {
 		name: row.name,
 		bio: row.bio,
 		website: row.website,
-		books: books.map((b) => ({ ...b, shareId: b.shareId!, updatedAt: b.updatedAt.toISOString() }))
+		series: collections.flatMap((item) => {
+			const books = booksInSeries(item.id, shared);
+			if (books.length === 0) return [];
+			return [
+				{
+					id: item.id,
+					title: item.title,
+					description: item.description,
+					books: books.map(card)
+				}
+			];
+		}),
+		books: shared.filter((b) => b.seriesId === null).map(card)
 	};
 }
 

@@ -3,9 +3,11 @@
 	import { booksRefresh, libraryStatus } from '$lib/stores';
 	import Button from '$lib/components/ui/Button.svelte';
 
-	// Shown when a book, part, chapter or story bible entry isn't in the loaded library (or the
-	// library failed).
-	let { noun }: { noun: 'book' | 'part' | 'chapter' | 'character' | 'place' | 'system' } = $props();
+	// Shown when a book, series, part, chapter or story bible entry isn't in the loaded library (or
+	// the library failed).
+	let {
+		noun
+	}: { noun: 'book' | 'series' | 'part' | 'chapter' | 'character' | 'place' | 'system' } = $props();
 </script>
 
 {#if $libraryStatus === 'ready'}

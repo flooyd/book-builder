@@ -11,5 +11,5 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	if (!Number.isInteger(id) || !(await findOwnedBook(locals.user.id, id))) {
 		error(404, "This book isn't on your shelf.");
 	}
-	return { counts: await appearanceCounts(id) };
+	return { counts: await appearanceCounts([id]) };
 };

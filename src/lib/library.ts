@@ -9,17 +9,20 @@ import {
 	systemsStore,
 	goalsStore,
 	libraryStatus,
+	seriesStore,
 	type Book,
 	type Chapter,
 	type Character,
 	type Entry,
 	type Part,
 	type Place,
+	type Series,
 	type System
 } from '$lib/stores';
 import { TIME_ZONE_COOKIE, type GoalsData } from '$lib/goals';
 import { ENTRY_COPY, type EntryType } from '$lib/bible';
 import { numberWords, type Noun } from '$lib/headings';
+import { withSeriesBooks } from '$lib/series';
 
 async function getJSON<T>(url: string): Promise<T> {
 	const response = await fetch(url);
@@ -51,13 +54,14 @@ let generation = 0;
 /** Fetch the signed-in user's books, parts, chapters and story bible into the stores. */
 export async function loadLibrary() {
 	const run = ++generation;
-	// The story bible and goals are extras: if they fail to load, the rest of the library still
-	// works.
+	// The story bible, goals and series are extras: if they fail to load, the rest of the library
+	// still works.
 	const extras = Promise.allSettled([
 		getJSON<Character[]>('/api/characters'),
 		getJSON<Place[]>('/api/places'),
 		getJSON<System[]>('/api/systems'),
-		getJSON<GoalsData>('/api/goals')
+		getJSON<GoalsData>('/api/goals'),
+		getJSON<Series[]>('/api/series')
 	]);
 	try {
 		const [books, parts, chapters] = await Promise.all([
@@ -65,7 +69,7 @@ export async function loadLibrary() {
 			getJSON<Part[]>('/api/parts'),
 			getJSON<Chapter[]>('/api/chapters')
 		]);
-		const [characters, places, systems, goals] = await extras;
+		const [characters, places, systems, goals, series] = await extras;
 		if (run !== generation) return; // superseded by a newer load or a sign-out
 		booksStore.set(books);
 		partsStore.set(parts);
@@ -74,6 +78,7 @@ export async function loadLibrary() {
 		if (places.status === 'fulfilled') placesStore.set(places.value);
 		if (systems.status === 'fulfilled') systemsStore.set(systems.value);
 		if (goals.status === 'fulfilled') goalsStore.set(goals.value);
+		if (series.status === 'fulfilled') seriesStore.set(series.value);
 		libraryStatus.set('ready');
 	} catch {
 		if (run !== generation) return;
@@ -100,6 +105,7 @@ export function touchLibrary(target: 'part' | 'chapter', id: number, at: string)
 export function clearLibrary() {
 	generation++;
 	booksStore.set([]);
+	seriesStore.set([]);
 	partsStore.set([]);
 	chaptersStore.set([]);
 	charactersStore.set([]);
@@ -160,6 +166,25 @@ export async function createEntry(type: EntryType, name: string, bookId: number)
 	const entry = await sendJSON<Entry>('POST', ENTRY_COPY[type].api, { name, bookIds: [bookId] });
 	entryStores[type].update((list) => [...list, entry]);
 	return entry;
+}
+
+let seriesSaves: Promise<unknown> = Promise.resolve();
+
+/**
+ * Make these books a series, in this order. It shows at once and goes back if the save fails.
+ * Saves go one at a time, so quick moves can't reach the server in the wrong order.
+ */
+export function setSeriesBooks(seriesId: number, bookIds: number[]) {
+	const before = get(booksStore);
+	booksStore.set(withSeriesBooks(before, seriesId, bookIds));
+	const save = seriesSaves
+		.catch(() => {})
+		.then(() => putJSON(`/api/series/${seriesId}/books`, { bookIds }));
+	seriesSaves = save;
+	return save.catch((cause) => {
+		booksStore.set(before);
+		throw cause;
+	});
 }
 
 /** Tell the server which time zone the writer is in, so "today" means their today. */

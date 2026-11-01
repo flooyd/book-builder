@@ -6,5 +6,5 @@
 </script>
 
 {#key data.handle}
-	<AuthorPage author={data.author} />
+	<AuthorPage author={data.author} handle={data.handle} />
 {/key}

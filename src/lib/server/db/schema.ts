@@ -14,29 +14,51 @@ import type { EntryDetail } from '$lib/bible';
 import type { LabelStyle } from '$lib/headings';
 import { user } from './auth.schema';
 
-export const book = pgTable('book', {
+//books that belong together. Its story bible is every entry linked to one of its books
+export const series = pgTable('series', {
 	id: serial('id').primaryKey(),
 	title: text('title').notNull(),
 	description: text('description').notNull().default(''),
 	userId: text('user_id')
 		.references(() => user.id, { onDelete: 'cascade' })
 		.notNull(),
-	//random id in the book's public /read/<shareId> link; null while the book is private
-	shareId: text('share_id').unique(),
-	//writing goals: the book's word target and when it should be finished (null = none set)
-	targetWords: integer('target_words'),
-	deadline: date('deadline', { mode: 'string' }),
-	//how reading mode labels parts and chapters (see $lib/headings)
-	partLabels: text('part_labels').$type<LabelStyle>().notNull().default('words'),
-	chapterLabels: text('chapter_labels').$type<LabelStyle>().notNull().default('numeral'),
-	//off, every chapter goes by its label alone in reading mode
-	chapterTitles: boolean('chapter_titles').notNull().default(true),
 	createdAt: timestamp('created_at').notNull().defaultNow(),
 	updatedAt: timestamp('updated_at')
 		.notNull()
 		.defaultNow()
 		.$onUpdate(() => new Date())
 });
+
+export const book = pgTable(
+	'book',
+	{
+		id: serial('id').primaryKey(),
+		title: text('title').notNull(),
+		description: text('description').notNull().default(''),
+		userId: text('user_id')
+			.references(() => user.id, { onDelete: 'cascade' })
+			.notNull(),
+		//the series it belongs to, if any, and where it comes in the reading order
+		seriesId: integer('series_id').references(() => series.id, { onDelete: 'set null' }),
+		seriesPosition: integer('series_position').notNull().default(0),
+		//random id in the book's public /read/<shareId> link; null while the book is private
+		shareId: text('share_id').unique(),
+		//writing goals: the book's word target and when it should be finished (null = none set)
+		targetWords: integer('target_words'),
+		deadline: date('deadline', { mode: 'string' }),
+		//how reading mode labels parts and chapters (see $lib/headings)
+		partLabels: text('part_labels').$type<LabelStyle>().notNull().default('words'),
+		chapterLabels: text('chapter_labels').$type<LabelStyle>().notNull().default('numeral'),
+		//off, every chapter goes by its label alone in reading mode
+		chapterTitles: boolean('chapter_titles').notNull().default(true),
+		createdAt: timestamp('created_at').notNull().defaultNow(),
+		updatedAt: timestamp('updated_at')
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date())
+	},
+	(table) => [index('book_series_id_idx').on(table.seriesId)]
+);
 
 export const part = pgTable('part', {
 	id: serial('id').primaryKey(),

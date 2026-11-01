@@ -5,14 +5,27 @@ import type { EntryFields, EntryType } from '$lib/bible';
 import type { LabelStyle } from '$lib/headings';
 
 export type ModalType = 'create' | 'edit' | 'delete';
-export type ModalCategory = 'book' | 'part' | 'chapter' | 'character' | 'place' | 'system';
+export type ModalCategory =
+	'book' | 'series' | 'part' | 'chapter' | 'character' | 'place' | 'system';
 
 // Rows as they arrive from the JSON API (timestamps are ISO strings).
+export type Series = {
+	id: number;
+	title: string;
+	description: string;
+	userId: string;
+	createdAt: string;
+	updatedAt: string;
+};
 export type Book = {
 	id: number;
 	title: string;
 	description: string;
 	userId: string;
+	/** The series it belongs to, if any (see $lib/series). */
+	seriesId: number | null;
+	/** Where it comes in that series' reading order. */
+	seriesPosition: number;
 	/** Random id in the public /read/<shareId> link; null while the book is private. */
 	shareId: string | null;
 	/** Words the book should reach (see $lib/goals); null when no target is set. */
@@ -88,6 +101,10 @@ export const modalStore = writable<{
 	/** Preselects the book (Part, Character, System) or part (Chapter) in the create dialog. */
 	bookId?: number;
 	partId?: number;
+	/** Preselects the books of a new character, place or system. */
+	bookIds?: number[];
+	/** Puts a new book in this series; a new entry opens in its story bible. */
+	seriesId?: number;
 	/** With type 'edit' and category 'system': the system to edit. */
 	systemId?: number;
 	/** Hands a new character, place or system back, instead of opening its page. */
@@ -97,6 +114,7 @@ export const showMenuStore = writable<boolean>(false);
 
 // The signed-in user's whole library, loaded by the root layout (see $lib/library).
 export const booksStore = writable<Book[]>([]);
+export const seriesStore = writable<Series[]>([]);
 export const partsStore = writable<Part[]>([]);
 export const chaptersStore = writable<Chapter[]>([]);
 export const charactersStore = writable<Character[]>([]);

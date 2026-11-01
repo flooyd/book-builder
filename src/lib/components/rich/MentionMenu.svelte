@@ -22,7 +22,7 @@
 	const rowNote = (row: MentionChoice) =>
 		[
 			row.label === row.name ? capitalize(ENTRY_COPY[row.type].one) : row.name,
-			row.elsewhere ? 'from another book' : ''
+			row.series ? 'from the series' : row.elsewhere ? 'from another book' : ''
 		]
 			.filter(Boolean)
 			.join(' · ');
@@ -86,7 +86,8 @@
 				id: entry.id,
 				name: entry.name,
 				label: entry.name,
-				elsewhere: false
+				elsewhere: false,
+				series: false
 			};
 			// Whatever has been typed since goes with it, and if the menu closed, nothing is inserted.
 			suggestion?.command(choice);

@@ -7,6 +7,7 @@
 
 	const items: { category: ModalCategory; label: string; icon: IconName }[] = [
 		{ category: 'book', label: 'Book', icon: 'book' },
+		{ category: 'series', label: 'Series', icon: 'library' },
 		{ category: 'part', label: 'Part', icon: 'layers' },
 		{ category: 'chapter', label: 'Chapter', icon: 'file-text' },
 		{ category: 'character', label: 'Character', icon: 'users' },
@@ -153,12 +154,12 @@
 		background: var(--bb-royal-hover);
 	}
 
-	/* Phones: icon over label so all five fit on one row. */
+	/* Phones: icon over label so all of them fit on one row. */
 	@media (max-width: 600px) {
 		.dock {
 			flex-wrap: nowrap;
-			gap: 2px;
-			padding: 5px;
+			gap: 0;
+			padding: 4px;
 		}
 
 		.dock-label {
@@ -169,8 +170,9 @@
 			flex-direction: column;
 			gap: 3px;
 			min-height: 52px;
-			padding: 6px 8px;
-			font-size: 11.5px;
+			padding: 6px 5px;
+			font-size: 11px;
+			letter-spacing: -0.01em;
 		}
 	}
 </style>

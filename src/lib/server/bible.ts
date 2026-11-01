@@ -1,5 +1,5 @@
 import { json, type RequestEvent } from '@sveltejs/kit';
-import { and, asc, eq, inArray, or } from 'drizzle-orm';
+import { and, asc, eq, inArray, ne, or } from 'drizzle-orm';
 import { requireUser } from '$lib/server/auth-guard';
 import { db } from '$lib/server/db';
 import {
@@ -485,6 +485,29 @@ export async function forgetEntry(tx: Tx, type: EntryType, id: number) {
 		);
 }
 
+/**
+ * A book is going, and the rest of its series stays: entries that belong to it alone join `heir`,
+ * so the series' story bible doesn't shrink with it.
+ */
+export async function passEntriesOn(tx: Tx, bookId: number, heir: number) {
+	for (const type of ENTRY_TYPES) {
+		const link = linkOf(type);
+		const rows = await tx
+			.select({ id: link.entry })
+			.from(link.table)
+			.where(eq(link.table.bookId, bookId));
+		const ids = rows.map((row) => row.id);
+		if (ids.length === 0) continue;
+		const shared = await tx
+			.select({ id: link.entry })
+			.from(link.table)
+			.where(and(inArray(link.entry, ids), ne(link.table.bookId, bookId)));
+		const alone = ids.filter((id) => !shared.some((row) => row.id === id));
+		if (alone.length === 0) continue;
+		await tx.insert(link.table).values(alone.map((id) => linkRow(type, id, heir)));
+	}
+}
+
 // ---- Where an entry appears ------------------------------------------------------------------
 
 /** Every chapter and story-text part an entry appears in, by mention or by cast. */
@@ -515,15 +538,17 @@ export async function appearancesOf(type: EntryType, id: number) {
 	return Object.values(found);
 }
 
-/** How many chapters and story-text parts of a book each entry appears in, keyed "character-12". */
-export async function appearanceCounts(bookId: number) {
+/** How many chapters and story-text parts of these books each entry appears in, keyed "place-12". */
+export async function appearanceCounts(bookIds: number[]) {
 	const seen: Record<string, string[]> = {};
 	const add = (entry: string, where: string) => {
 		const list = (seen[entry] ??= []);
 		if (!list.includes(where)) list.push(where);
 	};
 
-	const parts = await db.select({ id: part.id }).from(part).where(eq(part.bookId, bookId));
+	const parts = bookIds.length
+		? await db.select({ id: part.id }).from(part).where(inArray(part.bookId, bookIds))
+		: [];
 	const partIds = parts.map((row) => row.id);
 	const chapters = partIds.length
 		? await db.select({ id: chapter.id }).from(chapter).where(inArray(chapter.partId, partIds))

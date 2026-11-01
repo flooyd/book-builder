@@ -1,6 +1,7 @@
 // Reading mode: word counts, reading time, and the reader's text settings.
 
 import type { HeadingStyles } from '$lib/headings';
+import type { ReaderSeries } from '$lib/series';
 
 export function countWords(text: string) {
 	const trimmed = text.trim();
@@ -88,6 +89,8 @@ export type ReaderData = {
 	author: string;
 	/** The author's public page address (/author/<handle>), when it is on. */
 	authorHandle: string | null;
+	/** Its place in a series, if it's in one. */
+	series: ReaderSeries | null;
 	/** The signed-in owner (edit links) rather than a reader with the public link. */
 	owner: boolean;
 	prefs: ReaderPrefs;

@@ -15,6 +15,7 @@
 		type ReadingSection
 	} from '$lib/reading';
 	import { plainText } from '$lib/rich';
+	import { nextBookHref, seriesHref } from '$lib/series';
 	import BookCover from '$lib/components/ui/BookCover.svelte';
 	import RichText from '$lib/components/rich/RichText.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -69,6 +70,9 @@
 		[section.overline, section.title].filter(Boolean).join(' · ');
 
 	const bookHref = $derived(resolve('/book/[id]', { id: String(data.book.id) }));
+	const seriesPage = $derived(
+		data.series ? seriesHref(data.series.id, data.owner, data.authorHandle) : null
+	);
 
 	// ---- Text settings -----------------------------------------------------------------------
 	// The cookie's settings as of this page load; after that, these are the source of truth.
@@ -468,6 +472,17 @@
 							>{:else}{data.author}{/if}
 					</p>
 				{/if}
+				{#if data.series}
+					<p class="in-series">
+						Book {data.series.number} of
+						{#if seriesPage}
+							<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- seriesPage is resolve()d -->
+							<a href={seriesPage}>{data.series.title}</a>
+						{:else}
+							{data.series.title}
+						{/if}
+					</p>
+				{/if}
 				{#if data.book.description}
 					<p class="blurb"><RichText value={data.book.description} italic /></p>
 				{/if}
@@ -560,6 +575,15 @@
 				<footer class="colophon">
 					{@render ornament()}
 					<p class="the-end">The End</p>
+					{#if data.series?.next}
+						<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- nextBookHref resolve()s it -->
+						<a class="next-book" href={nextBookHref(data.series.next, data.owner)}>
+							<span class="next-over">Next in the series</span>
+							<span class="next-title">
+								{data.series.next.title}<Icon name="arrow-right" size={20} />
+							</span>
+						</a>
+					{/if}
 					<div class="end-actions">
 						{#if data.owner}<Button href={bookHref}>Back to the book</Button>{/if}
 						<Button variant="quiet" href="#top">Back to the top</Button>
@@ -893,14 +917,23 @@
 		text-wrap: balance;
 	}
 
-	.byline a {
+	.byline a,
+	.in-series a {
 		color: inherit;
 		text-decoration-thickness: 1px;
 		text-underline-offset: 4px;
 	}
 
-	.byline a:hover {
+	.byline a:hover,
+	.in-series a:hover {
 		color: var(--bb-sky);
+	}
+
+	.in-series {
+		font-family: var(--font-read);
+		font-style: italic;
+		font-size: 18px;
+		color: var(--bb-text-2);
 	}
 
 	.byline {
@@ -1158,6 +1191,38 @@
 		color: var(--bb-text-desc);
 	}
 
+	.next-book {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		margin: 14px 0;
+		color: var(--bb-text-strong);
+		text-decoration: none;
+	}
+
+	.next-book:hover {
+		color: var(--bb-sky);
+	}
+
+	.next-over {
+		font-size: 12px;
+		font-weight: 700;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--bb-sky);
+	}
+
+	.next-title {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		font-family: var(--font-display);
+		font-size: 30px;
+		line-height: 1.1;
+		overflow-wrap: anywhere;
+	}
+
 	.end-actions {
 		display: flex;
 		flex-wrap: wrap;
@@ -1237,6 +1302,7 @@
 		.bar,
 		.start,
 		.end-actions,
+		.next-book,
 		.made,
 		.no-text a {
 			display: none;
