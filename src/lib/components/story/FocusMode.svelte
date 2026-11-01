@@ -186,13 +186,12 @@
 						><span style:width="{Math.min(1, todayWords / dailyTarget) * 100}%"></span></span
 					>
 					<span class="today-text"
-						><span class="today-label">Today </span>{todayWords.toLocaleString('en')} / {dailyTarget.toLocaleString(
-							'en'
-						)}</span
+						><span class="today-label">Today</span>
+						{todayWords.toLocaleString('en')} / {dailyTarget.toLocaleString('en')}</span
 					>
 				{:else}
 					<span class="today-text"
-						><span class="today-label">Today </span>{todayWords.toLocaleString('en')} words</span
+						><span class="today-label">Today</span> {todayWords.toLocaleString('en')} words</span
 					>
 				{/if}
 			</p>

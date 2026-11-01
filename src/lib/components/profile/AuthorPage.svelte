@@ -115,6 +115,8 @@
 		font-weight: 400;
 		font-size: clamp(44px, 6vw, 72px);
 		line-height: 1;
+		/* The tails of J, g and y hang below a line this tight, so leave them room above the bio. */
+		margin-bottom: 0.2em;
 		color: var(--bb-text-strong);
 		text-wrap: balance;
 	}

@@ -80,6 +80,17 @@ motion-headline [data-label] {
 	user-select: none;
 }
 
+/* A headline's words rise from behind a box only as tall as their line. Headings set their lines
+   tight, so that box would slice the feet off Gloock's g, j and y and the arm off a final f.
+   Clipping a little outside the box gives the letters room while the box itself, and so the layout
+   and what can be clicked, stays as it was. The room at the foot is the least that fits a g: a
+   waiting word sits 110% of a line down, and any more would show the tops of its letters.
+   The important overrides the inline style motion-headline puts on the box. */
+motion-headline span:has(> [data-unit]) {
+	overflow: visible !important;
+	clip-path: inset(-0.25em -0.2em -0.12em);
+}
+
 /* Visually hidden, still announced by screen readers. */
 .sr-only {
 	position: absolute;
