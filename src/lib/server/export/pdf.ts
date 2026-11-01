@@ -797,8 +797,6 @@ class Book {
 		this.y = HEIGHT * 0.34;
 		this.#titleBlock(section, 34);
 		this.ornament(this.left + MEASURE / 2, this.y + 22);
-		// Its back stays blank, so what follows opens on a right-hand page.
-		this.addPage();
 	}
 
 	/** Label, title and description, centred, as they open a page in reading mode. */
