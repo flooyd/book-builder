@@ -64,6 +64,12 @@ rather than the entry's own, and it may carry marks.
   - boxed: `(lines - 1) * 1.4em + 1em`
 - **Line-height.** If you change `.bb-prose` line-height, re-measure in a browser that the letter spans exactly 2, 3 and 4 lines. Don't guess.
 
+## Exports
+
+`lib/server/export/manuscript.ts` reads the document itself rather than going through `toHTML`, so
+a new node, mark, colour, size or font has to be added there and in `pdf.ts` and `word.ts`. Its
+colour tables hold the light values of `--ink-*` and `--mark-*`, because a page is always paper.
+
 ## `prose.css`
 
 - **What it covers.** `.bb-prose` is the single definition of how story text looks: book paragraphs (indented, no gaps, flush after headings, quotes, lists and breaks), headings, quotes, lists, highlights, the scene-break ornament and drop caps.

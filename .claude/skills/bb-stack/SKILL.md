@@ -17,6 +17,7 @@ can belong to several books. It's deployed on Vercel from `main`.
 | Database        | Drizzle ORM on `postgres` (postgres-js), Neon in production                    | Schema in `src/lib/server/db/schema.ts`. See the `bb-database` skill.              |
 | Auth            | Better Auth with the SvelteKit cookies plugin                                  | `src/lib/server/auth.ts`; `hooks.server.ts` puts `locals.user` / `locals.session`. |
 | Rich text       | Tiptap **3.32.0, pinned exactly** (every `@tiptap/*` package the same version) | See the `bb-rich-text` skill.                                                      |
+| Export          | PDFKit, fontkit and hyphen (PDF), docx (Word)                                  | See "Adding a package" below: PDFKit's `@noble` versions clash with Better Auth's. |
 | Motion          | `motion-components` custom elements                                            | Registered in `$lib/motion.ts` after hydration.                                    |
 | Deploy          | `@sveltejs/adapter-vercel` 6.x, runtime `nodejs24.x`                           | Stay on adapter 6.x: 7.x needs SvelteKit 3.                                        |
 | Package manager | **Yarn 1** (`yarn.lock`)                                                       | Don't add a `package-lock.json`.                                                   |
@@ -29,6 +30,19 @@ Commands (all from the repo root):
 - `yarn dev` starts the dev server. To run against a throwaway database instead of Neon, see the `bb-verify` skill.
 
 Run both check and lint before calling a change done. They're fast and the user expects them to pass.
+
+## Adding a package
+
+The dev server hides bundling problems, so after adding anything the server uses, run a production
+build and read the log. The final Vercel symlink step always fails on Windows with `EPERM`, and
+the build exits 1 for that too, so the exit code proves nothing: any other error is real.
+
+Better Auth is bundled into the server, but what it imports isn't, so those imports load whatever
+sits at the top of `node_modules`. A new package that needs an older version of one of them can
+take that spot and stop every page working in production and nowhere else. PDFKit did this with
+`@noble/ciphers` and `@noble/hashes`, which is why they're in `ssr.noExternal` in `vite.config.ts`.
+Compare `yarn.lock` for names that gained a second version, and check them against the outside
+imports in `.svelte-kit/output/server`.
 
 ## Layout
 

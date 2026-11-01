@@ -3,6 +3,12 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+	ssr: {
+		// Better Auth is bundled and needs version 2 of these, while PDFKit needs version 1, which is
+		// the copy at the top of node_modules. Left as outside imports, the bundled code would load
+		// PDFKit's copy and the server wouldn't start. Bundled, each gets the version it asked for.
+		noExternal: ['@noble/ciphers', '@noble/hashes']
+	},
 	plugins: [
 		sveltekit({
 			compilerOptions: {

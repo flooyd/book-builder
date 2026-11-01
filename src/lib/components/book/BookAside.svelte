@@ -8,9 +8,11 @@
 	import RichText from '$lib/components/rich/RichText.svelte';
 	import BookGoal from '$lib/components/goals/BookGoal.svelte';
 	import BookHeadings from './BookHeadings.svelte';
+	import ExportButtons from './ExportButtons.svelte';
 	import Monogram from '$lib/components/bible/Monogram.svelte';
 
-	// Sharing, goal, headings, characters, places and systems of one book (Book.dc.html aside).
+	// Sharing, export, goal, headings, characters, places and systems of one book (Book.dc.html
+	// aside).
 	let { bookId }: { bookId: number } = $props();
 
 	// ---- Readers: the public link ------------------------------------------------------------
@@ -127,6 +129,17 @@
 						<Icon name="alert-circle" size={15} />{shareError}
 					</p>
 				{/if}
+			</section>
+		{/if}
+
+		{#if book}
+			<section aria-labelledby="h-export" class="panel">
+				<h2 id="h-export">Export</h2>
+				<p class="share-hint">
+					A PDF set as a finished book, or a Word document to keep working on. Both hold what
+					reading mode shows.
+				</p>
+				<ExportButtons url="/api/book/{bookId}/export" what="this book" />
 			</section>
 		{/if}
 

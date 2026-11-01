@@ -15,6 +15,9 @@ Bundled scripts (in `scripts/` next to this file):
 | `scratch-db.sh`       | Creates and starts a throwaway Postgres on port 54329, builds the current schema with drizzle-kit, prints the `DATABASE_URL`. Also `stop` and `url`.                                     |
 | `browser.mjs`         | puppeteer-core helpers: `launch`, `watch` (console errors, failed requests), `shot`, `overflow`, `freeze` (pause CSS animations), `ensureSignedIn` (signs up or signs in the test user). |
 | `seed-long-book.py`   | Prints SQL for "The Long Light", a long sample book (prologue, two parts, five chapters, rich text with a scene break, heading, quote and a three-line drop cap).                        |
+| `pdf-sheet.mjs`       | Draws pages of a PDF onto a contact sheet to look at. Run it from the scratch folder after `npm i pdfjs-dist`: `node pdf-sheet.mjs out/book.pdf name 1-8 4 340`.                         |
+| `word-check.ps1`      | Opens a `.docx` in real Word, read-only. Lists its contents and the page each heading really lands on, and can save Word's own PDF.                                                      |
+| `serve-func.mjs`      | Runs one built Vercel function from a copy outside the repo, the closest thing to Vercel here.                                                                                           |
 | `measure-ambient.mjs` | Renders every ambient sound offline in real Chrome and prints its loudness, peaks, stereo width, loudest jump and spectrum by octave, with a spectrogram sheet.                          |
 
 ## 1. A throwaway database
@@ -115,7 +118,26 @@ PGCLIENTENCODING=UTF8 psql -h localhost -p 54329 -U bb -d bookbuilder -q -t -A -
 For your own seeds, follow the rules in the `bb-database` skill: compact rich-text JSON,
 UTF-8, and `"user"` quoted inside a file.
 
-## 5. Before saying it's done
+## 5. Checking exports
+
+- **Fetch them signed in.** Call the endpoint from a signed-in page with `fetch`, or click the real buttons with `Browser.setDownloadBehavior`.
+- **Look at the pages.** Put them on a sheet with `pdf-sheet.mjs` and read it.
+- **Open Word files in Word.** Run `word-check.ps1` inside `Start-Job` with a timeout, since Word can sit waiting on a dialog nobody sees. Every contents number should match where the heading really lands.
+- **Check what stays out.** Seed hidden titles and descriptions, then search `pdftotext` output, the raw PDF and every part of the unzipped `.docx`.
+
+## 6. Checking a production build
+
+The dev server resolves packages differently, so a change to server packages isn't proven until
+the build has run (see "Adding a package" in the `bb-stack` skill).
+
+1. Build with `DATABASE_URL` on the throwaway database. Stop the dev server first, or restart it after: the build clears `.svelte-kit`, and a change to `vite.config.ts` restarts it.
+2. Copy the function out of the repo so it can't reach the project's `node_modules`: `cp -r ".vercel/output/functions/![-]/1.func" "<scratch>/func/export"`. Read each `.vc-config.json` to see which is which: the export has `maxDuration`.
+3. From the repo root, run `node .claude/skills/bb-verify/scripts/serve-func.mjs "<scratch>/func/export" 5197` in the background.
+4. Call it with the cookies of a signed-in dev server page. It uses the same secret, so the session holds. It serves API routes and pages only: static files come from Vercel's CDN.
+
+Stop those ports when you're done.
+
+## 7. Before saying it's done
 
 - Run `yarn run check` and `yarn lint`, and make sure both pass.
 - Look at the screenshots, and say what you checked and anything you couldn't.

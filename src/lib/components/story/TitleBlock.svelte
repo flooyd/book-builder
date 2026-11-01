@@ -31,6 +31,7 @@
 		readHref,
 		canEdit,
 		onsave,
+		actions,
 		children
 	}: {
 		overline: Snippet;
@@ -53,6 +54,8 @@
 		canEdit: boolean;
 		/** Persist the edit; throw an Error with a message to show it inline. */
 		onsave: (details: TitleDetails) => Promise<void>;
+		/** More buttons beside Read and Edit details. */
+		actions?: Snippet;
 		children?: Snippet;
 	} = $props();
 
@@ -179,6 +182,7 @@
 				{#if canEdit}
 					<Button onclick={startEdit}><Icon name="pen" size={15} />Edit details</Button>
 				{/if}
+				{@render actions?.()}
 			</div>
 		</div>
 		{#if description}

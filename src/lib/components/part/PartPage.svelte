@@ -14,6 +14,7 @@
 	import { StoryTextDoc, guardStoryText } from '$lib/story-text.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import Pill from '$lib/components/ui/Pill.svelte';
+	import ExportButtons from '$lib/components/book/ExportButtons.svelte';
 	import TocChapterRow from '$lib/components/book/TocChapterRow.svelte';
 	import PageFrame from '$lib/components/story/PageFrame.svelte';
 	import Rail from '$lib/components/story/Rail.svelte';
@@ -73,6 +74,13 @@
 		partsStore.update((parts) => parts.map((p) => (p.id === updated.id ? updated : p)));
 	}
 
+	/** What's being written has to be saved for the file to have it. */
+	async function saveBeforeExport() {
+		if (!holdsText) return;
+		doc.flush?.();
+		if (doc.dirty) await doc.save();
+	}
+
 	const newPart = () => modalStore.set({ type: 'create', category: 'part', bookId: part?.bookId });
 	const newChapter = () =>
 		modalStore.set({ type: 'create', category: 'chapter', bookId: part?.bookId, partId: id });
@@ -113,6 +121,11 @@
 			{#snippet overline()}
 				{entry.label ?? 'Part'} ·
 				<a href={resolve('/book/[id]', { id: String(book.id) })}>{book.title}</a>
+			{/snippet}
+			{#snippet actions()}
+				{#if isOwner}
+					<ExportButtons url="/api/part/{id}/export" what="this part" before={saveBeforeExport} />
+				{/if}
 			{/snippet}
 			{#if holdsText}
 				<span class="holds-text">

@@ -17,7 +17,7 @@ idea with that number here. If they name a number, start from its entry.
 - **Adding ideas.** Add them when the user asks for ideas or agrees to one. Say which are new.
 - **The public shelf is separate.** `src/lib/components/marketing/soon.ts` is what visitors see.
   Only add to it when the user asks, and take an entry off when it ships (see the `bb-homepage`
-  skill). An idea here isn't a promise there. The shelf holds 2, 4, 8 and 15 at the moment.
+  skill). An idea here isn't a promise there. The shelf holds 4, 8 and 15 at the moment.
 - **Check before trusting it.** Copilot also commits to this repo, so read `git log` and glance at
   the code before calling something unbuilt.
 
@@ -27,13 +27,13 @@ Statuses: **Not started**, **In progress**, **Shipped**, **Dropped**.
 
 ### Protect the writer's work
 
-| #   | Idea               | Status      | What it is                                                                                                                                                                                |
-| --- | ------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Version history    | Not started | Snapshots of each chapter, with compare and restore. Today a save replaces the only copy (`PUT` in `src/lib/server/story-text.ts`), so a mistaken delete can't be undone once it's saved. |
-| 2   | Export             | Not started | PDF and Word (on the Coming soon shelf), plus EPUB. It's also the only way a writer could take a real copy of their book away.                                                            |
-| 3   | Manuscript import  | Not started | Upload a Word document and split it into parts and chapters. "Import from text" only takes outlines, so an existing novel has to be pasted in chapter by chapter.                         |
-| 4   | Accounts and email | Not started | Password reset and account deletion. A forgotten password locks someone out for good, and the app can't send email at all.                                                                |
-| 5   | Offline writing    | Not started | Keep drafts on the device and sync them when back online, which also helps on phones. There's no service worker and nothing is stored locally.                                            |
+| #   | Idea               | Status      | What it is                                                                                                                                                                                                                                                              |
+| --- | ------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Version history    | Not started | Snapshots of each chapter, with compare and restore. Today a save replaces the only copy (`PUT` in `src/lib/server/story-text.ts`), so a mistaken delete can't be undone once it's saved.                                                                               |
+| 2   | Export             | Shipped     | PDF and Word of a book or one part, from the book page and the part page, for the owner. Left out: EPUB, the drawn cover in Word, and other scripts in the PDF (it covers Latin, Greek, Cyrillic and Vietnamese; the rest become `?` with a note, and Word keeps them). |
+| 3   | Manuscript import  | Not started | Upload a Word document and split it into parts and chapters. "Import from text" only takes outlines, so an existing novel has to be pasted in chapter by chapter.                                                                                                       |
+| 4   | Accounts and email | Not started | Password reset and account deletion. A forgotten password locks someone out for good, and the app can't send email at all.                                                                                                                                              |
+| 5   | Offline writing    | Not started | Keep drafts on the device and sync them when back online, which also helps on phones. There's no service worker and nothing is stored locally.                                                                                                                          |
 
 ### Build the world
 
@@ -63,9 +63,9 @@ Statuses: **Not started**, **In progress**, **Shipped**, **Dropped**.
 
 ## Recommended order
 
-Version history (1), then Export (2), then the rest of 6. Version history comes first because it's
-the only idea here that stops writers permanently losing work, and Export is already promised on
-the homepage. The user chose to start 6 first, on 2026-11-01.
+Version history (1), then the rest of 6. Version history comes first because it's the only idea
+here that stops writers permanently losing work. The user chose to start 6 first, on 2026-11-01,
+and had Export (2) built next, the same day.
 
 ## What depends on what
 

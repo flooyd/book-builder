@@ -1,6 +1,7 @@
 <script lang="ts">
-	// Pure-CSS cover generated from the title (books have no image field). The variant comes from
-	// a stable hash of the id, so a book keeps its cover. Decorative: aria-hidden.
+	import { coverTitleScale, coverVariant } from '$lib/cover';
+
+	// Pure-CSS cover generated from the title (see $lib/cover). Decorative: aria-hidden.
 	let {
 		id,
 		title,
@@ -16,13 +17,7 @@
 		tilt?: boolean;
 	} = $props();
 
-	function hash(text: string) {
-		let h = 0;
-		for (const char of text) h = (h * 31 + char.charCodeAt(0)) | 0;
-		return Math.abs(h);
-	}
-
-	const variant = $derived(hash(String(id)) % 2 === 1 ? 'navy' : 'paper');
+	const variant = $derived(coverVariant(id));
 
 	const initials = $derived(
 		title
@@ -33,8 +28,7 @@
 			.join('') || title.charAt(0).toUpperCase()
 	);
 
-	// Long titles step down so they stay on the cover.
-	const scale = $derived(title.length > 30 ? 0.7 : title.length > 16 ? 0.84 : 1);
+	const scale = $derived(coverTitleScale(title));
 </script>
 
 {#if tilt}

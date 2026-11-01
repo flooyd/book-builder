@@ -6,11 +6,6 @@ import type { IconName } from '$lib/components/ui/Icon.svelte';
  */
 export const SOON: { title: string; icon: IconName; body: string }[] = [
 	{
-		title: 'Export',
-		icon: 'download',
-		body: 'Download a finished book as a PDF or a Word document, with its cover, parts and chapters in order.'
-	},
-	{
 		title: 'Your account',
 		icon: 'lock',
 		body: 'Reset a forgotten password by email, and delete your account whenever you choose.'
