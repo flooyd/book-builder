@@ -168,7 +168,8 @@
 	}
 
 	/** Open a new entry's page once the dialog has closed: that's where it gets filled in. */
-	const openEntry = (type: EntryType, id: number) => () => {
+	const openEntry = (type: EntryType, id: number) => async () => {
+		if (opened?.oncreate) return opened.oncreate(type, id);
 		const href = resolve('/bible/[type]/[id]', { type, id: String(id) });
 		// eslint-disable-next-line svelte/no-navigation-without-resolve -- href is resolve()d
 		return goto(`${href}?book=${bookToShow()}`);

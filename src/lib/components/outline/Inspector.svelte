@@ -3,6 +3,7 @@
 	import { initials, plural } from '$lib/library';
 	import { modalStore } from '$lib/stores';
 	import { STATUSES } from '$lib/status';
+	import { ENTRY_COPY, ENTRY_TYPES, type EntryType } from '$lib/bible';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import type { Group, Item, OutlineUi } from './types';
@@ -28,7 +29,7 @@
 		partTitle: string;
 		bookId: number;
 		ui: OutlineUi;
-		oncast: (item: Item, characterIds: number[]) => void;
+		oncast: (item: Item, type: EntryType, ids: number[]) => void;
 		ondelete: (item: Item) => void;
 		/** In a dialog (narrow screens): close it. */
 		onclose?: () => void;
@@ -36,7 +37,6 @@
 
 	const isPart = $derived(item.kind === 'part');
 	const chapters = $derived(group?.chapters ?? []);
-	const characters = $derived(Object.values(ui.characters));
 	// A part can switch what it holds while it holds nothing.
 	const canSwitch = $derived(isPart && chapters.length === 0 && item.words === 0);
 
@@ -47,9 +47,16 @@
 	);
 	const readHref = $derived(`${resolve('/book/[id]/read', { id: String(bookId) })}#${item.key}`);
 
-	function toggleCast(id: number) {
-		oncast(item, item.cast.includes(id) ? item.cast.filter((c) => c !== id) : [...item.cast, id]);
+	function toggleCast(type: EntryType, id: number) {
+		const list = item.cast[type];
+		oncast(item, type, list.includes(id) ? list.filter((c) => c !== id) : [...list, id]);
 	}
+
+	// Made from here, it stays here and joins this chapter, rather than opening its own page.
+	const addNew = (type: EntryType) =>
+		modalStore.set({ type: 'create', category: type, bookId, oncreate: toggleCast });
+
+	const uid = $props.id();
 
 	const statusCount = (id: string) => chapters.filter((c) => c.status === id).length;
 </script>
@@ -145,30 +152,34 @@
 			</div>
 		</div>
 
-		<div class="field">
-			<p class="label" id="inspector-cast">Cast</p>
-			<div class="cast" role="group" aria-labelledby="inspector-cast">
-				{#each characters as character (character.id)}
-					<button
-						type="button"
-						class="person"
-						aria-pressed={item.cast.includes(character.id)}
-						onclick={() => toggleCast(character.id)}
-					>
-						<span class="face" aria-hidden="true">{initials(character.name)}</span>{character.name}
+		{#each ENTRY_TYPES as type (type)}
+			{@const copy = ENTRY_COPY[type]}
+			<div class="field">
+				<p class="label" id="{uid}-{type}">{type === 'character' ? 'Cast' : copy.many}</p>
+				<div class="cast" role="group" aria-labelledby="{uid}-{type}">
+					{#each Object.values(ui.entries[type]) as entry (entry.id)}
+						<button
+							type="button"
+							class="person"
+							aria-pressed={item.cast[type].includes(entry.id)}
+							onclick={() => toggleCast(type, entry.id)}
+						>
+							<span class="face" aria-hidden="true">
+								{#if type === 'character'}{initials(entry.name)}{:else}<Icon
+										name={copy.icon}
+										size={13}
+									/>{/if}
+							</span>{entry.name}
+						</button>
+					{:else}
+						<p class="muted">No {copy.many.toLowerCase()} in this book yet.</p>
+					{/each}
+					<button type="button" class="new" onclick={() => addNew(type)}>
+						<Icon name="plus" size={14} strokeWidth={2.2} />New {copy.one}
 					</button>
-				{:else}
-					<p class="muted">No characters in this book yet.</p>
-				{/each}
-				<button
-					type="button"
-					class="new"
-					onclick={() => modalStore.set({ type: 'create', category: 'character', bookId })}
-				>
-					<Icon name="plus" size={14} strokeWidth={2.2} />New character
-				</button>
+				</div>
 			</div>
-		</div>
+		{/each}
 	{/if}
 
 	<p class="numbers">

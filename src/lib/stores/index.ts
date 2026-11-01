@@ -75,6 +75,8 @@ export const modalStore = writable<{
 	partId?: number;
 	/** With type 'edit' and category 'system': the system to edit. */
 	systemId?: number;
+	/** Hands a new character, place or system back, instead of opening its page. */
+	oncreate?: (type: EntryType, id: number) => void;
 } | null>(null);
 export const showMenuStore = writable<boolean>(false);
 

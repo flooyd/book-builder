@@ -5,11 +5,15 @@ import { db } from '$lib/server/db';
 import {
 	chapter,
 	chapterCharacter,
+	chapterPlace,
+	chapterSystem,
 	character,
 	characterBook,
 	entryLink,
 	part,
 	partCharacter,
+	partPlace,
+	partSystem,
 	place,
 	placeBook,
 	storyMention,
@@ -25,6 +29,8 @@ import {
 	isEntryType,
 	renamedLabel,
 	type Appearance,
+	type Cast,
+	type CastTarget,
 	type EntryDetail,
 	type EntryType
 } from '$lib/bible';
@@ -53,6 +59,63 @@ const linkOf = (type: EntryType) =>
 	};
 const linkRow = (type: EntryType, entryId: number, bookId: number) =>
 	({ [linkOf(type).key]: entryId, bookId }) as typeof placeBook.$inferInsert;
+
+// The cast of a chapter or story-text part: one table for each type of entry on each side.
+const CASTS = {
+	chapter: {
+		character: {
+			table: chapterCharacter,
+			target: chapterCharacter.chapterId,
+			entry: chapterCharacter.characterId,
+			row: (chapterId: number, characterId: number) => ({ chapterId, characterId })
+		},
+		place: {
+			table: chapterPlace,
+			target: chapterPlace.chapterId,
+			entry: chapterPlace.placeId,
+			row: (chapterId: number, placeId: number) => ({ chapterId, placeId })
+		},
+		system: {
+			table: chapterSystem,
+			target: chapterSystem.chapterId,
+			entry: chapterSystem.systemId,
+			row: (chapterId: number, systemId: number) => ({ chapterId, systemId })
+		}
+	},
+	part: {
+		character: {
+			table: partCharacter,
+			target: partCharacter.partId,
+			entry: partCharacter.characterId,
+			row: (partId: number, characterId: number) => ({ partId, characterId })
+		},
+		place: {
+			table: partPlace,
+			target: partPlace.partId,
+			entry: partPlace.placeId,
+			row: (partId: number, placeId: number) => ({ partId, placeId })
+		},
+		system: {
+			table: partSystem,
+			target: partSystem.partId,
+			entry: partSystem.systemId,
+			row: (partId: number, systemId: number) => ({ partId, systemId })
+		}
+	}
+};
+/** A cast table. Like the book links above, they differ only in their columns' names. */
+const castTable = (target: CastTarget, type: EntryType) =>
+	CASTS[target][type] as unknown as typeof CASTS.chapter.place;
+
+/** The ids among `ids` that are entries of this type belonging to the user. */
+async function ownedIds(tx: Tx, userId: string, type: EntryType, ids: number[]) {
+	const table = tableOf(type);
+	const rows = await tx
+		.select({ id: table.id })
+		.from(table)
+		.where(and(inArray(table.id, ids), eq(table.userId, userId)));
+	return rows.map((row) => row.id);
+}
 
 /** The entry, if it exists and belongs to the user. */
 export async function findEntry(userId: string, type: EntryType, id: number) {
@@ -243,12 +306,7 @@ export async function ownedMentions(tx: Tx, userId: string, content: string) {
 	for (const type of ENTRY_TYPES) {
 		const ids = mentions.filter((mention) => mention.entry === type).map((mention) => mention.id);
 		if (ids.length === 0) continue;
-		const table = tableOf(type);
-		const rows = await tx
-			.select({ id: table.id })
-			.from(table)
-			.where(and(inArray(table.id, ids), eq(table.userId, userId)));
-		owned.push(...rows.map((row) => `${type}-${row.id}`));
+		owned.push(...(await ownedIds(tx, userId, type, ids)).map((id) => `${type}-${id}`));
 	}
 	return mapMentions(content, (mention) =>
 		owned.includes(`${mention.entry}-${mention.id}`) ? mention : null
@@ -259,9 +317,9 @@ export type LinkedEntry = { type: EntryType; id: number };
 
 /**
  * Rebuild the mention index for a piece of story text that was just saved. An entry mentioned here
- * for the first time joins the cast (characters) and the book, if it wasn't already part of them.
- * Only the first time: someone the writer took out of a cast by hand stays out, even while their
- * old mentions remain in the text. Returns the entries that joined the book.
+ * for the first time joins the cast and the book, if it wasn't already part of them. Only the first
+ * time: anything the writer took out of a cast by hand stays out, even while its old mentions
+ * remain in the text. Returns the entries that joined the book.
  */
 export async function indexMentions(
 	tx: Tx,
@@ -301,7 +359,7 @@ export async function indexMentions(
 	for (const type of ENTRY_TYPES) {
 		const ids = fresh.filter((row) => row.entryType === type).map((row) => row.entryId);
 		if (ids.length === 0) continue;
-		if (type === 'character') await joinCast(tx, target, targetId, ids);
+		await joinCast(tx, target, targetId, type, ids);
 		const link = linkOf(type);
 		const added = await tx
 			.insert(link.table)
@@ -315,21 +373,58 @@ export async function indexMentions(
 
 async function joinCast(
 	tx: Tx,
-	target: 'part' | 'chapter',
+	target: CastTarget,
 	targetId: number,
-	characterIds: number[]
+	type: EntryType,
+	ids: number[]
 ) {
-	if (target === 'chapter') {
-		await tx
-			.insert(chapterCharacter)
-			.values(characterIds.map((characterId) => ({ chapterId: targetId, characterId })))
-			.onConflictDoNothing();
-	} else {
-		await tx
-			.insert(partCharacter)
-			.values(characterIds.map((characterId) => ({ partId: targetId, characterId })))
-			.onConflictDoNothing();
+	const cast = castTable(target, type);
+	await tx
+		.insert(cast.table)
+		.values(ids.map((id) => cast.row(targetId, id)))
+		.onConflictDoNothing();
+}
+
+/** Replace one type of entry in a cast. False, and nothing saved, unless all are the user's. */
+export function setCast(
+	userId: string,
+	target: CastTarget,
+	targetId: number,
+	type: EntryType,
+	ids: number[]
+) {
+	return db.transaction(async (tx) => {
+		if (ids.length > 0 && (await ownedIds(tx, userId, type, ids)).length !== ids.length) {
+			return false;
+		}
+		const cast = castTable(target, type);
+		await tx.delete(cast.table).where(eq(cast.target, targetId));
+		if (ids.length > 0) await joinCast(tx, target, targetId, type, ids);
+		return true;
+	});
+}
+
+/** The casts of these parts and chapters, keyed like the section anchors ("chapter-12"). */
+export async function castsOf(partIds: number[], chapterIds: number[]) {
+	const casts: Record<string, Cast> = {};
+
+	async function read(target: CastTarget, targetIds: number[], type: EntryType) {
+		if (targetIds.length === 0) return;
+		const cast = castTable(target, type);
+		const rows = await db
+			.select({ targetId: cast.target, entryId: cast.entry })
+			.from(cast.table)
+			.where(inArray(cast.target, targetIds));
+		for (const { targetId, entryId } of rows) {
+			const found = (casts[`${target}-${targetId}`] ??= { character: [], place: [], system: [] });
+			found[type].push(entryId);
+		}
 	}
+
+	await Promise.all(
+		ENTRY_TYPES.flatMap((type) => [read('part', partIds, type), read('chapter', chapterIds, type)])
+	);
+	return casts;
 }
 
 /** The story text that mentions an entry. */
@@ -395,7 +490,7 @@ export async function forgetEntry(tx: Tx, type: EntryType, id: number) {
 /** Every chapter and story-text part an entry appears in, by mention or by cast. */
 export async function appearancesOf(type: EntryType, id: number) {
 	const found: Record<string, Appearance> = {};
-	const at = (target: 'part' | 'chapter', targetId: number) =>
+	const at = (target: CastTarget, targetId: number) =>
 		(found[`${target}-${targetId}`] ??= { target, id: targetId, uses: 0, cast: false });
 
 	const mentions = await db
@@ -412,17 +507,10 @@ export async function appearancesOf(type: EntryType, id: number) {
 		else if (row.partId) at('part', row.partId).uses += row.uses;
 	}
 
-	if (type === 'character') {
-		const chapters = await db
-			.select({ id: chapterCharacter.chapterId })
-			.from(chapterCharacter)
-			.where(eq(chapterCharacter.characterId, id));
-		for (const row of chapters) at('chapter', row.id).cast = true;
-		const parts = await db
-			.select({ id: partCharacter.partId })
-			.from(partCharacter)
-			.where(eq(partCharacter.characterId, id));
-		for (const row of parts) at('part', row.id).cast = true;
+	for (const target of ['chapter', 'part'] as const) {
+		const cast = castTable(target, type);
+		const rows = await db.select({ id: cast.target }).from(cast.table).where(eq(cast.entry, id));
+		for (const row of rows) at(target, row.id).cast = true;
 	}
 	return Object.values(found);
 }
@@ -464,19 +552,11 @@ export async function appearanceCounts(bookId: number) {
 				row.chapterId ? `chapter-${row.chapterId}` : `part-${row.partId}`
 			);
 		}
-
-		const partCast = await db
-			.select()
-			.from(partCharacter)
-			.where(inArray(partCharacter.partId, partIds));
-		for (const row of partCast) add(`character-${row.characterId}`, `part-${row.partId}`);
 	}
-	if (chapterIds.length > 0) {
-		const chapterCast = await db
-			.select()
-			.from(chapterCharacter)
-			.where(inArray(chapterCharacter.chapterId, chapterIds));
-		for (const row of chapterCast) add(`character-${row.characterId}`, `chapter-${row.chapterId}`);
+	for (const [where, cast] of Object.entries(await castsOf(partIds, chapterIds))) {
+		for (const type of ENTRY_TYPES) {
+			for (const id of cast[type]) add(`${type}-${id}`, where);
+		}
 	}
 
 	return Object.fromEntries(Object.entries(seen).map(([entry, list]) => [entry, list.length]));

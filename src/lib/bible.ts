@@ -27,13 +27,21 @@ export type EntryFields = {
 	updatedAt: string;
 };
 
+/** Where in a book entries appear: a chapter, or a part that holds its own story text. */
+export type CastTarget = 'part' | 'chapter';
+
+/** Who and what a chapter or story-text part holds, by type of entry. */
+export type Cast = Record<EntryType, number[]>;
+
+export const NO_CAST: Cast = { character: [], place: [], system: [] };
+
 /** A place in the story an entry appears: its chapter, or a part that holds story text. */
 export type Appearance = {
-	target: 'part' | 'chapter';
+	target: CastTarget;
 	id: number;
 	/** Times the story text mentions it there. */
 	uses: number;
-	/** It's in that chapter's or part's cast (characters only). */
+	/** It's in that chapter's or part's cast. */
 	cast: boolean;
 };
 

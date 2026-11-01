@@ -16,7 +16,7 @@ interlude). Chapters are numbered across the whole book. Each chapter or story-t
 a **status**: idea, outlined, drafting, revising or done. **Characters**, **places** and
 **systems** (magic, politics, trade) are the **story bible**: they belong to the user, can be
 linked to many books, and are called **entries** in the code. A chapter's or part's **cast** is
-the characters in it. **Mentions** are links from story text to entries, added by typing @.
+the entries in it. **Mentions** are links from story text to entries, added by typing @.
 Descriptions can show as subtitles in reading mode (`show_description`).
 
 ## Features → files
@@ -50,6 +50,8 @@ Two more features, kept out of the table so it stays readable:
 
 - **Story bible** (`/book/[id]/bible`, and `/bible/[type]/[id]` for one entry, where type is `character`, `place` or `system`): `lib/components/bible/` (`BiblePage`, `EntryPage`, `EntrySheet`, `EntryAppearances`, `EntryConnections`, `Monogram`), shared rules and types in `lib/bible.ts` (no imports), server in `lib/server/bible.ts`. Each type's API is `/api/characters`, `/api/places` and `/api/systems`, with `[id]` for PUT and DELETE, all from the handlers in `lib/server/bible.ts`. Connections are `/api/bible/links`. Stores: `charactersStore`, `placesStore`, `systemsStore`, and `entryStores[type]`.
 - **Mentions**: the node and the suggestion are in `lib/components/rich/mention.ts`, the `@` list is `MentionMenu.svelte`, the writer's hover card is `MentionCard.svelte`, and both are mounted by `RichEditor` when it's given a `bookId`. What a mention is, and how it's stored and cleaned, is in `lib/rich.ts`. Saving story text indexes them (`ownedMentions`, `indexMentions`). See the `bb-rich-text` skill.
+- **Casts**: a chapter's or story-text part's characters, places and systems. They're chosen in the outline's details panel (`Inspector`), shown on its rows by `CastStack`, and filtered by its "Whole cast" menu. The server reaches all six tables through `castTable` in `lib/server/bible.ts`. `PUT /api/cast/[target]/[id]` takes `{ type, ids }` and replaces that one type.
+- **Ambient sound**: `lib/ambient.ts` makes the sounds and mixes them (`AmbientMixer`), all Web Audio with no files. `lib/components/story/FocusSound.svelte` is the button and menu in focus mode's bar, remembered in `bb-focus-sound`. A change to a recipe needs measuring (see the `bb-verify` skill).
 
 ## How data reaches pages
 

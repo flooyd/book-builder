@@ -223,6 +223,74 @@ export const partCharacter = pgTable(
 	]
 );
 
+//places a chapter is set in: the same shape as its cast of characters
+export const chapterPlace = pgTable(
+	'chapter_place',
+	{
+		chapterId: integer('chapter_id')
+			.references(() => chapter.id, { onDelete: 'cascade' })
+			.notNull(),
+		placeId: integer('place_id')
+			.references(() => place.id, { onDelete: 'cascade' })
+			.notNull()
+	},
+	(table) => [
+		primaryKey({ columns: [table.placeId, table.chapterId] }),
+		index('chapter_place_chapter_id_idx').on(table.chapterId)
+	]
+);
+
+//places a part that holds its own story text is set in
+export const partPlace = pgTable(
+	'part_place',
+	{
+		partId: integer('part_id')
+			.references(() => part.id, { onDelete: 'cascade' })
+			.notNull(),
+		placeId: integer('place_id')
+			.references(() => place.id, { onDelete: 'cascade' })
+			.notNull()
+	},
+	(table) => [
+		primaryKey({ columns: [table.placeId, table.partId] }),
+		index('part_place_part_id_idx').on(table.partId)
+	]
+);
+
+//systems at work in a chapter
+export const chapterSystem = pgTable(
+	'chapter_system',
+	{
+		chapterId: integer('chapter_id')
+			.references(() => chapter.id, { onDelete: 'cascade' })
+			.notNull(),
+		systemId: integer('system_id')
+			.references(() => system.id, { onDelete: 'cascade' })
+			.notNull()
+	},
+	(table) => [
+		primaryKey({ columns: [table.systemId, table.chapterId] }),
+		index('chapter_system_chapter_id_idx').on(table.chapterId)
+	]
+);
+
+//systems at work in a part that holds its own story text
+export const partSystem = pgTable(
+	'part_system',
+	{
+		partId: integer('part_id')
+			.references(() => part.id, { onDelete: 'cascade' })
+			.notNull(),
+		systemId: integer('system_id')
+			.references(() => system.id, { onDelete: 'cascade' })
+			.notNull()
+	},
+	(table) => [
+		primaryKey({ columns: [table.systemId, table.partId] }),
+		index('part_system_part_id_idx').on(table.partId)
+	]
+);
+
 export const storyText = pgTable('story_text', {
 	id: serial('id').primaryKey(),
 	content: text('content').notNull(),

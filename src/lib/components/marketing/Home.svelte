@@ -414,7 +414,7 @@
 					<h3>Focus mode</h3>
 					<p>
 						A full-screen page with nothing but your words: typewriter scrolling, dimmed paragraphs,
-						and a timer for writing sprints.
+						rain or a fire to write beside, and a timer for writing sprints.
 					</p>
 				</article>
 

@@ -87,7 +87,7 @@
 			label="Status of {item.title}"
 			onchange={(status) => ui.save(item, { status })}
 		/>
-		<CastStack ids={item.cast} characters={ui.characters} />
+		<CastStack cast={item.cast} entries={ui.entries} />
 		<span class="words">{words(item.words)}</span>
 	</footer>
 {/snippet}
@@ -374,6 +374,7 @@
 
 	.card-foot {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		gap: 8px;
 		padding-top: 4px;

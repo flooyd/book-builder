@@ -2,7 +2,8 @@ import { json, type RequestEvent } from '@sveltejs/kit';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { requireUser } from '$lib/server/auth-guard';
 import { db } from '$lib/server/db';
-import { chapter, chapterCharacter, part, partCharacter } from '$lib/server/db/schema';
+import { chapter, part } from '$lib/server/db/schema';
+import { castsOf } from '$lib/server/bible';
 import { descriptionField, findOwnedBook, textField } from '$lib/server/ownership';
 import { storyTexts } from '$lib/server/outline';
 import { countWords } from '$lib/reading';
@@ -32,24 +33,7 @@ export const GET = async (event: RequestEvent) => {
 		words[key] = countWords(plainText(content));
 	}
 
-	const cast: Record<string, number[]> = {};
-	const add = (key: string, characterId: number) => (cast[key] ??= []).push(characterId);
-	if (chapterIds.length) {
-		const rows = await db
-			.select()
-			.from(chapterCharacter)
-			.where(inArray(chapterCharacter.chapterId, chapterIds));
-		for (const row of rows) add(`chapter-${row.chapterId}`, row.characterId);
-	}
-	if (partIds.length) {
-		const rows = await db
-			.select()
-			.from(partCharacter)
-			.where(inArray(partCharacter.partId, partIds));
-		for (const row of rows) add(`part-${row.partId}`, row.characterId);
-	}
-
-	return json({ words, cast });
+	return json({ words, cast: await castsOf(partIds, chapterIds) });
 };
 
 type Draft = { title: string; description: string };

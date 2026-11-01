@@ -1,6 +1,7 @@
 import { booksRefresh, chaptersStore, partsStore, type Chapter, type Part } from '$lib/stores';
 import { sendJSON, type OutlinePart } from '$lib/library';
 import type { ParsedOutline } from '$lib/outline-text';
+import type { Cast, EntryType } from '$lib/bible';
 
 // The create endpoints answer with an array of the inserted rows.
 const first = <T>(rows: T | T[]) => (Array.isArray(rows) ? rows[0] : rows);
@@ -103,7 +104,7 @@ export function stepMove(order: Order, kind: Kind, id: number, direction: -1 | 1
 export class OutlineDoc {
 	readonly bookId: number;
 	words = $state<Record<string, number>>({});
-	cast = $state<Record<string, number[]>>({});
+	cast = $state<Record<string, Cast>>({});
 	loaded = $state(false);
 	/** While dragging: the order on screen, saved on drop. */
 	draft = $state<Order | null>(null);
@@ -120,7 +121,7 @@ export class OutlineDoc {
 		try {
 			const response = await fetch(`/api/book/${this.bookId}/outline`);
 			if (!response.ok) throw new Error(`Request failed (${response.status}).`);
-			const data: { words: Record<string, number>; cast: Record<string, number[]> } =
+			const data: { words: Record<string, number>; cast: Record<string, Cast> } =
 				await response.json();
 			this.words = data.words;
 			this.cast = data.cast;
@@ -236,14 +237,18 @@ export class OutlineDoc {
 		}
 	}
 
-	async setCast(kind: Kind, id: number, characterIds: number[]) {
+	async setCast(kind: Kind, id: number, type: EntryType, ids: number[]) {
 		const key = keyOf(kind, id);
-		const before = this.cast[key] ?? [];
-		this.cast = { ...this.cast, [key]: characterIds };
+		const before = this.cast[key]?.[type] ?? [];
+		const show = (list: number[]) => {
+			const cast = this.cast[key] ?? { character: [], place: [], system: [] };
+			this.cast = { ...this.cast, [key]: { ...cast, [type]: list } };
+		};
+		show(ids);
 		try {
-			await sendJSON('PUT', `/api/cast/${kind}/${id}`, { characterIds });
+			await sendJSON('PUT', `/api/cast/${kind}/${id}`, { type, ids });
 		} catch (error) {
-			this.cast = { ...this.cast, [key]: before };
+			show(before);
 			this.#fail(error, "Couldn't save the cast.");
 		}
 	}

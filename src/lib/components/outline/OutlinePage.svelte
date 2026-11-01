@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { resolve } from '$app/paths';
-	import { booksStore, chaptersStore, charactersStore, partsStore } from '$lib/stores';
+	import {
+		booksStore,
+		chaptersStore,
+		charactersStore,
+		partsStore,
+		placesStore,
+		systemsStore
+	} from '$lib/stores';
+	import { ENTRY_COPY, ENTRY_TYPES, NO_CAST, type EntryType } from '$lib/bible';
 	import { bookOutline, plural } from '$lib/library';
 	import { useAppHeader } from '$lib/app-header.svelte';
 	import {
@@ -21,7 +29,7 @@
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import Missing from '$lib/components/story/Missing.svelte';
 	import { startDrag } from './drag';
-	import type { Group, Item, OutlineUi } from './types';
+	import type { CastEntry, Group, Item, OutlineUi } from './types';
 	import OutlineList from './OutlineList.svelte';
 	import Corkboard from './Corkboard.svelte';
 	import Inspector from './Inspector.svelte';
@@ -63,7 +71,7 @@
 					holdsChapters: false,
 					partId: chapter.partId,
 					words: doc.words[key] ?? 0,
-					cast: doc.cast[key] ?? []
+					cast: doc.cast[key] ?? NO_CAST
 				};
 			});
 			const part = entry.part;
@@ -84,7 +92,7 @@
 					words: part.hasChapters
 						? chapters.reduce((sum, chapter) => sum + chapter.words, 0)
 						: (doc.words[key] ?? 0),
-					cast: doc.cast[key] ?? []
+					cast: doc.cast[key] ?? NO_CAST
 				},
 				chapters
 			};
@@ -96,15 +104,21 @@
 			groups.flatMap((g) => [g.part, ...g.chapters]).map((item) => [item.key, item])
 		)
 	);
-	const characters = $derived(
+	/** What's linked to this book, by id. */
+	const inBook = <T extends CastEntry & { bookIds: number[] }>(list: T[]) =>
 		Object.fromEntries(
-			$charactersStore.filter((c) => c.bookIds.includes(id)).map((c) => [c.id, c])
-		) as Record<number, { id: number; name: string }>
-	);
+			list.filter((entry) => entry.bookIds.includes(id)).map((entry) => [entry.id, entry])
+		) as Record<number, CastEntry>;
+	const entries = $derived<Record<EntryType, Record<number, CastEntry>>>({
+		character: inBook($charactersStore),
+		place: inBook($placesStore),
+		system: inBook($systemsStore)
+	});
 
 	// ---- Search and filters ------------------------------------------------------------------
 	let query = $state('');
 	let statusFilter = $state<string[]>([]);
+	/** "place-3": show only the items with that entry in their cast. */
 	let castFilter = $state('');
 	const filtering = $derived(!!query.trim() || statusFilter.length > 0 || castFilter !== '');
 	const needle = $derived(query.trim().toLowerCase());
@@ -112,10 +126,15 @@
 	const textHit = (item: Item) =>
 		!needle ||
 		`${item.title}\n${plainText(item.description, 'description')}`.toLowerCase().includes(needle);
+	function castHit(item: Item) {
+		if (castFilter === '') return true;
+		const [type, entryId] = castFilter.split('-');
+		return item.cast[type as EntryType].includes(Number(entryId));
+	}
 	const hit = (item: Item) =>
 		textHit(item) &&
 		(statusFilter.length === 0 || statusFilter.includes(item.status)) &&
-		(castFilter === '' || item.cast.includes(Number(castFilter)));
+		castHit(item);
 
 	const visible = $derived(
 		filtering
@@ -211,7 +230,7 @@
 	const blank = (item: Item) =>
 		!plainText(item.description, 'description').trim() &&
 		item.words === 0 &&
-		item.cast.length === 0 &&
+		ENTRY_TYPES.every((type) => item.cast[type].length === 0) &&
 		!(item.kind === 'part' && (groups.find((g) => g.part.key === item.key)?.chapters.length ?? 0));
 
 	// ---- Changes -----------------------------------------------------------------------------
@@ -393,8 +412,8 @@
 		get synopses() {
 			return synopses;
 		},
-		get characters() {
-			return characters;
+		get entries() {
+			return entries;
 		},
 		select: (key) => (selected = key),
 		details: (key) => {
@@ -551,9 +570,16 @@
 				bind:value={castFilter}
 				aria-label="Show only chapters with"
 			>
-				<option value="">Everyone</option>
-				{#each Object.values(characters) as character (character.id)}
-					<option value={String(character.id)}>{character.name}</option>
+				<option value="">Whole cast</option>
+				{#each ENTRY_TYPES as type (type)}
+					{@const list = Object.values(entries[type])}
+					{#if list.length > 0}
+						<optgroup label={ENTRY_COPY[type].many}>
+							{#each list as entry (entry.id)}
+								<option value="{type}-{entry.id}">{entry.name}</option>
+							{/each}
+						</optgroup>
+					{/if}
 				{/each}
 			</select>
 			<label class="switch-label">
@@ -634,7 +660,7 @@
 								partTitle={selectedPartTitle}
 								bookId={id}
 								{ui}
-								oncast={(item, ids) => doc.setCast(item.kind, item.id, ids)}
+								oncast={(item, type, ids) => doc.setCast(item.kind, item.id, type, ids)}
 								ondelete={requestDelete}
 							/>
 						{/key}
@@ -685,7 +711,7 @@
 						partTitle={selectedPartTitle}
 						bookId={id}
 						{ui}
-						oncast={(item, ids) => doc.setCast(item.kind, item.id, ids)}
+						oncast={(item, type, ids) => doc.setCast(item.kind, item.id, type, ids)}
 						ondelete={requestDelete}
 						onclose={() => (detailsOpen = false)}
 					/>

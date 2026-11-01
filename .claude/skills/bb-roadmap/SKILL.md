@@ -82,6 +82,8 @@ Done:
 - A story bible page per book, and a page for every entry with details, notes, connections and
   "Appears in".
 - Hover cards while writing. Mentions are plain words in reading mode and on share links.
+- A cast for places and systems: chosen in the outline's details panel, joined by a first mention,
+  and filtered by in the outline.
 
 Left:
 
@@ -89,11 +91,9 @@ Left:
 - **Mentions in descriptions and notes:** they only work in story text so far.
 - **Finding names without an `@`:** suggesting links for names already in the text, so a book
   written before mentions existed can catch up.
-- **A cast for places and systems:** they appear through mentions only, and the outline can't
-  filter by them yet.
 
 ## Earlier ideas that shipped
 
 From the first list (2026-10-31, with different numbers): writing goals, focus mode and author
-pages. Two small parts of those were never built: ambient sound in focus mode, and following an
-author (now part of 13).
+pages, and ambient sound in focus mode, which followed on 2026-11-01. One small part was never
+built: following an author (now part of 13).

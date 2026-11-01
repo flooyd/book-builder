@@ -1,14 +1,14 @@
 import { json, type RequestEvent } from '@sveltejs/kit';
-import { and, eq, inArray } from 'drizzle-orm';
 import { requireUser } from '$lib/server/auth-guard';
-import { db } from '$lib/server/db';
-import { character, chapterCharacter, partCharacter } from '$lib/server/db/schema';
+import { setCast } from '$lib/server/bible';
 import { findOwnedChapter, findOwnedPart } from '$lib/server/ownership';
 import { isIdList } from '$lib/server/outline';
+import { isEntryType } from '$lib/bible';
 
 /**
- * Replace the cast of a chapter (/api/cast/chapter/[id]) or of a part that holds story text
- * (/api/cast/part/[id]) with `characterIds`, which must all be the user's characters.
+ * Replace part of the cast of a chapter (/api/cast/chapter/[id]) or of a part that holds story
+ * text (/api/cast/part/[id]): `{ type, ids }`, where `type` is character, place or system and
+ * `ids` must all be the user's. The other types in that cast stay as they are.
  */
 export const PUT = async (event: RequestEvent) => {
 	const user = requireUser(event);
@@ -19,9 +19,11 @@ export const PUT = async (event: RequestEvent) => {
 	}
 
 	const body = await event.request.json().catch(() => null);
-	const ids = body?.characterIds;
-	if (!isIdList(ids)) return json({ error: 'Expected { characterIds }' }, { status: 400 });
-	const characterIds = [...new Set(ids)];
+	const type = body?.type;
+	if (!isEntryType(type) || !isIdList(body?.ids)) {
+		return json({ error: 'Expected { type, ids }' }, { status: 400 });
+	}
+	const ids = [...new Set<number>(body.ids)];
 
 	const owned = target === 'chapter' ? findOwnedChapter(user.id, id) : findOwnedPart(user.id, id);
 	if (!(await owned)) {
@@ -31,33 +33,8 @@ export const PUT = async (event: RequestEvent) => {
 		);
 	}
 
-	if (characterIds.length) {
-		const mine = await db
-			.select({ id: character.id })
-			.from(character)
-			.where(and(inArray(character.id, characterIds), eq(character.userId, user.id)));
-		if (mine.length !== characterIds.length) {
-			return json({ error: 'Character does not belong to the user' }, { status: 403 });
-		}
+	if (!(await setCast(user.id, target, id, type, ids))) {
+		return json({ error: `That ${type} doesn't belong to the user` }, { status: 403 });
 	}
-
-	await db.transaction(async (tx) => {
-		if (target === 'chapter') {
-			await tx.delete(chapterCharacter).where(eq(chapterCharacter.chapterId, id));
-			if (characterIds.length) {
-				await tx
-					.insert(chapterCharacter)
-					.values(characterIds.map((characterId) => ({ chapterId: id, characterId })));
-			}
-		} else {
-			await tx.delete(partCharacter).where(eq(partCharacter.partId, id));
-			if (characterIds.length) {
-				await tx
-					.insert(partCharacter)
-					.values(characterIds.map((characterId) => ({ partId: id, characterId })));
-			}
-		}
-	});
-
-	return json({ characterIds });
+	return json({ type, ids });
 };

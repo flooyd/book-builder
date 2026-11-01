@@ -6,11 +6,14 @@
 	let {
 		id,
 		width = 240,
+		height = 320,
 		label,
 		children
 	}: {
 		id: string;
 		width?: number;
+		/** The most it grows to before scrolling, screen allowing. */
+		height?: number;
 		label: string;
 		children: Snippet<[close: () => void]>;
 	} = $props();
@@ -23,7 +26,10 @@
 		if (!trigger) return;
 		const box = trigger.getBoundingClientRect();
 		const below = box.bottom + 6;
-		panel.style.top = `${below + 320 > innerHeight && box.top > 340 ? box.top - 6 - 320 : below}px`;
+		const above = below + height > innerHeight && box.top > height + 20;
+		const top = above ? box.top - 6 - height : below;
+		panel.style.top = `${top}px`;
+		panel.style.maxHeight = `${Math.min(height, innerHeight - top - 8)}px`;
 		panel.style.left = `${Math.max(8, Math.min(box.left, innerWidth - width - 8))}px`;
 	}
 
@@ -47,7 +53,6 @@
 	.menu {
 		position: fixed;
 		inset: auto;
-		max-height: 320px;
 		margin: 0;
 		padding: 14px;
 		overflow: auto;

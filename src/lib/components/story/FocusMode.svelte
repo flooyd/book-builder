@@ -7,13 +7,14 @@
 	import RichEditor from '$lib/components/rich/RichEditor.svelte';
 	import Menu from '$lib/components/rich/Menu.svelte';
 	import SaveStatus from './SaveStatus.svelte';
+	import FocusSound from './FocusSound.svelte';
 	import { goalsStore } from '$lib/stores';
 	import { wordsOn } from '$lib/goals';
 
 	// Focus mode: the story text alone on a full-screen page (Night or Paper, as on the writing
 	// surface). The line being written stays at eye level (typewriter), the other paragraphs can
-	// dim, a session timer counts up or runs a sprint, and the text saves itself a moment after
-	// typing stops. Esc leaves.
+	// dim, a session timer counts up or runs a sprint, ambient sound can play, and the text saves
+	// itself a moment after typing stops. Esc leaves.
 	let {
 		doc,
 		title,
@@ -234,6 +235,7 @@
 				</div>
 			{/snippet}
 		</Menu>
+		<FocusSound />
 		<div class="toggles" role="group" aria-label="Focus settings">
 			<button type="button" aria-pressed={typewriter} onclick={() => (typewriter = !typewriter)}
 				>Typewriter</button

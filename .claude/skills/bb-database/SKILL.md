@@ -29,7 +29,7 @@ Auth (`yarn auth:schema`) and holds `user`, `session`, `account` and `verificati
 | `chapter`                             | `part_id`, `position`, `status`, `show_description`                                      | Ownership goes through its part.                                                                                                                                          |
 | `story_text`                          | `content`, `part_id` **or** `chapter_id`                                                 | One row per chapter, or per story-text part.                                                                                                                              |
 | `character`, `place`, `system`        | `user_id`, `aliases`, `details` (jsonb), `notes`; `kind` on place and system             | Story bible entries. Linked to books through `character_book`, `place_book` and `system_book`.                                                                            |
-| `chapter_character`, `part_character` | composite PKs                                                                            | The "cast" of a chapter or part.                                                                                                                                          |
+| `chapter_character`, `part_character` | composite PKs                                                                            | The "cast" of a chapter or part. `chapter_place`, `part_place`, `chapter_system`, `part_system` are the same for places and systems.                                      |
 | `story_mention`                       | `story_text_id` + `entry_type` + `entry_id` PK, `uses`                                   | An index of the mention nodes in `story_text.content`, rebuilt on every save. No foreign key to the entry.                                                                |
 | `entry_link`                          | `user_id`, `from_type`, `from_id`, `to_type`, `to_id`, `label`                           | A connection between two entries. No foreign key to either.                                                                                                               |
 | `profile`                             | `user_id` PK, `handle` unique, `bio`, `website`, `is_public`                             | The author page at `/author/<handle>`.                                                                                                                                    |
@@ -62,7 +62,7 @@ last file. `drizzle-kit generate` isn't used. Each file:
 - Is a single transaction (`BEGIN; ... COMMIT;`).
 - Uses constraint and index names that match what drizzle-kit would generate (`<table>_<column>_<ref table>_<ref column>_fk`, `<table>_<column>_unique`, and the names in `index('...')`). Otherwise drizzle-kit later sees a difference.
 - Changes the Drizzle schema in the same commit so code and database agree.
-- Lists its column order to match Drizzle's for composite primary keys, e.g. `primaryKey({ columns: [table.characterId, table.chapterId] })`. A different order looks like a change to drizzle-kit (this happened with `chapter_character`).
+- Lists its column order to match Drizzle's for composite primary keys, e.g. `primaryKey({ columns: [table.characterId, table.chapterId] })`. A different order looks like a change to drizzle-kit (this happened with `chapter_character`). The rule behind it: put a composite key's columns in reverse alphabetical order (`place_id, part_id`, not `part_id, place_id`), or drizzle-kit keeps proposing to drop and re-add the key, even on a database it just built.
 - Data-only fixes, such as backfilling dates, are fine as migrations too. Say so in the header and make them safe to re-run.
 
 ### Prove it on a throwaway database first
@@ -84,6 +84,7 @@ DATABASE_URL="$DB" npx drizzle-kit push 2>&1 | grep -iE "no changes|statements" 
 - **psql location.** psql lives in `C:\Program Files\PostgreSQL\18\bin` on this machine. Under Git Bash, quote it as `"/c/Program Files/PostgreSQL/18/bin/psql.exe"`.
 - **Order matters.** Drizzle selects every column in the schema, so code that reads a new column fails on Neon until the migration has run. Apply the migration first, then push the code.
 - **If drizzle-kit wants changes**, don't confirm anything. Stop and report.
+- **If that check is blocked.** Claude Code's permission check may refuse `drizzle-kit push` against Neon. Don't retry it or route around it. Read the catalog instead, inside `begin read only;` (`information_schema.columns`, `pg_constraint`, `pg_indexes`), rely on the "No changes detected" from the throwaway database, and say which check ran.
 - **Afterwards**, tell the user it was applied and mention the migration file in the commit message ("Migration: drizzle/manual/0006_profiles.sql (already applied to Neon).").
 
 ## The demo account (lives in Neon)

@@ -102,7 +102,7 @@
 {/snippet}
 
 {#snippet meta(item: Item)}
-	<CastStack ids={item.cast} characters={ui.characters} />
+	<CastStack cast={item.cast} entries={ui.entries} />
 	{#if !item.holdsChapters}
 		<StatusPill
 			value={item.status}
@@ -465,6 +465,7 @@
 
 		.meta {
 			width: 100%;
+			flex-wrap: wrap;
 			justify-content: flex-end;
 			min-height: 0;
 		}

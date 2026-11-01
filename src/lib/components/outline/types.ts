@@ -1,4 +1,8 @@
+import type { Cast, EntryType } from '$lib/bible';
 import type { Kind, Place } from '$lib/outline.svelte';
+
+/** What a cast needs to know about an entry. */
+export type CastEntry = { id: number; name: string };
 
 /** A part or chapter as the outline shows it. */
 export type Item = {
@@ -19,7 +23,7 @@ export type Item = {
 	partId: number | null;
 	/** Words of story text; for parts that hold chapters, of all their chapters. */
 	words: number;
-	cast: number[];
+	cast: Cast;
 };
 
 export type Group = { part: Item; chapters: Item[] };
@@ -32,8 +36,8 @@ export interface OutlineUi {
 	/** False while searching or filtering: the order on screen isn't the whole book. */
 	readonly canReorder: boolean;
 	readonly synopses: boolean;
-	/** The book's characters by id. */
-	readonly characters: Record<number, { id: number; name: string }>;
+	/** The book's characters, places and systems, each by id. */
+	readonly entries: Record<EntryType, Record<number, CastEntry>>;
 	select(key: string): void;
 	/** Select, and on narrow screens open the details. */
 	details(key: string): void;

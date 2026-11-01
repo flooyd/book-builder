@@ -10,11 +10,12 @@ proves it without touching their real data.
 
 Bundled scripts (in `scripts/` next to this file):
 
-| Script              | What it does                                                                                                                                                                             |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scratch-db.sh`     | Creates and starts a throwaway Postgres on port 54329, builds the current schema with drizzle-kit, prints the `DATABASE_URL`. Also `stop` and `url`.                                     |
-| `browser.mjs`       | puppeteer-core helpers: `launch`, `watch` (console errors, failed requests), `shot`, `overflow`, `freeze` (pause CSS animations), `ensureSignedIn` (signs up or signs in the test user). |
-| `seed-long-book.py` | Prints SQL for "The Long Light", a long sample book (prologue, two parts, five chapters, rich text with a scene break, heading, quote and a three-line drop cap).                        |
+| Script                | What it does                                                                                                                                                                             |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scratch-db.sh`       | Creates and starts a throwaway Postgres on port 54329, builds the current schema with drizzle-kit, prints the `DATABASE_URL`. Also `stop` and `url`.                                     |
+| `browser.mjs`         | puppeteer-core helpers: `launch`, `watch` (console errors, failed requests), `shot`, `overflow`, `freeze` (pause CSS animations), `ensureSignedIn` (signs up or signs in the test user). |
+| `seed-long-book.py`   | Prints SQL for "The Long Light", a long sample book (prologue, two parts, five chapters, rich text with a scene break, heading, quote and a three-line drop cap).                        |
+| `measure-ambient.mjs` | Renders every ambient sound offline in real Chrome and prints its loudness, peaks, stereo width, loudest jump and spectrum by octave, with a spectrogram sheet.                          |
 
 ## 1. A throwaway database
 
@@ -84,6 +85,7 @@ page looking right.
 - **Interactions.** Run them, not just the first paint: click, type, press keys, reload, and check that state survives where it should.
 - **Animation.** Use `freeze(page, '.stage', 2.5)` to screenshot an animation at a given moment.
 - **Reduced motion.** Use `page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }])` when the change animates.
+- **Sound.** Nobody here can hear it, so measure it, and say so when reporting back. Copy `measure-ambient.mjs` next to `browser.mjs`, run it with the dev server up, and read the spectrogram sheet as well as the numbers: sea should arc, wind should move, and crackles should show as strikes. Sounds sit at -20 dB A-weighted at full level (night at -22), so after changing a recipe, put new values in `TRIM` in `lib/ambient.ts`. Wait a moment after saving that file, or Vite's reload interrupts the render.
 
 ### Gotchas met before
 
