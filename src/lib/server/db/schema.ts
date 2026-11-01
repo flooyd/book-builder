@@ -5,10 +5,12 @@ import {
 	text,
 	boolean,
 	date,
+	jsonb,
 	timestamp,
 	primaryKey,
 	index
 } from 'drizzle-orm/pg-core';
+import type { EntryDetail } from '$lib/bible';
 import { user } from './auth.schema';
 
 export const book = pgTable('book', {
@@ -78,6 +80,10 @@ export const character = pgTable('character', {
 	id: serial('id').primaryKey(),
 	name: text('name').notNull(),
 	description: text('description').notNull().default(''),
+	//the story bible: short names to mention them by, labelled details and free notes
+	aliases: jsonb('aliases').$type<string[]>().notNull().default([]),
+	details: jsonb('details').$type<EntryDetail[]>().notNull().default([]),
+	notes: text('notes').notNull().default(''),
 	userId: text('user_id')
 		.references(() => user.id, { onDelete: 'cascade' })
 		.notNull(),
@@ -112,6 +118,10 @@ export const system = pgTable('system', {
 	description: text('description').notNull().default(''),
 	//free-form label shown as the overline, e.g. "Magic" or "Law"
 	kind: text('kind').notNull().default(''),
+	//the story bible: short names to mention them by, labelled details and free notes
+	aliases: jsonb('aliases').$type<string[]>().notNull().default([]),
+	details: jsonb('details').$type<EntryDetail[]>().notNull().default([]),
+	notes: text('notes').notNull().default(''),
 	userId: text('user_id')
 		.references(() => user.id, { onDelete: 'cascade' })
 		.notNull(),
@@ -136,6 +146,44 @@ export const systemBook = pgTable(
 	(table) => [
 		primaryKey({ columns: [table.systemId, table.bookId] }),
 		index('system_book_book_id_idx').on(table.bookId)
+	]
+);
+
+//the places of a world: a moon, a station, a ship...
+export const place = pgTable('place', {
+	id: serial('id').primaryKey(),
+	name: text('name').notNull(),
+	description: text('description').notNull().default(''),
+	//free-form label shown as the overline, e.g. "Moon" or "Station"
+	kind: text('kind').notNull().default(''),
+	//the story bible: short names to mention them by, labelled details and free notes
+	aliases: jsonb('aliases').$type<string[]>().notNull().default([]),
+	details: jsonb('details').$type<EntryDetail[]>().notNull().default([]),
+	notes: text('notes').notNull().default(''),
+	userId: text('user_id')
+		.references(() => user.id, { onDelete: 'cascade' })
+		.notNull(),
+	createdAt: timestamp('created_at').notNull().defaultNow(),
+	updatedAt: timestamp('updated_at')
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date())
+});
+
+//places can appear in multiple books or one
+export const placeBook = pgTable(
+	'place_book',
+	{
+		placeId: integer('place_id')
+			.references(() => place.id, { onDelete: 'cascade' })
+			.notNull(),
+		bookId: integer('book_id')
+			.references(() => book.id, { onDelete: 'cascade' })
+			.notNull()
+	},
+	(table) => [
+		primaryKey({ columns: [table.placeId, table.bookId] }),
+		index('place_book_book_id_idx').on(table.bookId)
 	]
 );
 
@@ -187,6 +235,46 @@ export const storyText = pgTable('story_text', {
 		.defaultNow()
 		.$onUpdate(() => new Date())
 });
+
+//who and what a piece of story text mentions, and how often: an index of the mention nodes in
+//its content, rebuilt on every save (see $lib/server/bible). entry_type is character, place or
+//system; entry_id points into that table, so nothing here cascades from the entry
+export const storyMention = pgTable(
+	'story_mention',
+	{
+		storyTextId: integer('story_text_id')
+			.references(() => storyText.id, { onDelete: 'cascade' })
+			.notNull(),
+		entryType: text('entry_type').notNull(),
+		entryId: integer('entry_id').notNull(),
+		uses: integer('uses').notNull().default(1)
+	},
+	(table) => [
+		primaryKey({ columns: [table.storyTextId, table.entryType, table.entryId] }),
+		index('story_mention_entry_idx').on(table.entryType, table.entryId)
+	]
+);
+
+//a connection between two story bible entries: Juno is "captain of" the Meridian
+export const entryLink = pgTable(
+	'entry_link',
+	{
+		id: serial('id').primaryKey(),
+		userId: text('user_id')
+			.references(() => user.id, { onDelete: 'cascade' })
+			.notNull(),
+		fromType: text('from_type').notNull(),
+		fromId: integer('from_id').notNull(),
+		toType: text('to_type').notNull(),
+		toId: integer('to_id').notNull(),
+		label: text('label').notNull().default(''),
+		createdAt: timestamp('created_at').notNull().defaultNow()
+	},
+	(table) => [
+		index('entry_link_from_idx').on(table.fromType, table.fromId),
+		index('entry_link_to_idx').on(table.toType, table.toId)
+	]
+);
 
 //an author's page: settings, and whether it is public at /author/<handle>
 export const profile = pgTable('profile', {

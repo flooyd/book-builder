@@ -8,6 +8,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import Typography from '@tiptap/extension-typography';
 import { Focus, Placeholder } from '@tiptap/extensions';
 import { FONTS, HIGHLIGHTS, INKS, SIZES, highlightVar, inkVar, type RichKind } from '$lib/rich';
+import { mentionExtension, type MentionBridge } from './mention';
 
 /** The document keeps the story's first-letter settings (see $lib/rich DropCap). */
 const StoryDocument = Document.extend({
@@ -59,7 +60,12 @@ const EscapeKey = (onescape?: () => void) =>
 		}
 	});
 
-export function extensionsFor(kind: RichKind, placeholder: string, onescape?: () => void) {
+export function extensionsFor(
+	kind: RichKind,
+	placeholder: string,
+	onescape?: () => void,
+	mentions?: MentionBridge
+) {
 	const story = kind === 'story';
 	return [
 		StarterKit.configure({
@@ -85,6 +91,8 @@ export function extensionsFor(kind: RichKind, placeholder: string, onescape?: ()
 		Placeholder.configure({ placeholder }),
 		// Marks the paragraph being written (.has-focus): focus mode can dim the rest.
 		...(story ? [Focus.configure({ className: 'has-focus', mode: 'shallowest' })] : []),
+		// Story text can always hold mentions; `mentions` is what lets the writer add them.
+		...(story ? [mentionExtension(mentions)] : []),
 		EscapeKey(onescape)
 	];
 }

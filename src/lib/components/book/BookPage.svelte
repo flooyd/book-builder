@@ -209,9 +209,14 @@
 		<section aria-labelledby="h-contents" class="contents">
 			<div class="contents-head">
 				<h2 id="h-contents">Contents</h2>
-				<Button href={resolve('/book/[id]/outline', { id: String(book.id) })}>
-					<Icon name="list-tree" size={16} />Outline
-				</Button>
+				<div class="contents-links">
+					<Button href={resolve('/book/[id]/bible', { id: String(book.id) })}>
+						<Icon name="book-marked" size={16} />Story bible
+					</Button>
+					<Button href={resolve('/book/[id]/outline', { id: String(book.id) })}>
+						<Icon name="list-tree" size={16} />Outline
+					</Button>
+				</div>
 			</div>
 
 			<motion-stagger interval={0.04} y={12}>
@@ -270,8 +275,8 @@
 			<div class="confirm">
 				<h2 id="delete-title">Delete <em>{book.title}</em>?</h2>
 				<p>
-					This removes its parts, chapters and story text, and any characters or systems that appear
-					only in this book.
+					This removes its parts, chapters and story text, and any characters, places or systems
+					that appear only in this book.
 				</p>
 				{#if deleteError}
 					<p class="error" role="alert"><Icon name="alert-circle" size={16} />{deleteError}</p>
@@ -467,6 +472,12 @@
 	.contents {
 		flex: 999 1 600px;
 		min-width: 0;
+	}
+
+	.contents-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
 	}
 
 	.contents-head {

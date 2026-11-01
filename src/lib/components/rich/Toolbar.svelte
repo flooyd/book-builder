@@ -19,12 +19,34 @@
 
 	// Formatting controls for a RichEditor. Story text gets everything; descriptions get the
 	// inline marks. `version` changes on every editor transaction, so the controls re-read state.
-	let { editor, version, kind }: { editor: Editor; version: number; kind: RichKind } = $props();
+	let {
+		editor,
+		version,
+		kind,
+		mentions = false
+	}: {
+		editor: Editor;
+		version: number;
+		kind: RichKind;
+		/** Offer the @ button: this text can mention the story bible. */
+		mentions?: boolean;
+	} = $props();
 
 	const uid = $props.id();
 	const story = $derived(kind === 'story');
 
 	const ALIGNS = ['left', 'center', 'right', 'justify'] as const;
+
+	/** Type the @ for the writer, on a word of its own, which opens the mention menu. */
+	function startMention() {
+		const { from } = editor.state.selection;
+		const before = editor.state.doc.textBetween(Math.max(0, from - 1), from, '\n', '\ufffc');
+		editor
+			.chain()
+			.focus()
+			.insertContent(before && !/\s/.test(before) ? ' @' : '@')
+			.run();
+	}
 
 	const now = $derived.by(() => {
 		void version;
@@ -425,6 +447,16 @@
 	{/if}
 
 	<div class="group">
+		{#if mentions}
+			<button
+				type="button"
+				class="tool"
+				aria-label="Mention a character, place or system"
+				title="Mention a character, place or system (@)"
+				onpointerdown={keep}
+				onclick={startMention}><Icon name="at-sign" size={17} /></button
+			>
+		{/if}
 		<button
 			type="button"
 			class="tool"

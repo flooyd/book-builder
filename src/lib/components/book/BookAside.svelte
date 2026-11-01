@@ -1,20 +1,15 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
-	import {
-		booksStore,
-		charactersStore,
-		modalStore,
-		systemsStore,
-		type Character
-	} from '$lib/stores';
-	import { initials } from '$lib/library';
+	import { booksStore, charactersStore, modalStore, placesStore, systemsStore } from '$lib/stores';
+	import type { EntryType } from '$lib/bible';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import RichText from '$lib/components/rich/RichText.svelte';
 	import BookGoal from '$lib/components/goals/BookGoal.svelte';
+	import Monogram from '$lib/components/bible/Monogram.svelte';
 
-	// Sharing, characters and systems of one book (Book.dc.html aside).
+	// Sharing, characters, places and systems of one book (Book.dc.html aside).
 	let { bookId }: { bookId: number } = $props();
 
 	// ---- Readers: the public link ------------------------------------------------------------
@@ -57,6 +52,7 @@
 	}
 
 	const characters = $derived($charactersStore.filter((c) => c.bookIds.includes(bookId)));
+	const places = $derived($placesStore.filter((p) => p.bookIds.includes(bookId)));
 	const systems = $derived($systemsStore.filter((s) => s.bookIds.includes(bookId)));
 
 	const bookTitle = (id: number) => $booksStore.find((b) => b.id === id)?.title;
@@ -70,9 +66,8 @@
 		return others.length > 0 ? `Also in ${others.join(', ')}` : null;
 	}
 
-	// Monogram colours vary per character, as in the mockup.
-	const TONES = ['paper', 'royal', 'raised'] as const;
-	const tone = (character: Character) => TONES[character.id % TONES.length];
+	const entryHref = (type: EntryType, id: number) =>
+		`${resolve('/bible/[type]/[id]', { type, id: String(id) })}?book=${bookId}`;
 </script>
 
 <aside class="aside">
@@ -142,15 +137,14 @@
 				<span class="count">{characters.length}</span>
 			</div>
 			{#each characters as character (character.id)}
-				<div class="person">
-					<span class={['avatar', tone(character)]} aria-hidden="true"
-						>{initials(character.name)}</span
-					>
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- entryHref is resolve()d -->
+				<a class="person" href={entryHref('character', character.id)}>
+					<Monogram name={character.name} id={character.id} />
 					<span class="person-text">
 						<span class="person-name">{character.name}</span>
 						<span class="person-meta">{alsoIn(character.bookIds) ?? bookTitle(bookId)}</span>
 					</span>
-				</div>
+				</a>
 			{:else}
 				<p class="empty">No characters yet.</p>
 			{/each}
@@ -160,6 +154,32 @@
 				onclick={() => modalStore.set({ type: 'create', category: 'character', bookId })}
 			>
 				<Icon name="plus" size={15} strokeWidth={2.2} />New character
+			</button>
+		</section>
+
+		<section aria-labelledby="h-places" class="panel">
+			<div class="panel-head">
+				<h2 id="h-places">Places</h2>
+				<span class="count">{places.length}</span>
+			</div>
+			{#each places as place (place.id)}
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- entryHref is resolve()d -->
+				<a class="person" href={entryHref('place', place.id)}>
+					<Monogram name={place.name} id={place.id} />
+					<span class="person-text">
+						<span class="person-name">{place.name}</span>
+						<span class="person-meta">{place.kind || alsoIn(place.bookIds) || 'Place'}</span>
+					</span>
+				</a>
+			{:else}
+				<p class="empty">No places yet.</p>
+			{/each}
+			<button
+				type="button"
+				class="panel-link"
+				onclick={() => modalStore.set({ type: 'create', category: 'place', bookId })}
+			>
+				<Icon name="plus" size={15} strokeWidth={2.2} />New place
 			</button>
 		</section>
 
@@ -182,7 +202,8 @@
 							<Icon name="pen" size={15} />
 						</button>
 					</div>
-					<span class="system-name">{system.name}</span>
+					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- entryHref is resolve()d -->
+					<a class="system-name" href={entryHref('system', system.id)}>{system.name}</a>
 					{#if system.description}
 						<span class="system-desc"><RichText value={system.description} italic /></span>
 					{/if}
@@ -245,34 +266,12 @@
 		display: flex;
 		align-items: center;
 		gap: 12px;
+		color: inherit;
+		text-decoration: none;
 	}
 
-	.avatar {
-		flex: none;
-		display: grid;
-		place-items: center;
-		width: 40px;
-		height: 40px;
-		border-radius: 50%;
-		font-family: var(--font-display);
-		font-size: 15px;
-	}
-
-	.avatar.paper {
-		background: var(--bb-paper);
-		box-shadow: inset 0 0 0 1px light-dark(rgba(60, 40, 10, 0.16), transparent);
-		color: #141c45;
-	}
-
-	.avatar.royal {
-		background: var(--bb-royal);
-		color: #fff;
-	}
-
-	.avatar.raised {
-		background: var(--bb-raised);
-		box-shadow: inset 0 0 0 1px var(--bb-line-dashed);
-		color: var(--bb-sky-text);
+	.person:hover .person-name {
+		color: var(--bb-sky);
 	}
 
 	.person-text {
@@ -311,9 +310,16 @@
 	}
 
 	.system-name {
+		align-self: flex-start;
+		color: inherit;
 		font-family: var(--font-display);
 		font-size: 19px;
+		text-decoration: none;
 		overflow-wrap: anywhere;
+	}
+
+	.system-name:hover {
+		color: var(--bb-sky);
 	}
 
 	.system-desc {

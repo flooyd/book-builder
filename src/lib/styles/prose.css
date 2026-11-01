@@ -72,6 +72,25 @@
 	text-indent: 0;
 }
 
+/* A mention in the editor: the words of the story, with a quiet underline for the writer. Reading
+   mode never gets this class, so there a name is just a name. */
+.bb-prose .bb-mention {
+	border-radius: 0.18em;
+	text-decoration: underline dotted 1.5px var(--bb-sky);
+	text-underline-offset: 0.2em;
+	cursor: pointer;
+}
+
+.bb-prose .bb-mention:hover {
+	background: var(--bb-sky-wash);
+}
+
+/* The @ being typed, while the menu is open. */
+.bb-prose .bb-mention-typing {
+	border-radius: 0.18em;
+	background: var(--bb-sky-wash);
+}
+
 .bb-prose mark {
 	padding: 0 0.12em;
 	border-radius: 0.18em;

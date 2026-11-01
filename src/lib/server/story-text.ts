@@ -6,6 +6,7 @@ import { book, chapter, part, storyText } from '$lib/server/db/schema';
 import { findOwnedChapter, findOwnedPart } from '$lib/server/ownership';
 import { cleanValue } from '$lib/rich';
 import { recordWords, todayFor, wordsIn } from '$lib/server/goals';
+import { indexMentions, ownedMentions } from '$lib/server/bible';
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -15,7 +16,8 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  * *this* part or chapter. Saving text counts as editing: the chapter or part, the part above
  * and the book become "updated" too, and the response says when (`touchedAt`). It also counts
  * toward the writer's daily goal, and the response says how many words that added and the
- * day's total (`writing`).
+ * day's total (`writing`). Mentions in the text are indexed in the same transaction, and the
+ * response lists any entries that joined the book by being mentioned (`linked`).
  */
 export function storyTextHandlers(target: 'part' | 'chapter') {
 	const column = target === 'part' ? storyText.partId : storyText.chapterId;
@@ -51,6 +53,7 @@ export function storyTextHandlers(target: 'part' | 'chapter') {
 			.where(eq(part.id, partId))
 			.returning({ bookId: part.bookId });
 		await tx.update(book).set({ updatedAt: at }).where(eq(book.id, row.bookId));
+		return row.bookId;
 	}
 
 	// Plain text, or the editor's document cleaned against its allow-list (see $lib/rich).
@@ -89,18 +92,32 @@ export function storyTextHandlers(target: 'part' | 'chapter') {
 		const at = new Date();
 		const day = todayFor(event);
 		const created = await db.transaction(async (tx) => {
+			const kept = await ownedMentions(tx, owned.userId, content);
 			const [row] = await tx
 				.insert(storyText)
-				.values({ ...link, content, createdAt: at, updatedAt: at })
+				.values({ ...link, content: kept, createdAt: at, updatedAt: at })
 				.returning();
-			await touch(tx, owned.id, at);
-			const delta = wordsIn(content);
+			const bookId = await touch(tx, owned.id, at);
+			const linked = await indexMentions(tx, {
+				storyTextId: row.id,
+				content: kept,
+				target,
+				targetId: owned.id,
+				bookId
+			});
+			const delta = wordsIn(kept);
 			return {
 				row,
+				linked,
 				writing: { day, delta, today: await recordWords(tx, owned.userId, day, delta) }
 			};
 		});
-		return json({ ...created.row, touchedAt: at.toISOString(), writing: created.writing });
+		return json({
+			...created.row,
+			touchedAt: at.toISOString(),
+			writing: created.writing,
+			linked: created.linked
+		});
 	};
 
 	const PUT = async (event: RequestEvent) => {
@@ -121,19 +138,33 @@ export function storyTextHandlers(target: 'part' | 'chapter') {
 		const day = todayFor(event);
 		const before = wordsIn(existing[0].content);
 		const updated = await db.transaction(async (tx) => {
+			const kept = await ownedMentions(tx, owned.userId, content);
 			const [row] = await tx
 				.update(storyText)
-				.set({ content, updatedAt: at })
+				.set({ content: kept, updatedAt: at })
 				.where(eq(column, owned.id))
 				.returning();
-			await touch(tx, owned.id, at);
-			const delta = wordsIn(content) - before;
+			const bookId = await touch(tx, owned.id, at);
+			const linked = await indexMentions(tx, {
+				storyTextId: row.id,
+				content: kept,
+				target,
+				targetId: owned.id,
+				bookId
+			});
+			const delta = wordsIn(kept) - before;
 			return {
 				row,
+				linked,
 				writing: { day, delta, today: await recordWords(tx, owned.userId, day, delta) }
 			};
 		});
-		return json({ ...updated.row, touchedAt: at.toISOString(), writing: updated.writing });
+		return json({
+			...updated.row,
+			touchedAt: at.toISOString(),
+			writing: updated.writing,
+			linked: updated.linked
+		});
 	};
 
 	return { GET, POST, PUT };

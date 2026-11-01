@@ -6,6 +6,8 @@
 // against an allow-list when saved and again when shown: shared books are public, so nothing but
 // known nodes, marks and attribute values may reach a page.
 
+import { isEntryType, type EntryType } from '$lib/bible';
+
 export type RichMark = { type: string; attrs?: Record<string, unknown> };
 export type RichNode = {
 	type: string;
@@ -158,17 +160,33 @@ function cleanMarks(marks: unknown): RichMark[] | undefined {
 	return clean.length ? clean : undefined;
 }
 
-function cleanInline(nodes: unknown): RichNode[] {
+/** A mention's own attributes, or null if they aren't a mention's. */
+function mentionAttrs(attrs: unknown): Mention | null {
+	const source = attrs as Record<string, unknown> | undefined;
+	const id = Number(source?.id);
+	const label = typeof source?.label === 'string' ? source.label.trim().slice(0, 200) : '';
+	if (!isEntryType(source?.entry) || !Number.isSafeInteger(id) || id <= 0 || !label) return null;
+	return { entry: source.entry, id, label };
+}
+
+const textNode = (text: string, marks?: RichMark[]): RichNode =>
+	marks ? { type: 'text', text, marks } : { type: 'text', text };
+
+function cleanInline(nodes: unknown, kind: RichKind): RichNode[] {
 	if (!Array.isArray(nodes)) return [];
 	const clean: RichNode[] = [];
 	for (const node of nodes) {
 		if (node?.type === 'text' && typeof node.text === 'string' && node.text) {
-			const marks = cleanMarks(node.marks);
-			clean.push(
-				marks ? { type: 'text', text: node.text, marks } : { type: 'text', text: node.text }
-			);
+			clean.push(textNode(node.text, cleanMarks(node.marks)));
 		} else if (node?.type === 'hardBreak') {
 			clean.push({ type: 'hardBreak' });
+		} else if (node?.type === 'mention') {
+			const mention = mentionAttrs(node.attrs);
+			const marks = cleanMarks(node.marks);
+			if (!mention) continue;
+			// Descriptions have no mentions: keep the word and let the link go.
+			if (kind === 'description') clean.push(textNode(mention.label, marks));
+			else clean.push({ type: 'mention', attrs: mention, ...(marks && { marks }) });
 		}
 	}
 	return clean;
@@ -179,25 +197,25 @@ function alignOf(attrs: unknown) {
 	return typeof align === 'string' && ALIGNS.includes(align) ? { textAlign: align } : undefined;
 }
 
-function cleanBlocks(nodes: unknown, depth: number): RichNode[] {
+function cleanBlocks(nodes: unknown, depth: number, kind: RichKind): RichNode[] {
 	if (!Array.isArray(nodes) || depth > MAX_DEPTH) return [];
 	const clean: RichNode[] = [];
 	for (const node of nodes) {
 		const type = node?.type;
 		if (type === 'paragraph') {
 			const attrs = alignOf(node.attrs);
-			clean.push({ type, ...(attrs && { attrs }), content: cleanInline(node.content) });
+			clean.push({ type, ...(attrs && { attrs }), content: cleanInline(node.content, kind) });
 		} else if (type === 'heading') {
 			const level = node.attrs?.level;
 			clean.push({
 				type,
 				attrs: { level: level === 2 || level === 3 ? level : 1, ...alignOf(node.attrs) },
-				content: cleanInline(node.content)
+				content: cleanInline(node.content, kind)
 			});
 		} else if (type === 'blockquote' || type === 'listItem') {
-			clean.push({ type, content: cleanBlocks(node.content, depth + 1) });
+			clean.push({ type, content: cleanBlocks(node.content, depth + 1, kind) });
 		} else if (type === 'bulletList' || type === 'orderedList') {
-			const items = cleanBlocks(node.content, depth + 1).filter((n) => n.type === 'listItem');
+			const items = cleanBlocks(node.content, depth + 1, kind).filter((n) => n.type === 'listItem');
 			const start = Number(node.attrs?.start);
 			clean.push({
 				type,
@@ -221,7 +239,7 @@ export function cleanDoc(doc: unknown, kind: RichKind): RichDoc {
 	return {
 		type: 'doc',
 		...(cap && { attrs: { dropCap: cap } }),
-		content: cleanBlocks(source?.content, 0)
+		content: cleanBlocks(source?.content, 0, kind)
 	};
 }
 
@@ -261,6 +279,7 @@ export function cleanValue(value: string, kind: RichKind): string {
 
 function textOf(node: RichNode): string {
 	if (node.type === 'text') return node.text ?? '';
+	if (node.type === 'mention') return String(node.attrs?.label ?? '');
 	if (node.type === 'hardBreak') return '\n';
 	return (node.content ?? []).map(textOf).join('');
 }
@@ -313,6 +332,85 @@ export function serialize(doc: unknown, kind: RichKind): string {
 	return JSON.stringify(clean);
 }
 
+// ---- Mentions --------------------------------------------------------------------------------
+
+/**
+ * A link from story text to a story bible entry. `label` is the words on the page, which may be a
+ * short name rather than the entry's own ("Juno" for Juno Halley).
+ */
+export type Mention = { entry: EntryType; id: number; label: string };
+
+/** Quick test before parsing: most story text has no mentions at all. */
+const mayMention = (value: string) => isRich(value) && value.includes('"type":"mention"');
+
+/** Visit every mention node, last first, so a visitor can replace it in its siblings. */
+function eachMention(
+	nodes: RichNode[],
+	visit: (node: RichNode, index: number, siblings: RichNode[]) => void
+) {
+	for (let index = nodes.length - 1; index >= 0; index--) {
+		const node = nodes[index];
+		if (node.type === 'mention') visit(node, index, nodes);
+		else if (node.content) eachMention(node.content, visit);
+	}
+}
+
+/** Every mention in a stored story value, in no particular order. */
+export function mentionsIn(value: string): Mention[] {
+	if (!mayMention(value)) return [];
+	const found: Mention[] = [];
+	eachMention(parse(value, 'story').content ?? [], (node) => {
+		const mention = mentionAttrs(node.attrs);
+		if (mention) found.push(mention);
+	});
+	return found;
+}
+
+/** Neighbouring text with the same marks is one run: the editor expects that of a document. */
+function joinText(nodes: RichNode[]): RichNode[] {
+	const joined: RichNode[] = [];
+	for (const node of nodes) {
+		const last = joined[joined.length - 1];
+		if (
+			last?.type === 'text' &&
+			node.type === 'text' &&
+			JSON.stringify(last.marks) === JSON.stringify(node.marks)
+		) {
+			last.text = `${last.text ?? ''}${node.text ?? ''}`;
+		} else {
+			joined.push(node.content ? { ...node, content: joinText(node.content) } : { ...node });
+		}
+	}
+	return joined;
+}
+
+/**
+ * A stored story value with its mentions changed: `change` returns the mention as it should be,
+ * or null to let the link go and leave the words as plain text. Unchanged text comes back as it
+ * was, so a caller can compare.
+ */
+export function mapMentions(value: string, change: (mention: Mention) => Mention | null) {
+	if (!mayMention(value)) return value;
+	const doc = parse(value, 'story');
+	let changed = false;
+	eachMention(doc.content ?? [], (node, index, siblings) => {
+		const mention = mentionAttrs(node.attrs);
+		if (!mention) return;
+		const next = change(mention);
+		if (!next) {
+			siblings[index] = textNode(mention.label, node.marks);
+			changed = true;
+		} else if (next.label !== mention.label) {
+			node.attrs = next;
+			changed = true;
+		}
+	});
+	return changed ? JSON.stringify({ ...doc, content: joinText(doc.content ?? []) }) : value;
+}
+
+/** The value with every mention turned back into plain words, for anything readers receive. */
+export const withoutMentions = (value: string) => mapMentions(value, () => null);
+
 // ---- HTML ------------------------------------------------------------------------------------
 
 const escape = (text: string) =>
@@ -347,8 +445,17 @@ function textHTML(node: RichNode) {
 	return html;
 }
 
+/** Reading mode shows a mention as the plain words it is: only the writer sees it as a link. */
+function inlineNodeHTML(node: RichNode) {
+	if (node.type === 'hardBreak') return '<br>';
+	if (node.type === 'mention') {
+		return textHTML({ type: 'text', text: String(node.attrs?.label ?? ''), marks: node.marks });
+	}
+	return textHTML(node);
+}
+
 function inlineHTML(nodes: RichNode[] = []) {
-	return nodes.map((node) => (node.type === 'hardBreak' ? '<br>' : textHTML(node))).join('');
+	return nodes.map(inlineNodeHTML).join('');
 }
 
 const alignAttr = (node: RichNode) =>

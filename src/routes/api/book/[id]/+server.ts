@@ -1,7 +1,16 @@
 import { requireUser } from '$lib/server/auth-guard';
 import { db } from '$lib/server/db';
 import { descriptionField } from '$lib/server/ownership';
-import { book, character, characterBook, system, systemBook } from '$lib/server/db/schema';
+import {
+	book,
+	character,
+	characterBook,
+	place,
+	placeBook,
+	system,
+	systemBook
+} from '$lib/server/db/schema';
+import { forgetEntry } from '$lib/server/bible';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { and, eq, exists, notExists, ne } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
@@ -10,11 +19,11 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
  * Correlated subquery: the item (`itemId`, e.g. character.id) is linked to `bookId` and to no
- * other book, according to `links` (character_book or system_book).
+ * other book, according to `links` (character_book, place_book or system_book).
  */
 function onlyInBook(
 	tx: Tx,
-	links: typeof characterBook | typeof systemBook,
+	links: typeof characterBook | typeof placeBook | typeof systemBook,
 	linkItemId: PgColumn,
 	itemId: PgColumn,
 	bookId: number
@@ -110,24 +119,39 @@ export const DELETE = async (event: RequestEvent) => {
 	}
 
 	await db.transaction(async (tx) => {
-		// Characters and systems that appear only in this book go with it; ones shared with other
-		// books stay (their link to this book is removed by the cascade).
-		await tx
+		// Story bible entries that belong only to this book go with it; ones shared with other books
+		// stay (their link to this book is removed by the cascade). One taken off another book can
+		// still be mentioned there, so each goes through forgetEntry.
+		const characters = await tx
 			.delete(character)
 			.where(
 				and(
 					eq(character.userId, user.id),
 					exists(onlyInBook(tx, characterBook, characterBook.characterId, character.id, id))
 				)
-			);
-		await tx
+			)
+			.returning({ id: character.id });
+		const places = await tx
+			.delete(place)
+			.where(
+				and(
+					eq(place.userId, user.id),
+					exists(onlyInBook(tx, placeBook, placeBook.placeId, place.id, id))
+				)
+			)
+			.returning({ id: place.id });
+		const systems = await tx
 			.delete(system)
 			.where(
 				and(
 					eq(system.userId, user.id),
 					exists(onlyInBook(tx, systemBook, systemBook.systemId, system.id, id))
 				)
-			);
+			)
+			.returning({ id: system.id });
+		for (const entry of characters) await forgetEntry(tx, 'character', entry.id);
+		for (const entry of places) await forgetEntry(tx, 'place', entry.id);
+		for (const entry of systems) await forgetEntry(tx, 'system', entry.id);
 		await tx.delete(book).where(and(eq(book.id, id), eq(book.userId, user.id)));
 	});
 

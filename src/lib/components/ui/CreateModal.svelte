@@ -10,14 +10,17 @@
 		charactersStore,
 		modalStore,
 		partsStore,
+		placesStore,
 		systemsStore,
 		type Book,
 		type Chapter,
 		type Character,
 		type ModalCategory,
 		type Part,
+		type Place,
 		type System
 	} from '$lib/stores';
+	import { KIND_SUGGESTIONS, type EntryType } from '$lib/bible';
 	import { bookOutline, putJSON } from '$lib/library';
 	import Dialog from './Dialog.svelte';
 	import Button from './Button.svelte';
@@ -59,6 +62,14 @@
 			'Who are they, and what do they want?',
 			'Create character'
 		],
+		place: [
+			'New place',
+			'Moons, stations, ships — anywhere the story goes.',
+			'Name',
+			'e.g. Vesper Station',
+			'What is it like, and why does it matter?',
+			'Create place'
+		],
 		system: [
 			'New system',
 			'Magic, law, trade — the rules your world runs on.',
@@ -74,11 +85,9 @@
 		{ id: 'part', label: 'Part' },
 		{ id: 'chapter', label: 'Chapter' },
 		{ id: 'character', label: 'Character' },
+		{ id: 'place', label: 'Place' },
 		{ id: 'system', label: 'System' }
 	];
-
-	// Suggestions for a system's kind (free text; shown as its overline on the book page).
-	const KINDS = ['Magic', 'Law', 'Trade', 'Politics', 'Religion', 'Technology', 'Nature'];
 
 	const EDIT_SYSTEM_COPY: (typeof COPY)[ModalCategory] = [
 		'Edit system',
@@ -137,7 +146,7 @@
 	let bookId = $state(opened?.bookId ? String(opened.bookId) : onlyBookId);
 	let partId = $state(defaultPartId());
 	let kind = $state(editing?.kind ?? '');
-	// Books chosen for a character ("Appears in") or a system ("Used in").
+	// Books chosen for a character or place ("Appears in") or a system ("Used in").
 	let selectedBooks = $state<string[]>(
 		editing
 			? editing.bookIds.map(String)
@@ -148,11 +157,22 @@
 					: []
 	);
 
-	/** The book to show a new character or system on: the one it was created from, else the first. */
+	const isEntry = $derived(
+		category === 'character' || category === 'place' || category === 'system'
+	);
+
+	/** The book a new entry's page belongs to: the one it was created from, else the first. */
 	function bookToShow() {
 		const from = String(opened?.bookId ?? '');
 		return selectedBooks.includes(from) ? from : selectedBooks[0];
 	}
+
+	/** Open a new entry's page once the dialog has closed: that's where it gets filled in. */
+	const openEntry = (type: EntryType, id: number) => () => {
+		const href = resolve('/bible/[type]/[id]', { type, id: String(id) });
+		// eslint-disable-next-line svelte/no-navigation-without-resolve -- href is resolve()d
+		return goto(`${href}?book=${bookToShow()}`);
+	};
 
 	let errors = $state<{
 		title?: string;
@@ -178,7 +198,7 @@
 		if (!title.trim()) next.title = `Add a ${nameLabel.toLowerCase()}.`;
 		if (category === 'part' && !bookId) next.book = 'Choose a book.';
 		if (category === 'chapter' && !partId) next.part = 'Choose a part.';
-		if ((category === 'character' || category === 'system') && selectedBooks.length === 0) {
+		if (isEntry && selectedBooks.length === 0) {
 			next.books = 'Choose at least one book.';
 		}
 		errors = next;
@@ -207,8 +227,7 @@
 		submitting = true;
 		try {
 			const fields = { title: title.trim(), description: description.trim() };
-			// Open the new item's page (or, for characters and systems, its book) once the dialog
-			// has closed.
+			// Open the new item's page once the dialog has closed.
 			let navigate: (() => Promise<void>) | null = null;
 
 			if (category === 'book') {
@@ -238,8 +257,16 @@
 					bookIds: selectedBooks.map(Number)
 				});
 				charactersStore.update((list) => [...list, character]);
-				const target = bookToShow();
-				navigate = () => goto(resolve('/book/[id]', { id: target }));
+				navigate = openEntry('character', character.id);
+			} else if (category === 'place') {
+				const place = await post<Place>('/api/places', {
+					name: fields.title,
+					description: fields.description,
+					kind: kind.trim(),
+					bookIds: selectedBooks.map(Number)
+				});
+				placesStore.update((list) => [...list, place]);
+				navigate = openEntry('place', place.id);
 			} else if (category === 'system') {
 				const payload = {
 					name: fields.title,
@@ -253,8 +280,7 @@
 				} else {
 					const system = await post<System>('/api/systems', payload);
 					systemsStore.update((list) => [...list, system]);
-					const target = bookToShow();
-					navigate = () => goto(resolve('/book/[id]', { id: target }));
+					navigate = openEntry('system', system.id);
 				}
 			}
 
@@ -392,7 +418,7 @@
 			</div>
 		{/if}
 
-		{#if category === 'system'}
+		{#if category === 'system' || category === 'place'}
 			<div class="field">
 				<label for="create-kind">Kind <span class="hint">Optional</span></label>
 				<input
@@ -402,10 +428,10 @@
 					type="text"
 					autocomplete="off"
 					list="create-kind-options"
-					placeholder="e.g. Magic, Law, Trade"
+					placeholder={category === 'place' ? 'e.g. Moon, Station, Ship' : 'e.g. Magic, Law, Trade'}
 				/>
 				<datalist id="create-kind-options">
-					{#each KINDS as option (option)}
+					{#each KIND_SUGGESTIONS[category] as option (option)}
 						<option value={option}></option>
 					{/each}
 				</datalist>
@@ -445,9 +471,9 @@
 			</div>
 		{/if}
 
-		{#if category === 'character' || category === 'system'}
+		{#if isEntry}
 			<fieldset class="appears" aria-describedby={errors.books ? 'create-books-error' : undefined}>
-				<legend>{category === 'character' ? 'Appears in' : 'Used in'}</legend>
+				<legend>{category === 'system' ? 'Used in' : 'Appears in'}</legend>
 				<div class="checks">
 					{#each $booksStore as book (book.id)}
 						<label class="check">

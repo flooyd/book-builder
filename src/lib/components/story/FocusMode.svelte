@@ -18,8 +18,15 @@
 		doc,
 		title,
 		paper,
+		bookId,
 		onexit
-	}: { doc: StoryTextDoc; title: string; paper: boolean; onexit: () => void } = $props();
+	}: {
+		doc: StoryTextDoc;
+		title: string;
+		paper: boolean;
+		bookId: number;
+		onexit: () => void;
+	} = $props();
 
 	let dialog = $state<HTMLDialogElement>();
 	let page = $state<HTMLElement>();
@@ -251,6 +258,7 @@
 				placeholder="Write…"
 				autofocus
 				{toolbar}
+				{bookId}
 				ontransaction={follow}
 				onescape={onexit}
 			/>

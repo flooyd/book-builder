@@ -10,7 +10,7 @@
 
 	// The writing surface: the rich text editor with its toolbar, live word count, Night / Paper,
 	// and focus mode.
-	let { doc, title }: { doc: StoryTextDoc; title: string } = $props();
+	let { doc, title, bookId }: { doc: StoryTextDoc; title: string; bookId: number } = $props();
 
 	let editor = $state<RichEditor>();
 	let focusing = $state(false);
@@ -89,7 +89,7 @@
 			<p class="loading" aria-busy="true">Loading…</p>
 		{:else if focusing}
 			<p class="loading">Writing in focus mode…</p>
-			<FocusMode bind:this={focusView} {doc} {title} {paper} onexit={leaveFocus} />
+			<FocusMode bind:this={focusView} {doc} {title} {paper} {bookId} onexit={leaveFocus} />
 		{:else}
 			<RichEditor
 				bind:this={editor}
@@ -99,6 +99,7 @@
 				onchange={(value) => (doc.content = value)}
 				label="Story text"
 				placeholder="Write your story here…"
+				{bookId}
 			/>
 		{/if}
 	</div>

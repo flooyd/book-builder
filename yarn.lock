@@ -964,6 +964,26 @@
     "@eslint/core" "^1.2.1"
     levn "^0.4.1"
 
+"@floating-ui/core@^1.8.0":
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/@floating-ui/core/-/core-1.8.0.tgz#d01c0bbea02e4a57f6fd7d5de6fc2c5c7dca40e1"
+  integrity sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ==
+  dependencies:
+    "@floating-ui/utils" "^0.2.12"
+
+"@floating-ui/dom@^1.6.12":
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/@floating-ui/dom/-/dom-1.8.0.tgz#8a20e6facbe2456afdbeb6c8b968a72df689cf63"
+  integrity sha512-yXSrzeHZBTZadLOlfyhCkJHNeLJnHRnRInwdZ40L7ZiaAtrBwoYlsDrX3v5zB1Utk7CLfzcOVnVVWoXEky7Ceg==
+  dependencies:
+    "@floating-ui/core" "^1.8.0"
+    "@floating-ui/utils" "^0.2.12"
+
+"@floating-ui/utils@^0.2.12":
+  version "0.2.12"
+  resolved "https://registry.yarnpkg.com/@floating-ui/utils/-/utils-0.2.12.tgz#afefe785949f16ac4cdd1e695935a321572dd56a"
+  integrity sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==
+
 "@humanfs/core@^0.19.2":
   version "0.19.2"
   resolved "https://registry.yarnpkg.com/@humanfs/core/-/core-0.19.2.tgz#a8272ca03b2acf492670222b2320b6c421bfde60"
@@ -1321,6 +1341,11 @@
   resolved "https://registry.yarnpkg.com/@tiptap/extension-list/-/extension-list-3.32.0.tgz#5b5f93e1d69452ca0d90cfc30505aaf7e9dca7e1"
   integrity sha512-QdzS5nFz9agAQhBgIuQluobWib39W2cMKx1XB6tYSue7bHMJdgPFP0EnGfFajaeVX42CG6RXtQWrNfyQGKhBvg==
 
+"@tiptap/extension-mention@3.32.0":
+  version "3.32.0"
+  resolved "https://registry.yarnpkg.com/@tiptap/extension-mention/-/extension-mention-3.32.0.tgz#35b360c412958362da95162e2801404b73d236e9"
+  integrity sha512-TMT4exls1VH0QXsLd676s5oGn9Zlc6QHgS/jKRTe+XJcbRTUzc9n70n9uUG2wDwEHGB0128Ojy6663gc05e1Bw==
+
 "@tiptap/extension-ordered-list@3.32.0":
   version "3.32.0"
   resolved "https://registry.yarnpkg.com/@tiptap/extension-ordered-list/-/extension-ordered-list-3.32.0.tgz#3d850734be18f139bdbeffef79619f7e2436a63f"
@@ -1414,6 +1439,11 @@
     "@tiptap/extension-underline" "3.32.0"
     "@tiptap/extensions" "3.32.0"
     "@tiptap/pm" "3.32.0"
+
+"@tiptap/suggestion@3.32.0":
+  version "3.32.0"
+  resolved "https://registry.yarnpkg.com/@tiptap/suggestion/-/suggestion-3.32.0.tgz#52fdfda24bd71ca36f0b587cd4eb8c57d86fee3a"
+  integrity sha512-5PbouU06zaZ7n4uyYzeNN/jBFVmGsHZ6c56MvN7M33echERAhu1L1X71Up0U6GK/pJfyugX7WbluBehJDPQeSQ==
 
 "@types/cookie@^0.6.0":
   version "0.6.0"

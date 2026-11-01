@@ -1,9 +1,10 @@
-import { writable } from 'svelte/store';
+import { writable, type Writable } from 'svelte/store';
 import type { User } from 'better-auth';
 import type { GoalsData } from '$lib/goals';
+import type { EntryFields, EntryType } from '$lib/bible';
 
 export type ModalType = 'create' | 'edit' | 'delete';
-export type ModalCategory = 'book' | 'part' | 'chapter' | 'character' | 'system';
+export type ModalCategory = 'book' | 'part' | 'chapter' | 'character' | 'place' | 'system';
 
 // Rows as they arrive from the JSON API (timestamps are ISO strings).
 export type Book = {
@@ -52,28 +53,17 @@ export type Chapter = {
 	updatedAt: string;
 };
 
-export type Character = {
-	id: number;
-	name: string;
-	description: string;
-	userId: string;
-	/** Books the character appears in (from the character_book link table). */
-	bookIds: number[];
-	createdAt: string;
-	updatedAt: string;
+export type Character = EntryFields;
+export type Place = EntryFields & {
+	/** Free-form label such as "Moon" or "Station"; may be empty. */
+	kind: string;
 };
-export type System = {
-	id: number;
-	name: string;
-	description: string;
+export type System = EntryFields & {
 	/** Free-form label such as "Magic" or "Law"; may be empty. */
 	kind: string;
-	/** Books the system applies to (from the system_book link table). */
-	bookIds: number[];
-	userId: string;
-	createdAt: string;
-	updatedAt: string;
 };
+/** A story bible entry of any type (see $lib/bible). */
+export type Entry = Character | Place | System;
 
 // app state stores
 export const userStore = writable<User | null>(null);
@@ -93,7 +83,14 @@ export const booksStore = writable<Book[]>([]);
 export const partsStore = writable<Part[]>([]);
 export const chaptersStore = writable<Chapter[]>([]);
 export const charactersStore = writable<Character[]>([]);
+export const placesStore = writable<Place[]>([]);
 export const systemsStore = writable<System[]>([]);
+/** The store that holds each type of story bible entry. */
+export const entryStores: Record<EntryType, Writable<Entry[]>> = {
+	character: charactersStore,
+	place: placesStore as Writable<Entry[]>,
+	system: systemsStore as Writable<Entry[]>
+};
 /** The writer's daily target, recent days and book progress; null until loaded (see $lib/goals). */
 export const goalsStore = writable<GoalsData | null>(null);
 /** 'loading' until the first load finishes; stays 'ready' during background refreshes. */

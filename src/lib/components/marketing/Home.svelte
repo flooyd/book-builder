@@ -62,6 +62,7 @@
 		{ label: 'Parts', icon: 'layers' },
 		{ label: 'Chapters', icon: 'file-text' },
 		{ label: 'Characters', icon: 'users' },
+		{ label: 'Places', icon: 'map-pin' },
 		{ label: 'Systems', icon: 'share-2' }
 	];
 
@@ -87,14 +88,14 @@
 			body: 'Every chapter knows the part it belongs to, so the whole book stays in order as it grows.'
 		},
 		{
-			title: 'Characters',
-			icon: 'users',
-			body: 'Keep the people of your story in one place — and carry them into every book they walk through.'
+			title: 'Story bible',
+			icon: 'book-marked',
+			body: 'Give every character, place and system its own page, and carry them into every book they walk through.'
 		},
 		{
-			title: 'Systems',
-			icon: 'share-2',
-			body: 'Write down the rules of your magic, politics or trade once, and keep them consistent everywhere.'
+			title: 'Mentions',
+			icon: 'at-sign',
+			body: 'Type @ as you write to link a name to its page, hover for its card, and see every chapter it appears in.'
 		}
 	];
 </script>
@@ -183,7 +184,7 @@
 			</div>
 			<motion-reveal class="section-aside" delay={0.25}>
 				A book breaks into parts, a part into chapters — or a part holds its own story text, the way
-				a prologue does. Characters and systems live right beside them.
+				a prologue does. Characters, places and systems live right beside them.
 			</motion-reveal>
 		</div>
 
@@ -227,6 +228,7 @@
 					</div>
 					<div class="tree-foot">
 						<span class="tree-count"><span>6</span> Characters</span>
+						<span class="tree-count"><span>4</span> Places</span>
 						<span class="tree-count"><span>2</span> Systems</span>
 					</div>
 				</div>

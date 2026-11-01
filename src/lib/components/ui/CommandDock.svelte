@@ -10,6 +10,7 @@
 		{ category: 'part', label: 'Part', icon: 'layers' },
 		{ category: 'chapter', label: 'Chapter', icon: 'file-text' },
 		{ category: 'character', label: 'Character', icon: 'users' },
+		{ category: 'place', label: 'Place', icon: 'map-pin' },
 		{ category: 'system', label: 'System', icon: 'share-2' }
 	];
 

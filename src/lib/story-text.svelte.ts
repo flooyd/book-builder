@@ -1,7 +1,7 @@
 import { beforeNavigate } from '$app/navigation';
 import { countWords } from '$lib/reading';
 import { plainText } from '$lib/rich';
-import { recordWriting, touchLibrary } from '$lib/library';
+import { recordMentions, recordWriting, touchLibrary } from '$lib/library';
 
 type Status = 'loading' | 'load-error' | 'ready' | 'saving' | 'saved' | 'error';
 
@@ -79,9 +79,10 @@ export class StoryTextDoc {
 			this.saved = content;
 			this.status = 'saved';
 			// "Updated today" on the chapter, its part and its book, wherever they're listed.
-			const { touchedAt, writing } = await response.json().catch(() => ({}));
+			const { touchedAt, writing, linked } = await response.json().catch(() => ({}));
 			if (touchedAt) touchLibrary(this.#target, this.#id, touchedAt);
 			if (writing) recordWriting(this.#target, this.#id, writing);
+			if (linked?.length) recordMentions(this.#target, this.#id, linked);
 		} catch (error) {
 			this.error = message(error, "Couldn't save the story text.");
 			this.status = 'error';

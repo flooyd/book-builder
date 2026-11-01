@@ -1,6 +1,6 @@
 ---
 name: bb-rich-text
-description: How formatted text works in Book Builder, covering the stored value format (plain text or Tiptap JSON), $lib/rich.ts (parse, clean, toHTML, plainText), the ink and highlight palettes, first-letter (drop cap) styles, prose.css, and the RichEditor, RichText and RichInline components on Tiptap 3.32. Use this whenever a task touches story text, descriptions, the editor or its toolbar, formatting, paste, word counts, drop caps, rendering text in reading mode or focus mode, or seeding text, even if the user only says "the editor" or "the text".
+description: How formatted text works in Book Builder, covering the stored value format (plain text or Tiptap JSON), $lib/rich.ts (parse, clean, toHTML, plainText), the ink and highlight palettes, first-letter (drop cap) styles, @ mentions, prose.css, and the RichEditor, RichText and RichInline components on Tiptap 3.32. Use this whenever a task touches story text, descriptions, the editor or its toolbar, formatting, paste, word counts, drop caps, rendering text in reading mode or focus mode, or seeding text, even if the user only says "the editor" or "the text".
 ---
 
 # Book Builder: rich text
@@ -40,6 +40,22 @@ Story blocks are paragraph, heading, blockquote, bullet/ordered list, list item 
 horizontal rule (drawn as a scene-break ornament). Headings inside text are output from `<h4>`
 down, because reading mode uses `<h2>`/`<h3>` for chapter titles.
 
+## Mentions
+
+A mention is an inline atom node in **story text only**:
+`{"type":"mention","attrs":{"entry":"character","id":12,"label":"Juno"}}`, with `entry` one of
+`character`, `place` or `system`. `label` is the words on the page, which may be a short name
+rather than the entry's own, and it may carry marks.
+
+- **Rules of the road.**
+  - `textOf`, and so `plainText` and word counts, read `label`. A new reader of the document must handle the node too, or those words vanish.
+  - Descriptions and bios have no mentions: `cleanInline` turns one into plain text there.
+  - `mentionsIn(value)` lists them, and `mapMentions(value, change)` rewrites them (return null to leave plain words). Use these rather than walking the JSON yourself.
+- **Readers never get them.** `toHTML` prints the label as plain words, and `readableBook` runs every text through `withoutMentions`. A link can be a spoiler: "the stranger" pointing at Juno's id gives the story away in the page source. Only the editor shows them as links, with `.bb-mention` in `prose.css`.
+- **Renames and deletes.** A rename rewrites mentions that show the full name or the first name, and leaves aliases alone (`renamedLabel` in `$lib/bible`). A delete leaves the words (`forgetEntry`).
+- **In the editor.** No space goes in after a mention, since the next character is as likely to be a comma or an apostrophe. Backspace takes the whole name. The menu and card are popovers in the top layer so they show over focus mode, and they're mounted inside the editor because a modal dialog makes everything outside it inert.
+- **Packages.** `@tiptap/extension-mention` and `@tiptap/suggestion` are pinned with the other Tiptap packages. `@tiptap/suggestion` needs `@floating-ui/dom` as a peer, and without it the editor fails to load.
+
 ## Drop caps (the "first letter")
 
 - **Settings.** `DropCap = { style: 'drop' | 'raised' | 'boxed' | 'none', lines: 2 | 3 | 4, font, color }`, defaulting to `{ drop, 2, display, accent }`. It's stored in `doc.attrs.dropCap`.
@@ -58,7 +74,7 @@ down, because reading mode uses `<h2>`/`<h3>` for chapter titles.
 
 - **`RichEditor.svelte`**: the Tiptap editor.
   - Tiptap and `./extensions` are dynamically imported in `onMount`, which keeps them out of server rendering and the first bundle.
-  - Props: `value`, `kind`, `onchange`, `label`, `id`, `placeholder`, `autofocus`, `delay`, `boxed`, `italic`, `toolbar`, `ontransaction(editor, transaction)`, `onescape`, `onblur`.
+  - Props: `value`, `kind`, `onchange`, `label`, `id`, `placeholder`, `autofocus`, `delay`, `boxed`, `italic`, `toolbar`, `bookId` (turns on @ mentions), `ontransaction(editor, transaction)`, `onescape`, `onblur`.
   - Exports `flush()` (emit pending changes now) and `focus()`.
 - **`Toolbar.svelte`, `Menu.svelte`**: formatting controls (bold, italic, underline, strike, colour, highlight, size, font, alignment, headings, lists, quote, scene break, first letter).
 - **`RichText.svelte`**: read-only rendering through `toHTML`. Story text gets `.bb-prose` plus the cap class; descriptions are inline (`italic` flips emphasis to roman inside italic text).

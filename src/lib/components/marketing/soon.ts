@@ -9,10 +9,5 @@ export const SOON: { title: string; icon: IconName; body: string }[] = [
 		title: 'Export',
 		icon: 'download',
 		body: 'Download a finished book as a PDF or a Word document, with its cover, parts and chapters in order.'
-	},
-	{
-		title: 'Mentions',
-		icon: 'at-sign',
-		body: 'Type @ to link a character in your story text, hover for their card, and see every chapter they appear in.'
 	}
 ];

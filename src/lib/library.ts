@@ -4,16 +4,21 @@ import {
 	partsStore,
 	chaptersStore,
 	charactersStore,
+	entryStores,
+	placesStore,
 	systemsStore,
 	goalsStore,
 	libraryStatus,
 	type Book,
 	type Chapter,
 	type Character,
+	type Entry,
 	type Part,
+	type Place,
 	type System
 } from '$lib/stores';
 import { TIME_ZONE_COOKIE, type GoalsData } from '$lib/goals';
+import { ENTRY_COPY, type EntryType } from '$lib/bible';
 
 async function getJSON<T>(url: string): Promise<T> {
 	const response = await fetch(url);
@@ -42,13 +47,14 @@ export const putJSON = <T>(url: string, body: unknown) => sendJSON<T>('PUT', url
 
 let generation = 0;
 
-/** Fetch the signed-in user's books, parts, chapters, characters and systems into the stores. */
+/** Fetch the signed-in user's books, parts, chapters and story bible into the stores. */
 export async function loadLibrary() {
 	const run = ++generation;
-	// Characters, systems and goals are extras: if they fail to load, the rest of the library
-	// still works.
+	// The story bible and goals are extras: if they fail to load, the rest of the library still
+	// works.
 	const extras = Promise.allSettled([
 		getJSON<Character[]>('/api/characters'),
+		getJSON<Place[]>('/api/places'),
 		getJSON<System[]>('/api/systems'),
 		getJSON<GoalsData>('/api/goals')
 	]);
@@ -58,12 +64,13 @@ export async function loadLibrary() {
 			getJSON<Part[]>('/api/parts'),
 			getJSON<Chapter[]>('/api/chapters')
 		]);
-		const [characters, systems, goals] = await extras;
+		const [characters, places, systems, goals] = await extras;
 		if (run !== generation) return; // superseded by a newer load or a sign-out
 		booksStore.set(books);
 		partsStore.set(parts);
 		chaptersStore.set(chapters);
 		if (characters.status === 'fulfilled') charactersStore.set(characters.value);
+		if (places.status === 'fulfilled') placesStore.set(places.value);
 		if (systems.status === 'fulfilled') systemsStore.set(systems.value);
 		if (goals.status === 'fulfilled') goalsStore.set(goals.value);
 		libraryStatus.set('ready');
@@ -95,6 +102,7 @@ export function clearLibrary() {
 	partsStore.set([]);
 	chaptersStore.set([]);
 	charactersStore.set([]);
+	placesStore.set([]);
 	systemsStore.set([]);
 	goalsStore.set(null);
 	libraryStatus.set('loading');
@@ -123,6 +131,34 @@ export function recordWriting(
 			bookWords
 		};
 	});
+}
+
+/** A save brought these entries into the book by mentioning them: show them there at once. */
+export function recordMentions(
+	target: 'part' | 'chapter',
+	id: number,
+	linked: { type: EntryType; id: number }[]
+) {
+	const partId =
+		target === 'part' ? id : get(chaptersStore).find((chapter) => chapter.id === id)?.partId;
+	const bookId = get(partsStore).find((part) => part.id === partId)?.bookId;
+	if (bookId === undefined) return;
+	for (const item of linked) {
+		entryStores[item.type].update((list) =>
+			list.map((entry) =>
+				entry.id === item.id && !entry.bookIds.includes(bookId)
+					? { ...entry, bookIds: [...entry.bookIds, bookId] }
+					: entry
+			)
+		);
+	}
+}
+
+/** Add a story bible entry to a book and to the library. */
+export async function createEntry(type: EntryType, name: string, bookId: number) {
+	const entry = await sendJSON<Entry>('POST', ENTRY_COPY[type].api, { name, bookIds: [bookId] });
+	entryStores[type].update((list) => [...list, entry]);
+	return entry;
 }
 
 /** Tell the server which time zone the writer is in, so "today" means their today. */

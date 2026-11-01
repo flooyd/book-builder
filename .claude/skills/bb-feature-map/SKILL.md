@@ -1,6 +1,6 @@
 ---
 name: bb-feature-map
-description: A map of every Book Builder feature and the files that own it (library and dashboard, book, part and chapter pages, the writing surface and focus mode, the outline and corkboard, characters, systems and cast, reading mode in scroll and book views, share links, author profiles and settings, theme, header, homepage). Use this at the start of any task that changes or asks about an existing feature, or that adds one next to them, so you go straight to the right files and reuse what's there instead of searching the whole repo or rebuilding something that exists.
+description: A map of every Book Builder feature and the files that own it (library and dashboard, book, part and chapter pages, the writing surface and focus mode, the outline and corkboard, the story bible, mentions, characters, places, systems and cast, reading mode in scroll and book views, share links, author profiles and settings, theme, header, homepage). Use this at the start of any task that changes or asks about an existing feature, or that adds one next to them, so you go straight to the right files and reuse what's there instead of searching the whole repo or rebuilding something that exists.
 ---
 
 # Book Builder: where everything lives
@@ -13,10 +13,11 @@ before assuming the feature is gone.
 A **book** holds **parts** in order. A part either holds **chapters** (`has_chapters = 1`,
 labelled "Part One", "Part Two", ...) or holds its own **story text** (a prologue, an
 interlude). Chapters are numbered across the whole book. Each chapter or story-text part has
-a **status**: idea, outlined, drafting, revising or done. **Characters** and **systems** (magic,
-politics, trade) belong to the user and can be linked to many books. A chapter's or part's
-**cast** is the characters in it. Descriptions can show as subtitles in reading mode
-(`show_description`).
+a **status**: idea, outlined, drafting, revising or done. **Characters**, **places** and
+**systems** (magic, politics, trade) are the **story bible**: they belong to the user, can be
+linked to many books, and are called **entries** in the code. A chapter's or part's **cast** is
+the characters in it. **Mentions** are links from story text to entries, added by typing @.
+Descriptions can show as subtitles in reading mode (`show_description`).
 
 ## Features → files
 
@@ -44,6 +45,11 @@ politics, trade) belong to the user and can be linked to many books. A chapter's
 | Theme                     | toggle in headers                         | `lib/theme.svelte.ts` (`ThemeState`, cookie `bb-theme`), `ThemeToggle.svelte`, `hooks.server.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | Signed-in header          | all app pages                             | `lib/components/ui/AppHeader.svelte`, crumbs via `useAppHeader` in `lib/app-header.svelte.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Motion                    | site-wide                                 | `lib/motion.ts` (registers motion-components after hydration)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+
+Two more features, kept out of the table so it stays readable:
+
+- **Story bible** (`/book/[id]/bible`, and `/bible/[type]/[id]` for one entry, where type is `character`, `place` or `system`): `lib/components/bible/` (`BiblePage`, `EntryPage`, `EntrySheet`, `EntryAppearances`, `EntryConnections`, `Monogram`), shared rules and types in `lib/bible.ts` (no imports), server in `lib/server/bible.ts`. Each type's API is `/api/characters`, `/api/places` and `/api/systems`, with `[id]` for PUT and DELETE, all from the handlers in `lib/server/bible.ts`. Connections are `/api/bible/links`. Stores: `charactersStore`, `placesStore`, `systemsStore`, and `entryStores[type]`.
+- **Mentions**: the node and the suggestion are in `lib/components/rich/mention.ts`, the `@` list is `MentionMenu.svelte`, the writer's hover card is `MentionCard.svelte`, and both are mounted by `RichEditor` when it's given a `bookId`. What a mention is, and how it's stored and cleaned, is in `lib/rich.ts`. Saving story text indexes them (`ownedMentions`, `indexMentions`). See the `bb-rich-text` skill.
 
 ## How data reaches pages
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import type { Editor } from '@tiptap/core';
 	import type { Transaction } from '@tiptap/pm/state';
 	import {
@@ -11,10 +11,12 @@
 		type RichKind
 	} from '$lib/rich';
 	import Toolbar from './Toolbar.svelte';
+	import MentionMenu from './MentionMenu.svelte';
+	import MentionCard from './MentionCard.svelte';
 
 	// The rich text editor (Tiptap): a toolbar over a WYSIWYG area set like reading mode. Changes
 	// reach `onchange` as a stored value (see $lib/rich), a moment after typing stops and at once
-	// on blur or flush().
+	// on blur or flush(). Given a `bookId`, typing @ links the story bible (see ./mention.ts).
 	let {
 		value,
 		kind = 'story',
@@ -27,6 +29,7 @@
 		boxed = false,
 		italic = false,
 		toolbar = true,
+		bookId,
 		ontransaction,
 		class: className = '',
 		onescape,
@@ -48,6 +51,8 @@
 		italic?: boolean;
 		/** Show the formatting toolbar (keyboard shortcuts work either way). */
 		toolbar?: boolean;
+		/** The book this story text belongs to: turns on @ mentions. */
+		bookId?: number;
 		/** After every change of text or selection (focus mode's typewriter). */
 		ontransaction?: (editor: Editor, transaction: Transaction) => void;
 		class?: string;
@@ -58,6 +63,8 @@
 	let host = $state<HTMLDivElement>();
 	let editor = $state.raw<Editor | null>(null);
 	let version = $state(0);
+	let mentionMenu = $state<MentionMenu>();
+	let mentionCard = $state<MentionCard>();
 	let pending = false;
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	// The value this editor last produced or was given: a different `value` is an outside change.
@@ -98,7 +105,19 @@
 				if (cancelled || !host) return;
 				instance = new Editor({
 					element: host,
-					extensions: extensionsFor(kind, placeholder, onescape),
+					extensions: extensionsFor(
+						kind,
+						placeholder,
+						onescape,
+						bookId === undefined
+							? undefined
+							: {
+									bookId,
+									open: (props) => mentionMenu?.open(props),
+									keydown: (event) => mentionMenu?.keydown(event) ?? false,
+									close: () => mentionMenu?.close()
+								}
+					),
 					content: parse(value, kind),
 					autofocus: autofocus ? 'end' : false,
 					editorProps: {
@@ -117,7 +136,8 @@
 						transformPastedHTML: cleanPastedHTML
 					},
 					onTransaction: ({ editor, transaction }) => {
-						version++;
+						// Can arrive in the middle of an update: taking away the focused editor blurs it.
+						untrack(() => version++);
 						ontransaction?.(editor, transaction);
 					},
 					onUpdate: () => {
@@ -134,7 +154,32 @@
 			}
 		);
 
+		// The writer's card for a mention: on hover, or on a tap where there's no hover.
+		const area = host;
+		const mentionAt = (event: Event) =>
+			(event.target as HTMLElement | null)?.closest?.<HTMLElement>('[data-type="mention"]');
+		const over = (event: MouseEvent) => {
+			const mention = mentionAt(event);
+			if (mention && !event.buttons) mentionCard?.show(mention);
+		};
+		const out = (event: MouseEvent) => {
+			if (mentionAt(event)) mentionCard?.leave();
+		};
+		const click = (event: MouseEvent) => {
+			const mention = mentionAt(event);
+			if (mention) mentionCard?.show(mention, true);
+		};
+		const typing = () => mentionCard?.hide();
+		area?.addEventListener('mouseover', over);
+		area?.addEventListener('mouseout', out);
+		area?.addEventListener('click', click);
+		area?.addEventListener('keydown', typing);
+
 		return () => {
+			area?.removeEventListener('mouseover', over);
+			area?.removeEventListener('mouseout', out);
+			area?.removeEventListener('click', click);
+			area?.removeEventListener('keydown', typing);
 			cancelled = true;
 			flush();
 			instance?.destroy();
@@ -145,10 +190,16 @@
 <div class={['rich-editor', kind, { boxed }, className]}>
 	{#if editor && toolbar}
 		<div class="bar">
-			<Toolbar {editor} {version} {kind} />
+			<Toolbar {editor} {version} {kind} mentions={bookId !== undefined} />
 		</div>
 	{/if}
 	<div class="area" bind:this={host}></div>
+	{#if bookId !== undefined}
+		<MentionMenu bind:this={mentionMenu} {bookId} />
+	{/if}
+	{#if story}
+		<MentionCard bind:this={mentionCard} />
+	{/if}
 </div>
 
 <style>

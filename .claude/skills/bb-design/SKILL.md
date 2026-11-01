@@ -62,6 +62,7 @@ custom property is declared**, not where it is used. Consequences:
 - **`Icon`**: 24×24 stroke icons in the `ICONS` map (a string is a path, a tuple is a circle). To add an icon, add its paths to the map. `IconName` types the names.
 - **Others**:
   - `BookCover`: a generated cover from the title (navy or paper variant by id hash; `sm`, `md`, `lg`; optional `tilt`).
+  - `Monogram` (in `components/bible`): a round stand-in for a portrait, an entry's initials in one of three tones.
   - `Pill`, `Kbd`, `Wordmark`, `ThemeToggle`.
   - `AppHeader`: crumbs come from `useAppHeader`.
   - `CommandDock`, `CreateModal`.

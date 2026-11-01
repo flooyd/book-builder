@@ -3,6 +3,7 @@ import { db } from '$lib/server/db';
 import { book, chapter, part, user } from '$lib/server/db/schema';
 import { storyTexts } from '$lib/server/outline';
 import { publicHandleOf } from '$lib/server/profile';
+import { withoutMentions } from '$lib/rich';
 
 const iso = (date: Date) => date.toISOString();
 
@@ -10,7 +11,9 @@ const iso = (date: Date) => date.toISOString();
  * Everything reading mode shows of a book, and nothing else: titles, the descriptions the writer
  * chose to show (hidden ones may be private notes, so they are blanked here, not in the page),
  * the story texts and the author's name. Shared by the owner's /book/[id]/read and the public
- * /read/[shareId], which anyone can open.
+ * /read/[shareId], which anyone can open. Mentions become plain words here, because the links
+ * themselves can give the story away: "the stranger" pointing at Juno's id is a spoiler for anyone
+ * who reads the page source.
  */
 export async function readableBook(found: typeof book.$inferSelect) {
 	const parts = await db.select().from(part).where(eq(part.bookId, found.id));
@@ -20,7 +23,12 @@ export async function readableBook(found: typeof book.$inferSelect) {
 		: [];
 	const chapterIds = chapters.map((c) => c.id);
 
-	const texts = await storyTexts(partIds, chapterIds);
+	const texts = Object.fromEntries(
+		Object.entries(await storyTexts(partIds, chapterIds)).map(([key, value]) => [
+			key,
+			withoutMentions(value)
+		])
+	);
 
 	const [author] = await db
 		.select({ name: user.name })
