@@ -7,7 +7,8 @@
 	import Icon from '$lib/components/ui/Icon.svelte';
 
 	// A book's word target and deadline, in the book page's aside: how far along it is, how long
-	// is left, and what each day has to add to get there.
+	// is left, and what each day has to add to get there. Either one is a goal on its own, so a
+	// deadline with no target still shows, with its countdown.
 	let { bookId }: { bookId: number } = $props();
 
 	const book = $derived($booksStore.find((b) => b.id === bookId));
@@ -17,6 +18,7 @@
 	const progress = $derived(
 		book ? bookProgress(words, book.targetWords, book.deadline, today, goals?.restDays ?? 0) : null
 	);
+	const hasGoal = $derived(!!book?.targetWords || !!book?.deadline);
 
 	let editing = $state(false);
 	// A number input hands back a number (or null when empty), so the draft isn't always a string.
@@ -94,23 +96,25 @@
 			{/if}
 		</div>
 
-		{#if book.targetWords && !editing}
-			<p class="figures">
-				<span class="words">{number(words)}</span>
-				<span class="of">of {number(book.targetWords)} words</span>
-			</p>
-			<div
-				class="track"
-				role="progressbar"
-				aria-labelledby="h-goal"
-				aria-valuemin="0"
-				aria-valuemax={book.targetWords}
-				aria-valuenow={Math.min(words, book.targetWords)}
-				aria-valuetext="{number(words)} of {number(book.targetWords)} words"
-			>
-				<span class={['fill', { done: progress.done }]} style:width="{progress.fraction * 100}%"
-				></span>
-			</div>
+		{#if hasGoal && !editing}
+			{#if book.targetWords}
+				<p class="figures">
+					<span class="words">{number(words)}</span>
+					<span class="of">of {number(book.targetWords)} words</span>
+				</p>
+				<div
+					class="track"
+					role="progressbar"
+					aria-labelledby="h-goal"
+					aria-valuemin="0"
+					aria-valuemax={book.targetWords}
+					aria-valuenow={Math.min(words, book.targetWords)}
+					aria-valuetext="{number(words)} of {number(book.targetWords)} words"
+				>
+					<span class={['fill', { done: progress.done }]} style:width="{progress.fraction * 100}%"
+					></span>
+				</div>
+			{/if}
 			{#if book.deadline && progress.daysLeft !== null}
 				<p class={['due', { late: progress.daysLeft < 0 && !progress.done }]}>
 					<Icon name="calendar" size={15} />
@@ -123,7 +127,9 @@
 				</p>
 			{/if}
 			<p class="pace">
-				{#if progress.done}
+				{#if !book.targetWords}
+					Add a word target to see what each day needs to add.
+				{:else if progress.done}
 					You've reached the target. Everything from here is extra.
 				{:else if progress.perDay !== null}
 					{number(progress.wordsLeft)} to go: about {number(progress.perDay)}
@@ -139,7 +145,7 @@
 				<Icon name="pen" size={15} />Edit goal
 			</button>
 		{:else if !editing}
-			<p class="empty">Give this book a word target and a deadline, and see how far along it is.</p>
+			<p class="empty">Give this book a word target, a deadline or both, and see how it's going.</p>
 			<button type="button" class="panel-link" onclick={edit}>
 				<Icon name="target" size={15} />Set a goal
 			</button>
@@ -152,7 +158,7 @@
 				}}
 			>
 				<label class="field">
-					<span>Word target</span>
+					<span>Word target <em>(optional)</em></span>
 					<input
 						class="bb-field"
 						type="number"
@@ -174,7 +180,7 @@
 				<div class="actions">
 					<Button variant="primary" type="submit" disabled={saving}>Save</Button>
 					<Button onclick={() => (editing = false)}>Cancel</Button>
-					{#if book.targetWords}
+					{#if hasGoal}
 						<Button variant="quiet" disabled={saving} onclick={() => save(true)}>Remove goal</Button
 						>
 					{/if}
