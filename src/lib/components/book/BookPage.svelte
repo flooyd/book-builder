@@ -15,6 +15,7 @@
 		type Part
 	} from '$lib/stores';
 	import { bookOutline, latestChapterId, plural, relativeDay } from '$lib/library';
+	import { partHeading } from '$lib/headings';
 	import BookCover from '$lib/components/ui/BookCover.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
@@ -233,8 +234,9 @@
 							<Pill size="sm">Story text</Pill>
 						</a>
 					{:else}
+						{@const heading = partHeading(entry, book)}
 						<div class="part-head">
-							<span class="overline">{entry.label}</span>
+							{#if heading.over}<span class="overline">{heading.over}</span>{/if}
 							<a class="part-title" href={partHref(entry.part)}>{entry.part.title}</a>
 						</div>
 						{#each entry.chapters as { chapter, number } (chapter.id)}

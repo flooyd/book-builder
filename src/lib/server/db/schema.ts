@@ -11,6 +11,7 @@ import {
 	index
 } from 'drizzle-orm/pg-core';
 import type { EntryDetail } from '$lib/bible';
+import type { LabelStyle } from '$lib/headings';
 import { user } from './auth.schema';
 
 export const book = pgTable('book', {
@@ -25,6 +26,11 @@ export const book = pgTable('book', {
 	//writing goals: the book's word target and when it should be finished (null = none set)
 	targetWords: integer('target_words'),
 	deadline: date('deadline', { mode: 'string' }),
+	//how reading mode labels parts and chapters (see $lib/headings)
+	partLabels: text('part_labels').$type<LabelStyle>().notNull().default('words'),
+	chapterLabels: text('chapter_labels').$type<LabelStyle>().notNull().default('numeral'),
+	//off, every chapter goes by its label alone in reading mode
+	chapterTitles: boolean('chapter_titles').notNull().default(true),
 	createdAt: timestamp('created_at').notNull().defaultNow(),
 	updatedAt: timestamp('updated_at')
 		.notNull()
@@ -50,6 +56,10 @@ export const part = pgTable('part', {
 	hasChapters: integer('has_chapters').notNull().default(1),
 	//show the description as a subtitle under the title in reading mode
 	showDescription: boolean('show_description').notNull().default(false),
+	//the label above the title in reading mode: null follows the book, '' hides it
+	headingLabel: text('heading_label'),
+	//show the title in reading mode
+	showTitle: boolean('show_title').notNull().default(true),
 	//order within the book (the outline sets it)
 	position: integer('position').notNull().default(0),
 	//writing status of a part that holds story text: idea, outlined, drafting, revising, done
@@ -65,6 +75,10 @@ export const chapter = pgTable('chapter', {
 		.notNull(),
 	//show the description as a subtitle under the title in reading mode
 	showDescription: boolean('show_description').notNull().default(false),
+	//the label above the title in reading mode: null follows the book, '' hides it
+	headingLabel: text('heading_label'),
+	//show the title in reading mode
+	showTitle: boolean('show_title').notNull().default(true),
 	//order within the part (the outline sets it)
 	position: integer('position').notNull().default(0),
 	//writing status: idea, outlined, drafting, revising, done

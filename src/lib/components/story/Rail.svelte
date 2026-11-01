@@ -4,8 +4,8 @@
 		href: string;
 		name: string;
 		current: boolean;
-		/** Chapter number shown before the name. */
-		number?: number;
+		/** Chapter number shown before the name; blank keeps the column for one without a number. */
+		number?: number | string;
 		/** Small count after the name (chapters in a part), hidden on the current item. */
 		count?: number;
 		countLabel?: string;

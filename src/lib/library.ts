@@ -19,6 +19,7 @@ import {
 } from '$lib/stores';
 import { TIME_ZONE_COOKIE, type GoalsData } from '$lib/goals';
 import { ENTRY_COPY, type EntryType } from '$lib/bible';
+import { numberWords, type Noun } from '$lib/headings';
 
 async function getJSON<T>(url: string): Promise<T> {
 	const response = await fetch(url);
@@ -184,67 +185,73 @@ export function initials(name: string) {
 const byPosition = <T extends { id: number; position: number; createdAt: string }>(a: T, b: T) =>
 	a.position - b.position || Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id - b.id;
 
-const ORDINALS = [
-	'One',
-	'Two',
-	'Three',
-	'Four',
-	'Five',
-	'Six',
-	'Seven',
-	'Eight',
-	'Nine',
-	'Ten',
-	'Eleven',
-	'Twelve',
-	'Thirteen',
-	'Fourteen',
-	'Fifteen',
-	'Sixteen',
-	'Seventeen',
-	'Eighteen',
-	'Nineteen',
-	'Twenty'
-];
-
-/** "Part One", "Part Two" … for the nth (1-based) chapter-holding part. */
-export const partLabel = (n: number) => `Part ${ORDINALS[n - 1] ?? n}`;
-
 /** What ordering needs of a part or chapter (reading mode passes trimmed-down rows). */
-type OutlinePartRow = Pick<Part, 'id' | 'bookId' | 'hasChapters' | 'position' | 'createdAt'>;
-type OutlineChapterRow = Pick<Chapter, 'id' | 'partId' | 'position' | 'createdAt'>;
+type OutlinePartRow = Pick<
+	Part,
+	'id' | 'bookId' | 'hasChapters' | 'position' | 'createdAt' | 'headingLabel'
+>;
+type OutlineChapterRow = Pick<Chapter, 'id' | 'partId' | 'position' | 'createdAt' | 'headingLabel'>;
 
 export type OutlinePart<P extends OutlinePartRow = Part, C extends OutlineChapterRow = Chapter> = {
 	part: P;
-	/** "Part One" etc. for parts that hold chapters; null for story-text parts. */
+	/** What the writing pages call it: "Part One", its own label or "Part"; null for story text. */
 	label: string | null;
-	chapters: { chapter: C; number: number }[];
+	/** Its number among the parts that take one; null for the rest. */
+	number: number | null;
+	/** The number it has or would take on an automatic label; null for story-text parts. */
+	place: number | null;
+	chapters: {
+		chapter: C;
+		number: number | null;
+		place: number;
+		/** "Chapter 3", its own label or "Chapter". */
+		label: string;
+	}[];
 };
 
+/** What the writing pages call a part or chapter, whatever style the book reads in. */
+const writingLabel = (noun: Noun, own: string | null, number: number | null) =>
+	number === null ? own || noun : `${noun} ${noun === 'Part' ? numberWords(number) : number}`;
+
 /**
- * A book's parts in outline order, with chapter numbers running continuously across the
- * whole book. Story-text parts (hasChapters = 0) carry no chapters and don't take a part number.
+ * A book's parts in outline order. Numbers run continuously across the whole book, and only
+ * parts and chapters on an automatic label take one (see $lib/headings). Story-text parts
+ * (hasChapters = 0) carry no chapters and never take a number.
  */
 export function bookOutline<P extends OutlinePartRow, C extends OutlineChapterRow>(
 	bookId: number,
 	parts: P[],
 	chapters: C[]
 ): OutlinePart<P, C>[] {
-	let ordinal = 0;
-	let number = 0;
+	let partNumber = 0;
+	let chapterNumber = 0;
 	return parts
 		.filter((part) => part.bookId === bookId)
 		.sort(byPosition)
 		.map((part) => {
-			if (!part.hasChapters) return { part, label: null, chapters: [] };
-			ordinal += 1;
+			if (!part.hasChapters) {
+				return { part, label: null, number: null, place: null, chapters: [] };
+			}
+			const place = partNumber + 1;
+			const number = part.headingLabel === null ? ++partNumber : null;
 			return {
 				part,
-				label: partLabel(ordinal),
+				label: writingLabel('Part', part.headingLabel, number),
+				number,
+				place,
 				chapters: chapters
 					.filter((chapter) => chapter.partId === part.id)
 					.sort(byPosition)
-					.map((chapter) => ({ chapter, number: ++number }))
+					.map((chapter) => {
+						const place = chapterNumber + 1;
+						const number = chapter.headingLabel === null ? ++chapterNumber : null;
+						return {
+							chapter,
+							number,
+							place,
+							label: writingLabel('Chapter', chapter.headingLabel, number)
+						};
+					})
 			};
 		});
 }

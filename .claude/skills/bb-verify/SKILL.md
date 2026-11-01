@@ -100,6 +100,7 @@ page looking right.
 - **Old scratch data.** Earlier scratch databases are kept under the Claude scratchpad
   (`%LOCALAPPDATA%\Temp\claude\...\scratchpad\*\pgdata`). The user values them, so copy a folder
   before starting a server on it, and never edit the original.
+- **A reload the first time an editor opens.** On a freshly started dev server, the first page that loads Tiptap can make Vite log `optimized dependencies changed. reloading` and reload the page mid-test: the description box is missing, then the page goes blank. It isn't a bug. Run the script again, or open an editor once before testing.
 - **Duplicate headlines.** `motion-headline` keeps a hidden copy of its text for screen readers, so `h1.textContent` reads the title twice. That's expected.
 
 ## 4. Test data

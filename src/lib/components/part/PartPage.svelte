@@ -17,7 +17,7 @@
 	import TocChapterRow from '$lib/components/book/TocChapterRow.svelte';
 	import PageFrame from '$lib/components/story/PageFrame.svelte';
 	import Rail from '$lib/components/story/Rail.svelte';
-	import TitleBlock from '$lib/components/story/TitleBlock.svelte';
+	import TitleBlock, { type TitleDetails } from '$lib/components/story/TitleBlock.svelte';
 	import StorySurface from '$lib/components/story/StorySurface.svelte';
 	import SaveStatus from '$lib/components/story/SaveStatus.svelte';
 	import Missing from '$lib/components/story/Missing.svelte';
@@ -68,8 +68,8 @@
 		if (holdsText) doc.load();
 	});
 
-	async function saveDetails(title: string, description: string, showDescription: boolean) {
-		const updated = await putJSON<Part>(`/api/part/${id}`, { title, description, showDescription });
+	async function saveDetails(details: TitleDetails) {
+		const updated = await putJSON<Part>(`/api/part/${id}`, details);
 		partsStore.update((parts) => parts.map((p) => (p.id === updated.id ? updated : p)));
 	}
 
@@ -99,6 +99,13 @@
 			description={part.description}
 			showDescription={part.showDescription}
 			descriptionPlaceholder="A line about this part"
+			heading={{
+				noun: 'Part',
+				place: entry.place,
+				style: book.partLabels,
+				label: part.headingLabel,
+				showTitle: part.showTitle
+			}}
 			readHref="{resolve('/book/[id]/read', { id: String(book.id) })}#part-{part.id}"
 			canEdit={isOwner}
 			onsave={saveDetails}

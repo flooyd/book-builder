@@ -1,5 +1,7 @@
 // Reading mode: word counts, reading time, and the reader's text settings.
 
+import type { HeadingStyles } from '$lib/headings';
+
 export function countWords(text: string) {
 	const trimmed = text.trim();
 	return trimmed ? trimmed.split(/\s+/).length : 0;
@@ -59,14 +61,15 @@ export type ReadingPosition = { key: string; fraction: number };
 
 // ---- Page data ---------------------------------------------------------------------------
 
-/** What both reading routes load ($lib/server/reading); hidden descriptions arrive blank. */
+/** What both reading routes load ($lib/server/reading); anything hidden arrives blank. */
 export type ReaderData = {
-	book: { id: number; title: string; description: string };
+	book: { id: number; title: string; description: string } & HeadingStyles;
 	parts: {
 		id: number;
 		bookId: number;
 		title: string;
 		description: string;
+		headingLabel: string | null;
 		hasChapters: number;
 		position: number;
 		createdAt: string;
@@ -76,6 +79,7 @@ export type ReaderData = {
 		partId: number;
 		title: string;
 		description: string;
+		headingLabel: string | null;
 		position: number;
 		createdAt: string;
 	}[];

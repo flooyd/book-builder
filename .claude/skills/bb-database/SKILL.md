@@ -36,6 +36,7 @@ Auth (`yarn auth:schema`) and holds `user`, `session`, `account` and `verificati
 | `writing_goal`                        | `user_id` PK, `daily_words` (0 = none), `rest_days` (bit mask, Monday = 1 ... Sunday 64) | The daily target and the weekdays kept for rest; a row appears the first time a writer sets either.                                                                       |
 | `writing_day`                         | `user_id` + `day` (date) PK, `words`                                                     | Net words saved that day in the writer's time zone; may dip below 0, so read `max(0, words)`.                                                                             |
 
+- **Headings.** `book.part_labels` and `book.chapter_labels` hold a label style from `$lib/headings`, and `book.chapter_titles` turns chapter titles off in reading mode. `part` and `chapter` each have `heading_label` (null follows the book, `''` hides the label, anything else is the label) and `show_title`.
 - **Text fields.** Titles are plain text. Descriptions and story text may be rich-text JSON (see the `bb-rich-text` skill), and the server cleans them with `cleanValue` before saving.
 - **Status.** `status` is one of `idea`, `outlined`, `drafting`, `revising`, `done` (see `$lib/status.ts`).
 - **Ordering.** Sort by `position`, then `createdAt`, then `id`. `bookOutline()` in `$lib/library.ts` does this, so use it rather than re-sorting by hand.

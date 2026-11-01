@@ -56,7 +56,7 @@
 
 	const groups = $derived<Group[]>(
 		outline.map((entry) => {
-			const chapters: Item[] = entry.chapters.map(({ chapter, number }) => {
+			const chapters: Item[] = entry.chapters.map(({ chapter, number, place, label }) => {
 				const key = keyOf('chapter', chapter.id);
 				return {
 					kind: 'chapter',
@@ -65,9 +65,12 @@
 					title: chapter.title,
 					description: chapter.description,
 					showDescription: chapter.showDescription,
+					headingLabel: chapter.headingLabel,
+					showTitle: chapter.showTitle,
 					status: chapter.status,
-					label: `Chapter ${number}`,
+					label,
 					number,
+					place,
 					holdsChapters: false,
 					partId: chapter.partId,
 					words: doc.words[key] ?? 0,
@@ -84,9 +87,12 @@
 					title: part.title,
 					description: part.description,
 					showDescription: part.showDescription,
+					headingLabel: part.headingLabel,
+					showTitle: part.showTitle,
 					status: part.status,
 					label: entry.label,
 					number: null,
+					place: entry.place,
 					holdsChapters: !!part.hasChapters,
 					partId: null,
 					words: part.hasChapters
@@ -658,7 +664,7 @@
 								item={selectedItem}
 								group={selectedGroup}
 								partTitle={selectedPartTitle}
-								bookId={id}
+								{book}
 								{ui}
 								oncast={(item, type, ids) => doc.setCast(item.kind, item.id, type, ids)}
 								ondelete={requestDelete}
@@ -709,7 +715,7 @@
 						item={selectedItem}
 						group={selectedGroup}
 						partTitle={selectedPartTitle}
-						bookId={id}
+						{book}
 						{ui}
 						oncast={(item, type, ids) => doc.setCast(item.kind, item.id, type, ids)}
 						ondelete={requestDelete}

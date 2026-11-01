@@ -2,6 +2,7 @@
 	import { onMount, tick, untrack } from 'svelte';
 	import { resolve } from '$app/paths';
 	import type { OutlinePart } from '$lib/library';
+	import { chapterHeading, partHeading } from '$lib/headings';
 	import {
 		TEXT_SIZES,
 		type ReaderData,
@@ -63,26 +64,30 @@
 		const flows: Flow[] = [];
 		const items: BookItem[] = [];
 		outline.forEach((entry, index) => {
+			const key = `part-${entry.part.id}`;
+			const heading = partHeading(entry, data.book);
 			if (entry.label) {
-				items.push({ kind: 'part', key: `part-${entry.part.id}`, entry: index });
-				for (const { chapter, number } of entry.chapters) {
+				const page = heading.title || entry.part.description;
+				items.push(page ? { kind: 'part', key, entry: index } : { kind: 'anchor', key });
+				for (const item of entry.chapters) {
+					const { chapter } = item;
+					const line = chapterHeading(item, data.book);
 					const key = `chapter-${chapter.id}`;
-					items.push({ kind: 'text', key, flow: flows.length, title: chapter.title });
+					items.push({ kind: 'text', key, flow: flows.length, title: line.title });
 					flows.push({
 						key,
-						over: `Chapter ${number}`,
-						title: chapter.title,
+						over: line.over,
+						title: line.title,
 						description: chapter.description,
 						editHref: resolve('/chapter/[id]', { id: String(chapter.id) })
 					});
 				}
 			} else {
-				const key = `part-${entry.part.id}`;
-				items.push({ kind: 'text', key, flow: flows.length, title: entry.part.title });
+				items.push({ kind: 'text', key, flow: flows.length, title: heading.title });
 				flows.push({
 					key,
-					over: null,
-					title: entry.part.title,
+					over: heading.over,
+					title: heading.title,
 					description: entry.part.description,
 					editHref: resolve('/part/[id]', { id: String(entry.part.id) })
 				});
@@ -402,37 +407,47 @@
 	<ol class="toc">
 		{#each outline as entry (entry.part.id)}
 			{@const key = `part-${entry.part.id}`}
+			{@const heading = partHeading(entry, data.book)}
 			<li class="toc-part">
-				<a
-					href="#{key}"
-					onclick={(event) => {
-						event.preventDefault();
-						goTo(key);
-					}}
-				>
-					{#if entry.label}<span class="toc-label">{entry.label}</span>{/if}
-					<span class="toc-title">{entry.part.title}</span>
-					<span class="toc-dots"></span>
-					<span class="toc-folio">{folioOf(key)}</span>
-				</a>
+				{#if heading.title}
+					<a
+						href="#{key}"
+						onclick={(event) => {
+							event.preventDefault();
+							goTo(key);
+						}}
+					>
+						{#if heading.over}<span class="toc-label">{heading.over}</span>{/if}
+						<span class="toc-title">{heading.title}</span>
+						<span class="toc-dots"></span>
+						<span class="toc-folio">{folioOf(key)}</span>
+					</a>
+				{/if}
 				{#if entry.chapters.length > 0}
 					<ol>
-						{#each entry.chapters as { chapter, number } (chapter.id)}
-							{@const chapterKey = `chapter-${chapter.id}`}
-							<li>
-								<a
-									href="#{chapterKey}"
-									onclick={(event) => {
-										event.preventDefault();
-										goTo(chapterKey);
-									}}
-								>
-									<span class="toc-num">{number}</span>
-									<span class="toc-title">{chapter.title}</span>
-									<span class="toc-dots"></span>
-									<span class="toc-folio">{folioOf(chapterKey)}</span>
-								</a>
-							</li>
+						{#each entry.chapters as item (item.chapter.id)}
+							{@const chapterKey = `chapter-${item.chapter.id}`}
+							{@const line = chapterHeading(item, data.book)}
+							{#if line.title}
+								<li>
+									<a
+										href="#{chapterKey}"
+										onclick={(event) => {
+											event.preventDefault();
+											goTo(chapterKey);
+										}}
+									>
+										{#if line.over && !line.short}
+											<span class="toc-label">{line.over}</span>
+										{:else}
+											<span class="toc-num">{line.short}</span>
+										{/if}
+										<span class="toc-title">{line.title}</span>
+										<span class="toc-dots"></span>
+										<span class="toc-folio">{folioOf(chapterKey)}</span>
+									</a>
+								</li>
+							{/if}
 						{/each}
 					</ol>
 				{/if}
@@ -443,13 +458,15 @@
 
 {#snippet flowContent(flow: Flow)}
 	{@const text = data.texts[flow.key] ?? ''}
-	<header class="opener">
-		{#if flow.over}<span class="opener-over">{flow.over}</span>{/if}
-		<h2 class="opener-title">{flow.title}</h2>
-		{#if flow.description}
-			<p class="opener-sub"><RichText value={flow.description} italic /></p>
-		{/if}
-	</header>
+	{#if flow.title || flow.description}
+		<header class="opener">
+			{#if flow.over}<span class="opener-over">{flow.over}</span>{/if}
+			{#if flow.title}<h2 class="opener-title">{flow.title}</h2>{/if}
+			{#if flow.description}
+				<p class="opener-sub"><RichText value={flow.description} italic /></p>
+			{/if}
+		</header>
+	{/if}
 	{#if plainText(text).trim()}
 		<RichText value={text} kind="story" class="prose" />
 	{:else}
@@ -530,7 +547,7 @@
 								{#if resume}
 									{@const saved = resume}
 									<button type="button" class="paper-button" onclick={() => goToPosition(saved)}>
-										Continue · {saved.label}
+										Continue{saved.label ? ` · ${saved.label}` : ''}
 									</button>
 								{/if}
 							</div>
@@ -538,9 +555,10 @@
 					</div>
 				{:else if page.kind === 'part'}
 					{@const entry = outline[page.entry]}
+					{@const heading = partHeading(entry, data.book)}
 					<div class="centered part-page">
-						<span class="part-over">{entry.label}</span>
-						<h2 class="part-title">{entry.part.title}</h2>
+						{#if heading.over}<span class="part-over">{heading.over}</span>{/if}
+						{#if heading.title}<h2 class="part-title">{heading.title}</h2>{/if}
 						{#if entry.part.description}
 							<p class="part-sub"><RichText value={entry.part.description} italic /></p>
 						{/if}
@@ -1001,7 +1019,9 @@
 	}
 
 	.toc-label {
-		flex: none;
+		flex: 0 1 auto;
+		min-width: 0;
+		overflow-wrap: anywhere;
 		font-family: var(--font-ui);
 		font-size: 0.6em;
 		font-weight: 700;

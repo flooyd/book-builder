@@ -7,9 +7,10 @@
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import RichText from '$lib/components/rich/RichText.svelte';
 	import BookGoal from '$lib/components/goals/BookGoal.svelte';
+	import BookHeadings from './BookHeadings.svelte';
 	import Monogram from '$lib/components/bible/Monogram.svelte';
 
-	// Sharing, characters, places and systems of one book (Book.dc.html aside).
+	// Sharing, goal, headings, characters, places and systems of one book (Book.dc.html aside).
 	let { bookId }: { bookId: number } = $props();
 
 	// ---- Readers: the public link ------------------------------------------------------------
@@ -130,6 +131,8 @@
 		{/if}
 
 		<BookGoal {bookId} />
+
+		<BookHeadings {bookId} />
 
 		<section aria-labelledby="h-characters" class="panel">
 			<div class="panel-head">

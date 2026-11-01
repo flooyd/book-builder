@@ -1,22 +1,24 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { initials, plural } from '$lib/library';
-	import { modalStore } from '$lib/stores';
+	import { modalStore, type Book } from '$lib/stores';
 	import { STATUSES } from '$lib/status';
 	import { ENTRY_COPY, ENTRY_TYPES, type EntryType } from '$lib/bible';
+	import { plainText } from '$lib/rich';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import type { Group, Item, OutlineUi } from './types';
 	import EditableText from './EditableText.svelte';
 	import RichInline from '$lib/components/rich/RichInline.svelte';
+	import HeadingFields from '$lib/components/story/HeadingFields.svelte';
 
-	// Everything about the selected part or chapter: title, synopsis, reading-mode subtitle,
-	// status, cast, numbers and actions.
+	// Everything about the selected part or chapter: title, synopsis, reading-mode subtitle and
+	// heading, status, cast, numbers and actions.
 	let {
 		item,
 		group,
 		partTitle,
-		bookId,
+		book,
 		ui,
 		oncast,
 		ondelete,
@@ -27,7 +29,7 @@
 		group: Group | undefined;
 		/** For chapters: the title of their part. */
 		partTitle: string;
-		bookId: number;
+		book: Book;
 		ui: OutlineUi;
 		oncast: (item: Item, type: EntryType, ids: number[]) => void;
 		ondelete: (item: Item) => void;
@@ -35,6 +37,7 @@
 		onclose?: () => void;
 	} = $props();
 
+	const bookId = $derived(book.id);
 	const isPart = $derived(item.kind === 'part');
 	const chapters = $derived(group?.chapters ?? []);
 	// A part can switch what it holds while it holds nothing.
@@ -107,6 +110,24 @@
 			/>
 			Show it under the title in reading mode
 		</label>
+	</div>
+
+	<div class="field">
+		<p class="label">Heading in reading mode</p>
+		<!-- Re-mounted per item: it keeps a half-typed label of its own. -->
+		{#key item.key}
+			<HeadingFields
+				noun={isPart ? 'Part' : 'Chapter'}
+				place={item.place}
+				style={isPart ? book.partLabels : book.chapterLabels}
+				label={item.headingLabel}
+				showTitle={item.showTitle}
+				titlesOff={!isPart && !book.chapterTitles}
+				title={item.title}
+				subtitle={item.showDescription ? plainText(item.description, 'description') : ''}
+				onchange={(changes) => ui.save(item, changes)}
+			/>
+		{/key}
 	</div>
 
 	{#if item.holdsChapters}

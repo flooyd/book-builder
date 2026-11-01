@@ -36,7 +36,7 @@
 						{
 							key: `chapter-${chapter.id}`,
 							href: resolve('/chapter/[id]', { id: String(chapter.id) }),
-							number: String(number),
+							number: String(number ?? ''),
 							title: chapter.title,
 							found
 						}

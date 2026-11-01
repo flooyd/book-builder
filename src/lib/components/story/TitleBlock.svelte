@@ -1,17 +1,33 @@
+<script lang="ts" module>
+	/** What "Edit details" saves. */
+	export type TitleDetails = {
+		title: string;
+		description: string;
+		showDescription: boolean;
+		headingLabel: string | null;
+		showTitle: boolean;
+	};
+</script>
+
 <script lang="ts">
 	import { tick, type Snippet } from 'svelte';
+	import type { LabelStyle, Noun } from '$lib/headings';
+	import { plainText } from '$lib/rich';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import RichEditor from '$lib/components/rich/RichEditor.svelte';
 	import RichText from '$lib/components/rich/RichText.svelte';
+	import HeadingFields from './HeadingFields.svelte';
 
-	// Overline, title, italic description and inline "Edit details" for part and chapter pages.
+	// Overline, title, italic description and inline "Edit details" for part and chapter pages,
+	// including how the heading reads in reading mode.
 	let {
 		overline,
 		title,
 		description,
 		showDescription,
 		descriptionPlaceholder,
+		heading,
 		readHref,
 		canEdit,
 		onsave,
@@ -23,11 +39,20 @@
 		/** Whether reading mode shows the description as a subtitle under the title. */
 		showDescription: boolean;
 		descriptionPlaceholder: string;
+		/** Its heading in reading mode (see HeadingFields). */
+		heading: {
+			noun: Noun;
+			place: number | null;
+			style: LabelStyle;
+			label: string | null;
+			showTitle: boolean;
+			titlesOff?: boolean;
+		};
 		/** Opens this part or chapter in reading mode. */
 		readHref: string;
 		canEdit: boolean;
 		/** Persist the edit; throw an Error with a message to show it inline. */
-		onsave: (title: string, description: string, showDescription: boolean) => Promise<void>;
+		onsave: (details: TitleDetails) => Promise<void>;
 		children?: Snippet;
 	} = $props();
 
@@ -35,6 +60,10 @@
 	let draftTitle = $state('');
 	let draftDescription = $state('');
 	let draftShow = $state(false);
+	let draftHeading = $state<Pick<TitleDetails, 'headingLabel' | 'showTitle'>>({
+		headingLabel: null,
+		showTitle: true
+	});
 	let descriptionEditor = $state<RichEditor>();
 	let saving = $state(false);
 	let error = $state('');
@@ -44,6 +73,7 @@
 		draftTitle = title;
 		draftDescription = description;
 		draftShow = showDescription;
+		draftHeading = { headingLabel: heading.label, showTitle: heading.showTitle };
 		error = '';
 		editing = true;
 		await tick();
@@ -61,7 +91,12 @@
 		saving = true;
 		error = '';
 		try {
-			await onsave(draftTitle, draftDescription, draftShow);
+			await onsave({
+				title: draftTitle,
+				description: draftDescription,
+				showDescription: draftShow,
+				...draftHeading
+			});
 			editing = false;
 		} catch (err) {
 			error = err instanceof Error ? err.message : "Couldn't save.";
@@ -107,6 +142,20 @@
 				<input type="checkbox" bind:checked={draftShow} />
 				Show the description under the title in reading mode
 			</label>
+			<div class="heading">
+				<p class="heading-name">Heading in reading mode</p>
+				<HeadingFields
+					noun={heading.noun}
+					place={heading.place}
+					style={heading.style}
+					label={heading.label}
+					showTitle={draftHeading.showTitle}
+					titlesOff={heading.titlesOff}
+					title={draftTitle.trim()}
+					subtitle={draftShow ? plainText(draftDescription, 'description') : ''}
+					onchange={(changes) => (draftHeading = { ...draftHeading, ...changes })}
+				/>
+			</div>
 			{#if error}
 				<p id="details-error" class="error" role="alert">
 					<Icon name="alert-circle" size={16} />{error}
@@ -137,6 +186,9 @@
 			{#if showDescription}
 				<p class="shown"><Icon name="book-open" size={14} />Shown as a subtitle in reading mode</p>
 			{/if}
+		{/if}
+		{#if !heading.showTitle || heading.titlesOff}
+			<p class="shown"><Icon name="book-open" size={14} />The title is hidden in reading mode</p>
 		{/if}
 	{/if}
 
@@ -266,6 +318,22 @@
 		width: 18px;
 		height: 18px;
 		accent-color: var(--bb-royal);
+	}
+
+	.heading {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		padding-top: 14px;
+		border-top: 1px solid var(--bb-line-faint);
+	}
+
+	.heading-name {
+		font-size: 12px;
+		font-weight: 700;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--bb-text-3);
 	}
 
 	.edit-actions {

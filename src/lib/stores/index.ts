@@ -2,6 +2,7 @@ import { writable, type Writable } from 'svelte/store';
 import type { User } from 'better-auth';
 import type { GoalsData } from '$lib/goals';
 import type { EntryFields, EntryType } from '$lib/bible';
+import type { LabelStyle } from '$lib/headings';
 
 export type ModalType = 'create' | 'edit' | 'delete';
 export type ModalCategory = 'book' | 'part' | 'chapter' | 'character' | 'place' | 'system';
@@ -18,6 +19,12 @@ export type Book = {
 	targetWords: number | null;
 	/** The day ('YYYY-MM-DD') the book should be finished by; null when none is set. */
 	deadline: string | null;
+	/** How reading mode writes the automatic part labels (see $lib/headings). */
+	partLabels: LabelStyle;
+	/** How reading mode writes the automatic chapter labels. */
+	chapterLabels: LabelStyle;
+	/** Off, every chapter goes by its label alone in reading mode. */
+	chapterTitles: boolean;
 	createdAt: string;
 	updatedAt: string;
 };
@@ -31,6 +38,10 @@ export type Part = {
 	hasChapters: number;
 	/** Show the description as a subtitle in reading mode. */
 	showDescription: boolean;
+	/** The label above the title in reading mode: null follows the book, '' hides it. */
+	headingLabel: string | null;
+	/** Show the title in reading mode. */
+	showTitle: boolean;
 	/** Order within the book. */
 	position: number;
 	/** Writing status (see $lib/status); used by parts that hold story text. */
@@ -45,6 +56,10 @@ export type Chapter = {
 	partId: number;
 	/** Show the description as a subtitle in reading mode. */
 	showDescription: boolean;
+	/** The label above the title in reading mode: null follows the book, '' hides it. */
+	headingLabel: string | null;
+	/** Show the title in reading mode. */
+	showTitle: boolean;
 	/** Order within the part. */
 	position: number;
 	/** Writing status (see $lib/status). */

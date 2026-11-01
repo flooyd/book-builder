@@ -60,10 +60,14 @@ export function geometryFor(width: number, height: number, textSize: number): Ge
 	};
 }
 
-/** What goes into the book, in order: part title pages and flows of text. */
+/**
+ * What goes into the book, in order: part title pages and flows of text. An anchor is a part
+ * with nothing to show: it gets no page, but links to it land on whatever comes next.
+ */
 export type BookItem =
 	| { kind: 'part'; key: string; entry: number }
-	| { kind: 'text'; key: string; flow: number; title: string };
+	| { kind: 'text'; key: string; flow: number; title: string }
+	| { kind: 'anchor'; key: string };
 
 export type BookPage = (
 	| { kind: 'endpaper' | 'title' | 'end' | 'blank' | 'empty' }
@@ -106,13 +110,15 @@ export function buildPages(
 
 	if (!single) drafts.push({ kind: 'endpaper' });
 	drafts.push({ kind: 'title' });
-	if (items.length === 0) {
+	if (items.every((item) => item.kind === 'anchor')) {
 		drafts.push({ kind: 'empty' });
 	} else {
 		for (let column = 0; column < contentsColumns; column++)
 			drafts.push({ kind: 'contents', column });
 		for (const item of items) {
-			if (item.kind === 'part') {
+			if (item.kind === 'anchor') {
+				startOf[item.key] = drafts.length;
+			} else if (item.kind === 'part') {
 				// Right-hand pages have odd indexes (the title page is 1).
 				if (!single && drafts.length % 2 === 0) drafts.push({ kind: 'blank' });
 				startOf[item.key] = drafts.length;
@@ -138,8 +144,8 @@ export function buildPages(
 				...page,
 				folio,
 				printFolio: true,
-				// Not over the opening page of a chapter.
-				head: draft.column === 0 ? null : left ? bookTitle : title
+				// Not over the opening page of a chapter. A chapter with no heading goes by the book.
+				head: draft.column === 0 ? null : left ? bookTitle : title || bookTitle
 			};
 		}
 		if (draft.kind === 'contents') {

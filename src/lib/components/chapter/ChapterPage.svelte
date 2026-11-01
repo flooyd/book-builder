@@ -13,7 +13,7 @@
 	import { StoryTextDoc, guardStoryText } from '$lib/story-text.svelte';
 	import PageFrame from '$lib/components/story/PageFrame.svelte';
 	import Rail from '$lib/components/story/Rail.svelte';
-	import TitleBlock from '$lib/components/story/TitleBlock.svelte';
+	import TitleBlock, { type TitleDetails } from '$lib/components/story/TitleBlock.svelte';
 	import StorySurface from '$lib/components/story/StorySurface.svelte';
 	import SaveStatus from '$lib/components/story/SaveStatus.svelte';
 	import Missing from '$lib/components/story/Missing.svelte';
@@ -28,7 +28,7 @@
 			? bookOutline(book.id, $partsStore, $chaptersStore).find((e) => e.part.id === part.id)
 			: undefined
 	);
-	const number = $derived(entry?.chapters.find((c) => c.chapter.id === id)?.number);
+	const placed = $derived(entry?.chapters.find((c) => c.chapter.id === id));
 	const isOwner = $derived(!!part && $userStore?.id === part.userId);
 
 	const chapterHref = (c: Chapter) => resolve('/chapter/[id]', { id: String(c.id) });
@@ -38,7 +38,7 @@
 			key: item.chapter.id,
 			href: chapterHref(item.chapter),
 			name: item.chapter.title,
-			number: item.number,
+			number: item.number ?? '',
 			current: item.chapter.id === id
 		}))
 	);
@@ -67,12 +67,8 @@
 		if (chapter) doc.load();
 	});
 
-	async function saveDetails(title: string, description: string, showDescription: boolean) {
-		const updated = await putJSON<Chapter>(`/api/chapter/${id}`, {
-			title,
-			description,
-			showDescription
-		});
+	async function saveDetails(details: TitleDetails) {
+		const updated = await putJSON<Chapter>(`/api/chapter/${id}`, details);
 		chaptersStore.update((chapters) => chapters.map((c) => (c.id === updated.id ? updated : c)));
 	}
 
@@ -103,12 +99,20 @@
 			description={chapter.description}
 			showDescription={chapter.showDescription}
 			descriptionPlaceholder="What happens here?"
+			heading={{
+				noun: 'Chapter',
+				place: placed?.place ?? null,
+				style: book.chapterLabels,
+				label: chapter.headingLabel,
+				showTitle: chapter.showTitle,
+				titlesOff: !book.chapterTitles
+			}}
 			readHref="{resolve('/book/[id]/read', { id: String(book.id) })}#chapter-{chapter.id}"
 			canEdit={isOwner}
 			onsave={saveDetails}
 		>
 			{#snippet overline()}
-				Chapter {number ?? ''} ·
+				{placed?.label ?? 'Chapter'} ·
 				<a href={resolve('/part/[id]', { id: String(part.id) })}>{part.title}</a>
 			{/snippet}
 		</TitleBlock>

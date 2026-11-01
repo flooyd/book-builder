@@ -12,7 +12,8 @@
 		compact = false
 	}: {
 		href: string;
-		number: number;
+		/** Null for a chapter with a label of its own, which doesn't take a number. */
+		number: number | null;
 		title: string;
 		updatedAt: string;
 		latest?: boolean;

@@ -218,7 +218,7 @@
 							id="title-{item.key}"
 							class="title"
 							value={item.title}
-							label="Title of chapter {item.number}"
+							label="Title of {item.label}"
 							required
 							onsave={(title) => ui.save(item, { title })}
 							onkeydown={(event) => ui.titleKeys(item, event)}

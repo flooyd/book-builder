@@ -4,17 +4,21 @@ import { db } from '$lib/server/db';
 import { storyText } from '$lib/server/db/schema';
 import { descriptionField, textField } from '$lib/server/ownership';
 import { isStatus, type Status } from '$lib/status';
+import { HEADING_LABEL_LENGTH } from '$lib/headings';
 
 export type DetailChanges = {
 	title?: string;
 	description?: string;
 	showDescription?: boolean;
+	headingLabel?: string | null;
+	showTitle?: boolean;
 	status?: Status;
 };
 
 /**
  * The fields a PUT to a part or chapter may change: any of title (not empty), description,
- * showDescription and status. Returns the changes, or an error response to send back.
+ * showDescription, headingLabel, showTitle and status. Returns the changes, or an error response
+ * to send back.
  */
 export function readDetails(body: unknown): { changes: DetailChanges } | { error: Response } {
 	if (!body || typeof body !== 'object') {
@@ -33,6 +37,16 @@ export function readDetails(body: unknown): { changes: DetailChanges } | { error
 	}
 	if (typeof fields.showDescription === 'boolean') {
 		changes.showDescription = fields.showDescription;
+	}
+	if ('headingLabel' in fields) {
+		const label = fields.headingLabel;
+		if (label !== null && typeof label !== 'string') {
+			return { error: json({ error: 'A label is text, or nothing' }, { status: 400 }) };
+		}
+		changes.headingLabel = label?.trim().slice(0, HEADING_LABEL_LENGTH) ?? null;
+	}
+	if (typeof fields.showTitle === 'boolean') {
+		changes.showTitle = fields.showTitle;
 	}
 	if ('status' in fields) {
 		if (!isStatus(fields.status)) {

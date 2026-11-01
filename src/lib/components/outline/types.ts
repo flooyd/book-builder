@@ -13,10 +13,16 @@ export type Item = {
 	title: string;
 	description: string;
 	showDescription: boolean;
+	/** The label above the title in reading mode: null follows the book, '' hides it. */
+	headingLabel: string | null;
+	showTitle: boolean;
 	status: string;
-	/** "Part One", "Chapter 3"; null for parts that hold story text. */
+	/** "Part One", "Chapter 3", or its own label; null for parts that hold story text. */
 	label: string | null;
+	/** Null for parts, and for chapters with a label of their own. */
 	number: number | null;
+	/** The number it has or would take on an automatic label; null for story-text parts. */
+	place: number | null;
 	/** Parts: holds chapters (true) or its own story text (false). Chapters: false. */
 	holdsChapters: boolean;
 	/** Chapters: the part they're in. */

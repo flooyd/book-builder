@@ -2,6 +2,7 @@
 	import { onMount, tick } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { bookOutline, plural } from '$lib/library';
+	import { chapterHeading, partHeading } from '$lib/headings';
 	import {
 		DEFAULT_PREFS,
 		countWords,
@@ -40,23 +41,32 @@
 			(words > 0 ? ` · ${plural(words, 'word')} · about ${readingTime(words)}` : '')
 	);
 
-	// Every part and chapter in reading order, with its anchor (the element's id).
+	// Every part and chapter in reading order, with its anchor (the element's id). A part that
+	// holds chapters and has nothing to show has no page of its own, so it isn't a place to be.
 	const sections = $derived<ReadingSection[]>(
-		outline.flatMap((entry): ReadingSection[] =>
-			entry.label
-				? [
-						{ key: `part-${entry.part.id}`, overline: entry.label, title: entry.part.title },
-						...entry.chapters.map(({ chapter, number }) => ({
-							key: `chapter-${chapter.id}`,
-							overline: `Chapter ${number}`,
-							title: chapter.title
-						}))
-					]
-				: [{ key: `part-${entry.part.id}`, overline: null, title: entry.part.title }]
-		)
+		outline.flatMap((entry): ReadingSection[] => {
+			const heading = partHeading(entry, data.book);
+			const part = {
+				key: `part-${entry.part.id}`,
+				overline: heading.over,
+				title: heading.title
+			};
+			if (!entry.label) return [part];
+			return [
+				...(heading.title || entry.part.description ? [part] : []),
+				...entry.chapters.map((item) => {
+					const line = chapterHeading(item, data.book);
+					return {
+						key: `chapter-${item.chapter.id}`,
+						overline: line.over,
+						title: line.title
+					};
+				})
+			];
+		})
 	);
 	const labelOf = (section: ReadingSection) =>
-		section.overline ? `${section.overline} · ${section.title}` : section.title;
+		[section.overline, section.title].filter(Boolean).join(' · ');
 
 	const bookHref = $derived(resolve('/book/[id]', { id: String(data.book.id) }));
 
@@ -281,29 +291,41 @@
 	<ol class="toc">
 		{#each outline as entry (entry.part.id)}
 			{@const partKey = `part-${entry.part.id}`}
+			{@const heading = partHeading(entry, data.book)}
 			<li class={entry.label ? 'toc-part' : 'toc-story'}>
-				<a
-					href="#{partKey}"
-					aria-current={inDialog && sections[current]?.key === partKey ? 'location' : undefined}
-					onclick={(event) => jump(event, partKey)}
-				>
-					{#if entry.label}<span class="toc-over">{entry.label}</span>{/if}
-					<span class="toc-title">{entry.part.title}</span>
-				</a>
+				{#if heading.title}
+					<a
+						href="#{partKey}"
+						aria-current={inDialog && sections[current]?.key === partKey ? 'location' : undefined}
+						onclick={(event) => jump(event, partKey)}
+					>
+						{#if heading.over}<span class="toc-over">{heading.over}</span>{/if}
+						<span class="toc-title">{heading.title}</span>
+					</a>
+				{/if}
 				{#if entry.chapters.length > 0}
 					<ol>
-						{#each entry.chapters as { chapter, number } (chapter.id)}
-							{@const key = `chapter-${chapter.id}`}
-							<li>
-								<a
-									href="#{key}"
-									aria-current={inDialog && sections[current]?.key === key ? 'location' : undefined}
-									onclick={(event) => jump(event, key)}
-								>
-									<span class="toc-num">{number}</span>
-									<span class="toc-title">{chapter.title}</span>
-								</a>
-							</li>
+						{#each entry.chapters as item (item.chapter.id)}
+							{@const key = `chapter-${item.chapter.id}`}
+							{@const line = chapterHeading(item, data.book)}
+							{#if line.title}
+								<li>
+									<a
+										href="#{key}"
+										aria-current={inDialog && sections[current]?.key === key
+											? 'location'
+											: undefined}
+										onclick={(event) => jump(event, key)}
+									>
+										{#if line.over && !line.short}
+											<span class="toc-over">{line.over}</span>
+										{:else}
+											<span class="toc-num">{line.short}</span>
+										{/if}
+										<span class="toc-title">{line.title}</span>
+									</a>
+								</li>
+							{/if}
 						{/each}
 					</ol>
 				{/if}
@@ -457,7 +479,9 @@
 						</Button>
 						{#if resume}
 							{@const at = resume}
-							<Button size="lg" onclick={() => restore(at, 'smooth')}>Continue · {at.label}</Button>
+							<Button size="lg" onclick={() => restore(at, 'smooth')}>
+								Continue{at.label ? ` · ${at.label}` : ''}
+							</Button>
 						{/if}
 					</div>
 				{/if}
@@ -472,28 +496,38 @@
 
 			{#each outline as entry (entry.part.id)}
 				{@const partHref = resolve('/part/[id]', { id: String(entry.part.id) })}
+				{@const heading = partHeading(entry, data.book)}
 				{#if entry.label}
-					<header class="part-page" id="part-{entry.part.id}">
-						<span class="part-over">{entry.label}</span>
-						<h2>{entry.part.title}</h2>
-						{#if entry.part.description}
-							<p class="subtitle"><RichText value={entry.part.description} italic /></p>
-						{/if}
-						{@render ornament()}
-					</header>
-					{#each entry.chapters as { chapter, number } (chapter.id)}
+					{#if heading.title || entry.part.description}
+						<header class="part-page" id="part-{entry.part.id}">
+							{#if heading.over}<span class="part-over">{heading.over}</span>{/if}
+							{#if heading.title}<h2>{heading.title}</h2>{/if}
+							{#if entry.part.description}
+								<p class="subtitle"><RichText value={entry.part.description} italic /></p>
+							{/if}
+							{@render ornament()}
+						</header>
+					{:else}
+						<!-- Nothing to show, so no page; links to this part still land here. -->
+						<span id="part-{entry.part.id}"></span>
+					{/if}
+					{#each entry.chapters as item (item.chapter.id)}
+						{@const chapter = item.chapter}
+						{@const line = chapterHeading(item, data.book)}
 						<section
 							class="chapter"
 							id="chapter-{chapter.id}"
-							aria-labelledby="h-chapter-{chapter.id}"
+							aria-labelledby={line.title ? `h-chapter-${chapter.id}` : undefined}
 						>
-							<header class="chapter-head">
-								<span class="chapter-over">Chapter {number}</span>
-								<h3 id="h-chapter-{chapter.id}">{chapter.title}</h3>
-								{#if chapter.description}
-									<p class="subtitle"><RichText value={chapter.description} italic /></p>
-								{/if}
-							</header>
+							{#if line.title || chapter.description}
+								<header class="chapter-head">
+									{#if line.over}<span class="chapter-over">{line.over}</span>{/if}
+									{#if line.title}<h3 id="h-chapter-{chapter.id}">{line.title}</h3>{/if}
+									{#if chapter.description}
+										<p class="subtitle"><RichText value={chapter.description} italic /></p>
+									{/if}
+								</header>
+							{/if}
 							{@render prose(
 								`chapter-${chapter.id}`,
 								resolve('/chapter/[id]', { id: String(chapter.id) })
@@ -506,14 +540,17 @@
 					<section
 						class="chapter"
 						id="part-{entry.part.id}"
-						aria-labelledby="h-part-{entry.part.id}"
+						aria-labelledby={heading.title ? `h-part-${entry.part.id}` : undefined}
 					>
-						<header class="chapter-head">
-							<h2 id="h-part-{entry.part.id}">{entry.part.title}</h2>
-							{#if entry.part.description}
-								<p class="subtitle"><RichText value={entry.part.description} italic /></p>
-							{/if}
-						</header>
+						{#if heading.title || entry.part.description}
+							<header class="chapter-head">
+								{#if heading.over}<span class="chapter-over">{heading.over}</span>{/if}
+								{#if heading.title}<h2 id="h-part-{entry.part.id}">{heading.title}</h2>{/if}
+								{#if entry.part.description}
+									<p class="subtitle"><RichText value={entry.part.description} italic /></p>
+								{/if}
+							</header>
+						{/if}
 						{@render prose(`part-${entry.part.id}`, partHref)}
 					</section>
 				{/if}
@@ -945,8 +982,9 @@
 	}
 
 	.toc-over {
-		flex: none;
+		flex: 0 1 auto;
 		min-width: 88px;
+		overflow-wrap: anywhere;
 		font-size: 11.5px;
 		font-weight: 700;
 		letter-spacing: 0.18em;

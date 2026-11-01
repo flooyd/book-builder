@@ -158,14 +158,14 @@
 							>
 								<div class="card-top">
 									{@render grip(card)}
-									<span class="card-num">Chapter {card.number}</span>
+									<span class="card-num">{card.label}</span>
 									{@render details(card)}
 								</div>
 								<EditableText
 									id="title-{card.key}"
 									class="card-title"
 									value={card.title}
-									label="Title of chapter {card.number}"
+									label="Title of {card.label}"
 									required
 									onsave={(title) => ui.save(card, { title })}
 									onkeydown={(event) => ui.titleKeys(card, event)}
