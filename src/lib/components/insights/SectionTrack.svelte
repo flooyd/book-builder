@@ -7,7 +7,7 @@
 </script>
 
 <script lang="ts">
-	import type { SectionInsight } from '$lib/insights';
+	import type { SectionSummary } from '$lib/insights';
 	import ChartTip from './ChartTip.svelte';
 	import { byPart, nameOf } from './sections';
 
@@ -19,7 +19,7 @@
 		cell,
 		tip
 	}: {
-		sections: SectionInsight[];
+		sections: SectionSummary[];
 		/** Says what the track shows, for screen readers. */
 		label?: string;
 		cell?: (index: number) => TrackCell;
@@ -47,7 +47,7 @@
 
 	/** A number for every chapter would crowd a long book. */
 	const ticks = $derived(sections.length <= 24 ? 1 : sections.length <= 60 ? 5 : 10);
-	const shows = (section: SectionInsight) =>
+	const shows = (section: SectionSummary) =>
 		section.number !== null && (ticks === 1 || section.number % ticks === 0);
 </script>
 

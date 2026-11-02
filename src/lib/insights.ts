@@ -4,6 +4,7 @@
 // No imports, so it runs anywhere and stays easy to test. The server hands analyseManuscript a
 // book's chapters and story-text parts in reading order (see $lib/server/insights), and pages only
 // use the types. "Section" is the word here for either of those: the things a book is read in.
+// The way words are read and tallied is shared with the word maps ($lib/speakers, $lib/word-map).
 
 export type EntryKind = 'character' | 'place' | 'system';
 
@@ -51,10 +52,13 @@ export type ManuscriptInput = {
 	entries: EntryInput[];
 };
 
-export type SectionInsight = Pick<
+/** A section as a page draws it, with none of its text. */
+export type SectionSummary = Pick<
 	SectionInput,
 	'key' | 'target' | 'id' | 'label' | 'title' | 'number' | 'group' | 'words'
-> & {
+>;
+
+export type SectionInsight = SectionSummary & {
 	/** Average words in a sentence; 0 with no text. */
 	sentenceLength: number;
 	/** How much of it is spoken aloud, from 0 to 1. */
@@ -187,17 +191,18 @@ const HABIT_PHRASES = [
 // ---- Reading the text ------------------------------------------------------------------------
 
 /** A word: letters and digits, kept whole across an apostrophe or a hyphen. */
-const WORD = /[\p{L}\p{N}]+(?:['’-][\p{L}\p{N}]+)*/gu;
+export const WORD = /[\p{L}\p{N}]+(?:['’-][\p{L}\p{N}]+)*/gu;
 
 const ABBREVIATION = /^(?:mr|mrs|ms|dr|st|prof|capt|sgt|lt|col|gen|rev)$/i;
 const INITIAL = /^[A-HJ-Z]$/;
-const CAPITAL = /^\p{Lu}/u;
+export const CAPITAL = /^\p{Lu}/u;
 const OPENS_SENTENCE = /^[\p{Lu}\p{N}]/u;
 
-const withoutPossessive = (word: string) => word.replace(/['’]s$/i, '');
+export const withoutPossessive = (word: string) => word.replace(/['’]s$/i, '');
 
 /** The form a word is compared in: lower case, straight apostrophes, no possessive. */
-const plainForm = (word: string) => withoutPossessive(word).toLowerCase().replaceAll('’', "'");
+export const plainForm = (word: string) =>
+	withoutPossessive(word).toLowerCase().replaceAll('’', "'");
 
 const hasVowel = (word: string) => /[aeiouy]/.test(word);
 
@@ -227,9 +232,9 @@ const HABIT_KEYS = new Set(HABIT_WORDS.map(stem));
 const HABIT_PHRASE_SET = new Set(HABIT_PHRASES);
 const HABIT_PHRASE_LENGTHS = [...new Set(HABIT_PHRASES.map((phrase) => phrase.split(' ').length))];
 
-type Spot = { section: number; line: number; start: number; end: number };
+export type Spot = { section: number; line: number; start: number; end: number };
 
-type Tally = {
+export type Tally = {
 	count: number;
 	/** How often each spelling appears. */
 	forms: Record<string, number>;
@@ -261,10 +266,10 @@ function count(tally: Tally, form: string, spot: Spot) {
 	if (here < SPOTS_PER_SECTION && tally.spots.length < SPOTS_KEPT) tally.spots.push(spot);
 }
 
-type Quote = '' | 'double' | 'single';
+export type Quote = '' | 'double' | 'single';
 
 /** The quotation in force after this run of punctuation. The first to open holds until it closes. */
-function quoteAfter(punctuation: string, quote: Quote): Quote {
+export function quoteAfter(punctuation: string, quote: Quote): Quote {
 	let current = quote;
 	for (const character of punctuation) {
 		if (character === '“' && !current) current = 'double';
@@ -280,21 +285,21 @@ function quoteAfter(punctuation: string, quote: Quote): Quote {
  * Whether a sentence ends in the punctuation between two words. A full stop after "Dr" doesn't
  * count, and nor does one before a small letter: “Stop!” she said, is one sentence.
  */
-const endsSentence = (punctuation: string, previous: string, next: string) =>
+export const endsSentence = (punctuation: string, previous: string, next: string) =>
 	/[.!?…]/.test(punctuation) &&
 	OPENS_SENTENCE.test(next) &&
 	!ABBREVIATION.test(previous) &&
 	!INITIAL.test(previous);
 
 type NameMatch = { rest: string[]; entries: string[] };
-type NameIndex = Map<string, NameMatch[]>;
+export type NameIndex = Map<string, NameMatch[]>;
 
 /**
  * Every name the story might use, by its first word, so a line is checked once however many
  * entries there are. Names match as written: "Ade" isn't "made", and a lower-case alias ("the
  * captain") also matches with a capital, for the start of a sentence.
  */
-function nameIndex(entries: EntryInput[]) {
+export function nameIndex(entries: EntryInput[]) {
 	const index: NameIndex = new Map();
 	for (const entry of entries) {
 		const key = `${entry.type}-${entry.id}`;
@@ -320,8 +325,16 @@ function nameIndex(entries: EntryInput[]) {
 	return index;
 }
 
+/** The name that starts at this word, if one does. */
+export function nameAt(words: string[], index: number, names: NameIndex) {
+	const options = names.get(withoutPossessive(words[index] ?? ''));
+	return options?.find((option) =>
+		option.rest.every((word, offset) => withoutPossessive(words[index + 1 + offset] ?? '') === word)
+	);
+}
+
 /** The words names are made of. They'd only crowd the list of common words. */
-function nameWords(entries: EntryInput[]) {
+export function nameWords(entries: EntryInput[]) {
 	const words = new Set<string>();
 	for (const entry of entries) {
 		for (const name of entry.names) {
@@ -346,6 +359,22 @@ type Tallies = {
 };
 
 const isContent = (form: string) => !STOP_WORDS.has(form) && !form.includes("'");
+
+/** Tallies a word if it says anything about this book: not a small word, unless it's a habit. */
+export function countWord(
+	tallies: Map<string, Tally>,
+	word: string,
+	form: string,
+	opening: boolean,
+	spot: Spot
+) {
+	const key = stem(form);
+	if (!HABIT_KEYS.has(key) && (form.length <= 2 || !isContent(form) || /\d/.test(form))) return;
+	const tally = tallyOf(tallies, key);
+	count(tally, form, spot);
+	if (!CAPITAL.test(word)) tally.lower += 1;
+	else if (!opening) tally.capital += 1;
+}
 
 /** Phrases of three to five words, kept within a sentence, and any habit phrases among them. */
 function countPhrases(
@@ -422,31 +451,16 @@ function readLine(
 
 		const form = plainForm(word);
 		sentence.push({ form, start, end });
-
-		const key = stem(form);
-		const habit = HABIT_KEYS.has(key);
-		if (habit || (form.length > 2 && isContent(form) && !/\d/.test(form))) {
-			const tally = tallyOf(tallies.words, key);
-			count(tally, form, { section, line, start, end });
-			if (CAPITAL.test(word)) {
-				if (!opening) tally.capital += 1;
-			} else {
-				tally.lower += 1;
-			}
-		}
+		countWord(tallies.words, word, form, opening, { section, line, start, end });
 
 		opening = false;
 		last = end;
 	}
 	close();
 
-	for (let index = 0; index < tokens.length; index++) {
-		const options = names.get(withoutPossessive(tokens[index][0]));
-		const found = options?.find((option) =>
-			option.rest.every(
-				(word, offset) => withoutPossessive(tokens[index + 1 + offset]?.[0] ?? '') === word
-			)
-		);
+	const words = tokens.map((token) => token[0]);
+	for (let index = 0; index < words.length; index++) {
+		const found = nameAt(words, index, names);
 		if (!found) continue;
 		for (const entry of found.entries) result.named[entry] = (result.named[entry] ?? 0) + 1;
 		index += found.rest.length;
@@ -482,16 +496,16 @@ function excerpt(text: string, start: number, end: number) {
 }
 
 /** A few uses of a word, from as many chapters as possible, in reading order. */
-function examplesOf(tally: Tally, sections: SectionInput[]): Example[] {
+function examplesOf(tally: Tally, sections: SectionInput[], limit: number): Example[] {
 	const chosen = tally.spots.filter(
 		(spot, index) => tally.spots.findIndex((other) => other.section === spot.section) === index
 	);
 	for (const spot of tally.spots) {
-		if (chosen.length >= EXAMPLES) break;
+		if (chosen.length >= limit) break;
 		if (!chosen.includes(spot)) chosen.push(spot);
 	}
 	return chosen
-		.slice(0, EXAMPLES)
+		.slice(0, limit)
 		.sort((a, b) => a.section - b.section || a.line - b.line || a.start - b.start)
 		.map((spot) => ({
 			section: spot.section,
@@ -499,7 +513,12 @@ function examplesOf(tally: Tally, sections: SectionInput[]): Example[] {
 		}));
 }
 
-function repeatInsight(tally: Tally, sections: SectionInput[], words: number): RepeatInsight {
+export function repeatInsight(
+	tally: Tally,
+	sections: SectionInput[],
+	words: number,
+	examples = EXAMPLES
+): RepeatInsight {
 	const forms = Object.entries(tally.forms)
 		.sort((a, b) => b[1] - a[1])
 		.map(([form]) => form);
@@ -512,12 +531,12 @@ function repeatInsight(tally: Tally, sections: SectionInput[], words: number): R
 		every: Math.max(1, Math.round(words / tally.count)),
 		spread,
 		peak: spread.length > 1 && uses * 2 >= tally.count ? busiest : null,
-		examples: examplesOf(tally, sections)
+		examples: examplesOf(tally, sections, examples)
 	};
 }
 
 /** A word that's capitalised wherever it can be told apart: a name nobody has put in the bible. */
-const isProperNoun = (tally: Tally) => tally.capital > 0 && tally.capital >= tally.lower;
+export const isProperNoun = (tally: Tally) => tally.capital > 0 && tally.capital >= tally.lower;
 
 /** Every run of three words in a phrase, for telling when two phrases overlap. */
 function threes(phrase: string) {

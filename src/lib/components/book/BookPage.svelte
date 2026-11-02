@@ -230,6 +230,9 @@
 					<Button href={resolve('/book/[id]/insights', { id: String(book.id) })}>
 						<Icon name="bar-chart" size={16} />Insights
 					</Button>
+					<Button href={resolve('/book/[id]/word-map', { id: String(book.id) })}>
+						<Icon name="quote" size={16} />Word map
+					</Button>
 				</div>
 			</div>
 

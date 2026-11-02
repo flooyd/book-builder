@@ -117,12 +117,24 @@ export function cleanDetails(value: unknown): EntryDetail[] {
 
 // ---- Choosing an entry to mention ---------------------------------------------------------------
 
-const NOT_A_NAME = /^(the|a|an|of)$/i;
+/** Words a full name can open with that no one goes by alone: not "Mr", and not "the". */
+const NOT_A_NAME =
+	/^(?:the|a|an|of|mr|mrs|ms|mx|miss|dr|sir|lady|lord|madam|prof|professor|capt|captain|col|colonel|gen|general|lt|lieutenant|sgt|sergeant|rev|reverend|father|sister|brother|uncle|aunt|king|queen|prince|princess)\.?$/i;
 
 /** The first word of a name, when that's a name by itself: "Juno" of "Juno Halley". */
 export function firstName(name: string) {
 	const [first, ...rest] = name.trim().split(/\s+/);
 	return rest.length > 0 && !NOT_A_NAME.test(first) ? first : null;
+}
+
+/** What a story shortens a full name to from the other end: "Holmes", "Darcy" for Mr. Darcy. */
+export function lastName(name: string) {
+	const words = name.trim().split(/\s+/);
+	const [last, before] = [words.at(-1) ?? '', words.at(-2) ?? ''];
+	// "Juno of Kesh" isn't a Kesh, and "The Hatter" is the Hatter, not a surname.
+	return before && /^\p{Lu}/u.test(last) && /^\p{Lu}/u.test(before) && !/^the$/i.test(before)
+		? last
+		: null;
 }
 
 /**

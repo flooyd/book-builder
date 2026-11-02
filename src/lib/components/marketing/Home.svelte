@@ -499,8 +499,8 @@
 					</div>
 					<h3>Manuscript insights</h3>
 					<p>
-						Your chapter pacing, the words you lean on and who drifts off the page, counted from
-						your own text with no AI involved.
+						Your chapter pacing, the words you lean on, who drifts off the page and a word map for
+						each character, counted from your own text with no AI involved.
 					</p>
 				</article>
 			</motion-stagger>

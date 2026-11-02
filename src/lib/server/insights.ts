@@ -1,5 +1,5 @@
 import { eq, inArray } from 'drizzle-orm';
-import { firstName, type EntryType } from '$lib/bible';
+import { firstName, lastName, type EntryType } from '$lib/bible';
 import {
 	analyseManuscript,
 	type EntryInput,
@@ -13,6 +13,7 @@ import { castsOf, entriesOfBook } from '$lib/server/bible';
 import { db } from '$lib/server/db';
 import { book, chapter, part } from '$lib/server/db/schema';
 import { storyTexts } from '$lib/server/outline';
+import { buildWordMaps } from '$lib/word-map';
 
 /** Everything the story might call an entry, for finding it in text with no mentions. */
 function namesOf(entry: {
@@ -21,15 +22,15 @@ function namesOf(entry: {
 	name: string;
 	aliases: string[];
 }): EntryInput {
-	// Only people go by their first word: the "Lantern" of the Lantern Gate could be any lantern
-	// at the start of a sentence. "The Meridian" is plain "Meridian" as often as not.
-	const short = entry.type === 'character' ? firstName(entry.name) : null;
+	// Only people go by a single word of their name: the "Lantern" of the Lantern Gate could be any
+	// lantern at the start of a sentence. "The Meridian" is plain "Meridian" as often as not.
+	const short = entry.type === 'character' ? [firstName(entry.name), lastName(entry.name)] : [];
 	const bare = entry.name.replace(/^(?:the|a|an)\s+/i, '');
 	return {
 		type: entry.type,
 		id: entry.id,
 		name: entry.name,
-		names: [...new Set([entry.name, bare, ...(short ? [short] : []), ...entry.aliases])]
+		names: [...new Set([entry.name, bare, ...short.filter(Boolean), ...entry.aliases])] as string[]
 	};
 }
 
@@ -43,11 +44,11 @@ function mentionCounts(value: string) {
 }
 
 /**
- * A book's insights, from what's saved now. Unlike reading mode this is for the owner alone, so it
- * uses every real title, hidden or not, and the text with its mentions. It counts in reading order
+ * A book as it's saved now, ready to be counted. Unlike reading mode this is for the owner alone, so
+ * it uses every real title, hidden or not, and the text with its mentions. It runs in reading order
  * through bookOutline, so its numbers and labels are the ones on the outline.
  */
-export async function manuscriptInsights(found: typeof book.$inferSelect) {
+async function manuscriptOf(found: typeof book.$inferSelect) {
 	const parts = await db.select().from(part).where(eq(part.bookId, found.id));
 	const partIds = parts.map((row) => row.id);
 	const chapters = partIds.length
@@ -118,5 +119,13 @@ export async function manuscriptInsights(found: typeof book.$inferSelect) {
 		);
 	});
 
-	return analyseManuscript({ sections, groups, entries: entries.map(namesOf) });
+	return { sections, groups, entries: entries.map(namesOf) };
+}
+
+export async function manuscriptInsights(found: typeof book.$inferSelect) {
+	return analyseManuscript(await manuscriptOf(found));
+}
+
+export async function wordMaps(found: typeof book.$inferSelect) {
+	return buildWordMaps(await manuscriptOf(found));
 }

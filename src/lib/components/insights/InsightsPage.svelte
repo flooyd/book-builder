@@ -61,6 +61,9 @@
 			</p>
 		</div>
 		<div class="actions">
+			<Button href={resolve('/book/[id]/word-map', { id: String(book.id) })}>
+				<Icon name="quote" size={16} />Word map
+			</Button>
 			<Button href={resolve('/book/[id]/outline', { id: String(book.id) })}>
 				<Icon name="list-tree" size={16} />Outline
 			</Button>
