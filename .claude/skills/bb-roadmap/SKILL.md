@@ -17,7 +17,7 @@ idea with that number here. If they name a number, start from its entry.
 - **Adding ideas.** Add them when the user asks for ideas or agrees to one. Say which are new.
 - **The public shelf is separate.** `src/lib/components/marketing/soon.ts` is what visitors see.
   Only add to it when the user asks, and take an entry off when it ships (see the `bb-homepage`
-  skill). An idea here isn't a promise there. The shelf holds 4 at the moment.
+  skill). An idea here isn't a promise there. The shelf holds 4 and 17 at the moment.
 - **Check before trusting it.** Copilot also commits to this repo, so read `git log` and glance at
   the code before calling something unbuilt.
 
@@ -60,6 +60,7 @@ Statuses: **Not started**, **In progress**, **Shipped**, **Dropped**.
 | --- | ------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 15  | Manuscript insights | Shipped     | A page for each book at `/book/[id]/insights`: chapter pacing, the words a writer leans on, who drifts off the page, and a "Worth a look" list, all with no AI. Left out: hiding a word from the lists, -ly adverbs, close repeats (echoes), names missing from the bible, insights across a series, and highlighting uses in the editor. |
 | 16  | AI continuity check | Not started | Ask questions about a book and flag contradictions with the bible. Opt-in, and probably on the writer's own API key: the running cost matters on a free app, and many writers object to AI. Ask before starting.                                                                                                                          |
+| 17  | Word maps           | Not started | A word map or cloud of the whole book, and one for each character, made from the words they say. The whole-book map needs no AI, and neither does a first version of the per-character one: see "Idea 17" below.                                                                                                                          |
 
 ## Recommended order
 
@@ -72,6 +73,8 @@ and had Export (2) built next, the same day.
 - **Email (4):** needed for 13 and 14, and for comment alerts in 12.
 - **Image storage (nothing built yet):** needed for character portraits, uploaded covers and maps.
 - **Mentions (6):** the character-tracking parts of 11 and 15 work best on top of it.
+- **Insights (15):** 17 reuses its counting. The per-character map also leans on the names and
+  aliases in the story bible (6), and on 16 only if AI is ever added for the hard cases.
 
 ## Idea 6: what's done and what's left
 
@@ -91,6 +94,26 @@ Left:
 - **Mentions in descriptions and notes:** they only work in story text so far.
 - **Finding names without an `@`:** suggesting links for names already in the text, so a book
   written before mentions existed can catch up.
+
+## Idea 17: telling who's speaking
+
+The user asked for two maps: the whole book with no AI, and the whole book split by character.
+They expected the second to need AI, so that it wouldn't take a huge list of words to look for,
+"unless you think it's not necessary". Decided on 2026-11-02: it isn't, for a first version.
+
+- **No list of speech verbs.** The names are already in the story bible. In
+  `"How are you doing?" Will inquired.`, a known name or alias next to the quotation marks says who
+  it is, whatever the verb is.
+- **In order of trust.** A name right after or right before the quotation, then an action beat by
+  a known name in the same paragraph, then taking turns in a two-person exchange.
+- **Never guess.** Anything still uncertain goes in an "unattributed" pile the writer can see. A
+  character's map with a stranger's words in it is worse than a smaller map.
+- **What to reuse.** `$lib/insights.ts` already tracks quotation marks (`quoteAfter`, `readLine`),
+  indexes names (`nameIndex`), and has the small words to leave out (`STOP_WORDS`). `namesOf` in
+  `lib/server/insights.ts` builds each entry's names.
+- **Hard to get right without AI.** Pronouns ("she said"), long runs of untagged lines, and
+  characters who go by a name the bible doesn't hold. These fall into "unattributed".
+- **AI, if ever.** Only for what's left, opt-in, on the writer's own key, for the same reasons as 16. Don't promise it, or its absence, on the public shelf.
 
 ## Earlier ideas that shipped
 

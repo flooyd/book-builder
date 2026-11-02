@@ -126,3 +126,4 @@ drizzle/manual/       hand-written SQL migrations
 ## On the shelf next
 
 - **Your account:** reset a forgotten password by email, and delete your account whenever you choose.
+- **Word maps:** see the words your whole book is made of at a glance, and a map for each character, drawn from what they say.
