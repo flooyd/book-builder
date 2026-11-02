@@ -34,6 +34,32 @@ function namesOf(entry: {
 	};
 }
 
+/** What a person's name can be shortened to in the text. */
+const shortNames = (name: string) =>
+	[name.replace(/^(?:the|a|an)\s+/i, ''), firstName(name), lastName(name)].filter(
+		(short) => short !== null
+	);
+
+/**
+ * Everyone a word map should know: the book's entries, with their aliases shortened as their names
+ * are, and any character the story links to with an @, by the words it uses. A link says who's
+ * meant, even if they've since left this book's story bible or the words aren't one of their names.
+ */
+function withEveryName(entries: EntryInput[], texts: string[]) {
+	const known = new Map(entries.map((entry) => [`${entry.type}-${entry.id}`, entry]));
+	for (const { entry, id, label } of texts.flatMap((text) => mentionsIn(text))) {
+		if (entry !== 'character') continue;
+		const key = `${entry}-${id}`;
+		const person = known.get(key) ?? { type: entry, id, name: label, names: [] };
+		known.set(key, { ...person, names: [...person.names, label] });
+	}
+	return [...known.values()].map((entry) =>
+		entry.type === 'character'
+			? { ...entry, names: [...new Set([...entry.names, ...entry.names.flatMap(shortNames)])] }
+			: entry
+	);
+}
+
 /** How many times story text mentions each entry, keyed "character-1". */
 function mentionCounts(value: string) {
 	const counts: Record<string, number> = {};
@@ -119,7 +145,7 @@ async function manuscriptOf(found: typeof book.$inferSelect) {
 		);
 	});
 
-	return { sections, groups, entries: entries.map(namesOf) };
+	return { sections, groups, entries: entries.map(namesOf), texts: Object.values(texts) };
 }
 
 export async function manuscriptInsights(found: typeof book.$inferSelect) {
@@ -127,5 +153,6 @@ export async function manuscriptInsights(found: typeof book.$inferSelect) {
 }
 
 export async function wordMaps(found: typeof book.$inferSelect) {
-	return buildWordMaps(await manuscriptOf(found));
+	const { texts, ...manuscript } = await manuscriptOf(found);
+	return buildWordMaps({ ...manuscript, entries: withEveryName(manuscript.entries, texts) });
 }

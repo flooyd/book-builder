@@ -55,6 +55,17 @@
 	}
 
 	const percent = (words: number) => Math.round((words / maps.spoken.words) * 100);
+
+	/** Names to spell out before "and 12 more". */
+	const QUIET_NAMES = 8;
+
+	const quiet = $derived(
+		new Intl.ListFormat('en').format(
+			maps.quiet.length > QUIET_NAMES
+				? [...maps.quiet.slice(0, QUIET_NAMES), `${maps.quiet.length - QUIET_NAMES} more`]
+				: maps.quiet
+		)
+	);
 </script>
 
 <svelte:head>
@@ -141,6 +152,10 @@
 						chosen={openKey}
 						onchoose={(key) => (chosen = key)}
 					/>
+				{/if}
+
+				{#if maps.quiet.length > 0}
+					<p class="scope">No lines placed yet for {quiet}, so no map of their own.</p>
 				{/if}
 
 				<section class="card" aria-label={speaker?.name ?? 'Not sure who'}>

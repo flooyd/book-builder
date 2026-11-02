@@ -2,7 +2,13 @@
 // that matter most sit at the heart of it. Words stay level, because a cloud is there to be read.
 // No imports and no randomness, so the same words always land in the same places.
 
-export type CloudWord = { key: string; text: string; weight: number };
+export type CloudWord = {
+	key: string;
+	text: string;
+	weight: number;
+	/** Keeps its place in the cloud however light it is. */
+	pinned?: boolean;
+};
 
 export type Placed = {
 	/** Its centre, from the top left of the cloud. */
@@ -115,7 +121,11 @@ export function layOutCloud<Word extends CloudWord>(
 ): Cloud<Word> {
 	const aspect = aspectOf(width);
 	const fits = Math.round((width * (width / aspect)) / roomPerWord(width));
-	const chosen = words.slice(0, Math.max(FEWEST_WORDS, fits));
+	const room = Math.max(FEWEST_WORDS, fits);
+	// Pinned words use up the room first, and the heaviest of the rest fill what's left.
+	const pinned = words.filter((word) => word.pinned).length;
+	let spare = Math.max(room - pinned, FEWEST_WORDS / 2);
+	const chosen = words.filter((word) => word.pinned || spare-- > 0);
 	const sizes = sizesOf(chosen, width, measure);
 
 	const boxes: Box[] = [];

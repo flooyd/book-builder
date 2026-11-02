@@ -60,6 +60,8 @@
 			key: word.text,
 			text: word.text,
 			weight: rank === 'own' ? word.own : word.count,
+			// Everyone in the story has a place on the book's cloud. A character's holds what they say.
+			pinned: !speaker && word.person,
 			tip: tipOf(word),
 			name: word.name
 		}))

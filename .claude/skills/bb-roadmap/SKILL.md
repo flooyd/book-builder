@@ -121,6 +121,12 @@ that version shipped the same day. The rules are in `lib/speakers.ts`.
   about one person, counting he, she, himself, herself and titles. His and her were too noisy.
 - **Names beside lines that aren't in the bible** are collected and offered as ones to add. A tag
   with an unknown name also stops the guessing around it.
+- **Names are not words.** The user's rule, from 2026-11-02: if a character is in the bible or
+  linked with an @, they should be on the cloud without anyone adding them. So people are tallied
+  by name, apart from ordinary words, and keep a place on the book's cloud however rarely they're
+  named. A character who never appears in the text isn't drawn: there's nothing to size them by.
+  A name that's an everyday word (Hope) also picks up that word where it opens a sentence, since a
+  capital proves nothing there. Questions are the one case told apart: "Will she come?", "May I?"
 - **Tried and dropped.** Giving an untagged line to the one person the paragraph before was about
   scored 0 of 10 in the blind test, because that line is usually the other person answering.
 - **How it was measured.** Hiding the tags of known lines in four public-domain novels and seeing
@@ -132,7 +138,7 @@ that version shipped the same day. The rules are in `lib/speakers.ts`.
   exchange can run across one. Someone speaking two paragraphs in a row can flip the turns that
   follow. A first-person narrator is "The narrator", not their entry.
 - **The tests** aren't in the repo, which has no test runner. They bundle these modules with
-  esbuild and were run from a scratch folder: 47 on the rules and 30 on the maps and cloud.
+  esbuild and were run from a scratch folder: 47 on the rules and 45 on the maps and cloud.
 - **AI, if ever.** Only for what's left, opt-in, on the writer's own key, for the same reasons as 16. Don't promise it, or its absence, on the public shelf.
 
 ## Earlier ideas that shipped

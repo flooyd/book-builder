@@ -76,8 +76,18 @@ const ARTICLES = list('the a an');
 /** The first person, with what can be joined to it: "I'd", "I’ll". */
 const FIRST_PERSON = /^I(?:['’](?:d|m|ll|ve))?$/;
 
-/** Words that open a question, so the capital in "Will she come?" doesn't make it a name. */
-const FOLLOWS_A_MODAL = list('i you he she it we they the a an this that there');
+/** Names that can also open a question. */
+const MODALS = list('will may might can shall');
+
+/** What follows one when it's asking, so the capital in "Will she come?" doesn't make it a name. */
+const FOLLOWS_A_MODAL = list(
+	`i you he she it we they the a an this that there my your his her our their these those all any
+	anyone anything everyone someone`
+);
+
+/** Whether a word that could be a name is opening a question instead: "May I?" */
+export const isAsking = (word: string, next: string) =>
+	MODALS.has(word.toLowerCase()) && FOLLOWS_A_MODAL.has(next.toLowerCase());
 
 /** Scare quotes hold this many words at most: they called it “the long dark”. */
 const MENTIONED_WORDS = 4;
@@ -185,8 +195,7 @@ function whoAt(words: Word[], index: number, names: NameIndex): Reading | null {
 	if (!found && ARTICLES.has(word.text.toLowerCase()) && nameAt(texts, index + 1, names)) {
 		return whoAt(words, index + 1, names);
 	}
-	const next = words[index + 1]?.text.toLowerCase() ?? '';
-	if (found && !(word.text === 'Will' && FOLLOWS_A_MODAL.has(next))) {
+	if (found && !isAsking(word.text, words[index + 1]?.text ?? '')) {
 		// Two names at once are two people, which is no help in telling them apart.
 		const after = index + 1 + found.rest.length;
 		const pair = words[after]?.text === 'and' && nameAt(texts, after + 1, names);

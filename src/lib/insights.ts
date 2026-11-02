@@ -358,7 +358,7 @@ type Tallies = {
 	habits: Map<string, Tally>;
 };
 
-const isContent = (form: string) => !STOP_WORDS.has(form) && !form.includes("'");
+export const isContent = (form: string) => !STOP_WORDS.has(form) && !form.includes("'");
 
 /** Tallies a word if it says anything about this book: not a small word, unless it's a habit. */
 export function countWord(
@@ -374,6 +374,14 @@ export function countWord(
 	count(tally, form, spot);
 	if (!CAPITAL.test(word)) tally.lower += 1;
 	else if (!opening) tally.capital += 1;
+}
+
+/** Where a person's name is filed, away from the words: a stem would put Will with "willing". */
+export const NAME_KEY = 'name:';
+
+/** Tallies a name, whatever else it spells: Will, May and Jo would never pass as words. */
+export function countName(tallies: Map<string, Tally>, name: string, spot: Spot) {
+	count(tallyOf(tallies, `${NAME_KEY}${name}`), name, spot);
 }
 
 /** Phrases of three to five words, kept within a sentence, and any habit phrases among them. */
