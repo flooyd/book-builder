@@ -9,10 +9,5 @@ export const SOON: { title: string; icon: IconName; body: string }[] = [
 		title: 'Your account',
 		icon: 'lock',
 		body: 'Reset a forgotten password by email, and delete your account whenever you choose.'
-	},
-	{
-		title: 'Manuscript insights',
-		icon: 'search',
-		body: 'See your overused words, your chapter pacing and the characters who vanish for too long, with no AI involved.'
 	}
 ];

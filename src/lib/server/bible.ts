@@ -404,6 +404,23 @@ export function setCast(
 	});
 }
 
+/** A book's story bible, as much of it as tells where an entry appears. */
+export async function entriesOfBook(bookId: number) {
+	const entries = await Promise.all(
+		ENTRY_TYPES.map(async (type) => {
+			const table = tableOf(type);
+			const link = linkOf(type);
+			const rows = await db
+				.select({ id: table.id, name: table.name, aliases: table.aliases })
+				.from(table)
+				.innerJoin(link.table, eq(link.entry, table.id))
+				.where(eq(link.table.bookId, bookId));
+			return rows.map((row) => ({ type, ...row }));
+		})
+	);
+	return entries.flat();
+}
+
 /** The casts of these parts and chapters, keyed like the section anchors ("chapter-12"). */
 export async function castsOf(partIds: number[], chapterIds: number[]) {
 	const casts: Record<string, Cast> = {};

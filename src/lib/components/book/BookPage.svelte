@@ -227,6 +227,9 @@
 					<Button href={resolve('/book/[id]/outline', { id: String(book.id) })}>
 						<Icon name="list-tree" size={16} />Outline
 					</Button>
+					<Button href={resolve('/book/[id]/insights', { id: String(book.id) })}>
+						<Icon name="bar-chart" size={16} />Insights
+					</Button>
 				</div>
 			</div>
 

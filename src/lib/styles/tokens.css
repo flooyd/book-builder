@@ -67,7 +67,8 @@
 	--bb-coral-soft: light-dark(#a3242f, #ff9aa3); /* error message text */
 	--bb-coral-line: light-dark(#e9c3c3, #5a2f45);
 	--bb-coral-wash: light-dark(rgba(181, 41, 58, 0.08), rgba(255, 122, 133, 0.1));
-	--bb-amber: light-dark(#8a5a00, #f2c46b); /* "Unsaved changes" */
+	--bb-amber: light-dark(#8a5a00, #f2c46b); /* "Unsaved changes", "worth a look" */
+	--bb-amber-wash: light-dark(rgba(138, 90, 0, 0.16), rgba(242, 196, 107, 0.2));
 
 	/* Ink and highlighter colours for formatted text (the editor's palette; see $lib/rich). */
 	--ink-accent: var(--bb-sky);

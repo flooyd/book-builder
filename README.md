@@ -51,6 +51,7 @@ Every screenshot shows the real app, filled with _The Glass Armada_, the sample 
 ## Also on the shelf
 
 - **Series:** set a reading order and share one story bible across every book.
+- **Manuscript insights:** chapter pacing, the words you lean on and who drifts off the page, counted from your own text with no AI involved.
 - **Writing goals:** a daily word target with streaks, rest days and a history calendar, plus a word target and deadline for each book.
 - **Share links:** turn one on and anyone with the link can read your book, no account needed.
 - **Author pages:** a public page at `/author/<handle>` for your bio, books and series.
@@ -125,4 +126,3 @@ drizzle/manual/       hand-written SQL migrations
 ## On the shelf next
 
 - **Your account:** reset a forgotten password by email, and delete your account whenever you choose.
-- **Manuscript insights:** see your overused words, your chapter pacing and the characters who vanish for too long, with no AI involved.

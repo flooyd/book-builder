@@ -17,7 +17,7 @@ idea with that number here. If they name a number, start from its entry.
 - **Adding ideas.** Add them when the user asks for ideas or agrees to one. Say which are new.
 - **The public shelf is separate.** `src/lib/components/marketing/soon.ts` is what visitors see.
   Only add to it when the user asks, and take an entry off when it ships (see the `bb-homepage`
-  skill). An idea here isn't a promise there. The shelf holds 4 and 15 at the moment.
+  skill). An idea here isn't a promise there. The shelf holds 4 at the moment.
 - **Check before trusting it.** Copilot also commits to this repo, so read `git log` and glance at
   the code before calling something unbuilt.
 
@@ -56,10 +56,10 @@ Statuses: **Not started**, **In progress**, **Shipped**, **Dropped**.
 
 ### Insight
 
-| #   | Idea                | Status      | What it is                                                                                                                                                                                                       |
-| --- | ------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 15  | Manuscript insights | Not started | Overused words, chapter pacing, and characters who vanish for long stretches, with no AI needed. The mention index (`story_mention`) already says who appears where.                                             |
-| 16  | AI continuity check | Not started | Ask questions about a book and flag contradictions with the bible. Opt-in, and probably on the writer's own API key: the running cost matters on a free app, and many writers object to AI. Ask before starting. |
+| #   | Idea                | Status      | What it is                                                                                                                                                                                                                                                                                                                                |
+| --- | ------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 15  | Manuscript insights | Shipped     | A page for each book at `/book/[id]/insights`: chapter pacing, the words a writer leans on, who drifts off the page, and a "Worth a look" list, all with no AI. Left out: hiding a word from the lists, -ly adverbs, close repeats (echoes), names missing from the bible, insights across a series, and highlighting uses in the editor. |
+| 16  | AI continuity check | Not started | Ask questions about a book and flag contradictions with the bible. Opt-in, and probably on the writer's own API key: the running cost matters on a free app, and many writers object to AI. Ask before starting.                                                                                                                          |
 
 ## Recommended order
 

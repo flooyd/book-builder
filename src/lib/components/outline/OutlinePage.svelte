@@ -512,6 +512,9 @@
 				<Button href={resolve('/book/[id]/read', { id: String(book.id) })}>
 					<Icon name="book-open" size={16} />Read
 				</Button>
+				<Button href={resolve('/book/[id]/insights', { id: String(book.id) })}>
+					<Icon name="bar-chart" size={16} />Insights
+				</Button>
 				<Button onclick={copyText} disabled={groups.length === 0}>
 					<Icon name="copy" size={16} />Copy as text
 				</Button>

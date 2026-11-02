@@ -57,6 +57,11 @@
 	const goalWords = [320, 560, 510, 640, 500, 720, 530, 600, 515, 880, 540, 505, 610, 412];
 	const goalTallest = Math.max(...goalWords);
 
+	// The insights card: a prologue, five chapters and an epilogue, with one running long.
+	const pacingWords = [840, 2310, 2050, 4520, 2190, 1980, 1240];
+	const pacingTypical = 2050;
+	const pacingTallest = Math.max(...pacingWords);
+
 	const homeFor: { label: string; icon: IconName }[] = [
 		{ label: 'Books', icon: 'book' },
 		{ label: 'Parts', icon: 'layers' },
@@ -386,7 +391,7 @@
 	</section>
 
 	<section id="focus" class="section">
-		<p class="overline">04 — Focus, goals and share</p>
+		<p class="overline">04 — Focus, goals, insights and share</p>
 		<h2 class="section-title duo-title">
 			<motion-headline by="words">Close the door, then open the book.</motion-headline>
 		</h2>
@@ -469,6 +474,33 @@
 					<p>
 						A daily word goal with a streak to keep, and a target and deadline for each book that
 						says how many words a day it will take.
+					</p>
+				</article>
+
+				<article class="duo-card">
+					<!-- A picture of insights: chapter lengths against the typical one, and who's gone. -->
+					<div class="goal-demo" aria-hidden="true">
+						<span class="goal-demo-over">Pacing</span>
+						<span
+							class="goal-demo-bars pacing-demo-bars"
+							style:--typical="{(pacingTypical / pacingTallest) * 100}%"
+						>
+							{#each pacingWords as words, i (i)}
+								<span
+									class:long={words > pacingTypical * 1.6}
+									style:height="{(words / pacingTallest) * 100}%"
+								></span>
+							{/each}
+						</span>
+						<span class="pacing-demo-note"
+							><Icon name="alert-circle" size={15} /><strong>Tamsin goes quiet</strong>Not seen
+							since Chapter 2</span
+						>
+					</div>
+					<h3>Manuscript insights</h3>
+					<p>
+						Your chapter pacing, the words you lean on and who drifts off the page, counted from
+						your own text with no AI involved.
 					</p>
 				</article>
 			</motion-stagger>
@@ -1107,7 +1139,7 @@
 
 	.duo {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 18px;
 	}
 
@@ -1286,6 +1318,53 @@
 
 	.goal-demo-bars .now {
 		box-shadow: 0 0 0 1.5px var(--bb-sky);
+	}
+
+	/* Insights: drawn as the real pacing chart is, with a line for the typical chapter. */
+	.pacing-demo-bars {
+		position: relative;
+		justify-content: space-around;
+		border-bottom: 1px solid var(--bb-line-soft);
+	}
+
+	.pacing-demo-bars span {
+		flex: 0 1 24px;
+		border-radius: 4px 4px 0 0;
+		background: var(--bb-sky);
+	}
+
+	.pacing-demo-bars .long {
+		background: var(--bb-amber);
+	}
+
+	.pacing-demo-bars::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: var(--typical);
+		height: 1px;
+		background: var(--bb-text-strong);
+	}
+
+	.pacing-demo-note {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 2px 8px;
+		margin-top: 8px;
+		font-size: 13.5px;
+		color: var(--bb-text-2);
+	}
+
+	.pacing-demo-note strong {
+		font-weight: 600;
+		color: var(--bb-text-strong);
+	}
+
+	.pacing-demo-note :global(svg) {
+		flex: none;
+		color: var(--bb-amber);
 	}
 
 	/* The author page */
@@ -1478,6 +1557,12 @@
 	}
 
 	/* Copy first when the section stacks, as in the editor section above. */
+	@media (max-width: 760px) {
+		.duo {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+
 	@media (max-width: 1060px) {
 		.board-reveal {
 			order: 2;
