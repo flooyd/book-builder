@@ -25,6 +25,7 @@
 	import { STATUSES } from '$lib/status';
 	import { plainText } from '$lib/rich';
 	import Button from '$lib/components/ui/Button.svelte';
+	import ConfirmDelete from '$lib/components/ui/ConfirmDelete.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import Missing from '$lib/components/story/Missing.svelte';
@@ -202,6 +203,7 @@
 	let detailsOpen = $state(false);
 	let importing = $state(false);
 	let deleting = $state<Item | null>(null);
+	let removing = $state(false);
 	let live = $state('');
 	let root = $state<HTMLElement>();
 
@@ -232,7 +234,10 @@
 		if (next) focusTitle(next);
 	}
 
-	/** Nothing in it yet: deleting it loses nothing. */
+	/**
+	 * Nothing in it yet, so Backspace in its empty title can take it away without asking: there's no
+	 * title to type and nothing to lose. The Delete button always asks for the title.
+	 */
 	const blank = (item: Item) =>
 		!plainText(item.description, 'description').trim() &&
 		item.words === 0 &&
@@ -285,19 +290,18 @@
 		live = `Deleted ${item.title}.`;
 	}
 
-	function requestDelete(item: Item) {
-		if (blank(item)) removeBlank(item);
-		else deleting = item;
-	}
+	const requestDelete = (item: Item) => (deleting = item);
 
 	async function confirmDelete() {
 		const item = deleting;
-		if (!item) return;
+		if (!item || removing) return;
+		removing = true;
 		if (await doc.remove(item.kind, item.id)) {
 			if (selected === item.key) selected = null;
 			detailsOpen = false;
 			doc.say(`Deleted “${item.title}”.`);
 		}
+		removing = false;
 		deleting = null;
 	}
 
@@ -735,28 +739,25 @@
 		{#if deleting}
 			{@const item = deleting}
 			{@const chapterCount = groups.find((g) => g.part.key === item.key)?.chapters.length ?? 0}
-			<Dialog labelledby="delete-item-title" width={460} onclose={() => (deleting = null)}>
-				<div class="confirm">
-					<h2 id="delete-item-title">Delete <em>{item.title}</em>?</h2>
-					<p>
-						{#if item.kind === 'part' && item.holdsChapters}
-							Its {plural(chapterCount, 'chapter')} and their story text ({plural(
-								item.words,
-								'word'
-							)}) go with it.
-						{:else}
-							Its story text ({plural(item.words, 'word')}), synopsis and cast go with it.
-						{/if}
-						This can't be undone.
-					</p>
-					<div class="confirm-actions">
-						<Button variant="quiet" onclick={() => (deleting = null)}>Cancel</Button>
-						<Button variant="danger" onclick={confirmDelete}>
-							<Icon name="trash" size={16} />Delete
-						</Button>
-					</div>
-				</div>
-			</Dialog>
+			<ConfirmDelete
+				noun={item.kind}
+				title={item.title}
+				busy={removing}
+				onconfirm={confirmDelete}
+				onclose={() => (deleting = null)}
+			>
+				<p>
+					{#if item.kind === 'part' && item.holdsChapters}
+						Its {plural(chapterCount, 'chapter')} and their story text ({plural(
+							item.words,
+							'word'
+						)}) go with it.
+					{:else}
+						Its story text ({plural(item.words, 'word')}), synopsis and cast go with it.
+					{/if}
+					This can't be undone.
+				</p>
+			</ConfirmDelete>
 		{/if}
 	</div>
 {:else}
@@ -1161,41 +1162,6 @@
 	.toast.error {
 		background: var(--bb-coral);
 		color: #fff;
-	}
-
-	.confirm {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-		padding: 28px 30px 26px;
-	}
-
-	.confirm h2 {
-		font-family: var(--font-display);
-		font-weight: 400;
-		font-size: 28px;
-		line-height: 1.1;
-		color: var(--bb-text-strong);
-		overflow-wrap: break-word;
-	}
-
-	.confirm em {
-		font-family: var(--font-read);
-	}
-
-	.confirm p {
-		font-size: 15.5px;
-		line-height: 1.5;
-		color: var(--bb-text-2);
-	}
-
-	.confirm-actions {
-		display: flex;
-		justify-content: flex-end;
-		gap: 10px;
-		margin-top: 14px;
-		padding-top: 20px;
-		border-top: 1px solid var(--bb-line-soft);
 	}
 
 	@media (max-width: 600px) {

@@ -20,7 +20,7 @@
 	import { placeInSeries, seriesSiblings } from '$lib/series';
 	import BookCover from '$lib/components/ui/BookCover.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import Dialog from '$lib/components/ui/Dialog.svelte';
+	import ConfirmDelete from '$lib/components/ui/ConfirmDelete.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import Pill from '$lib/components/ui/Pill.svelte';
 	import RichEditor from '$lib/components/rich/RichEditor.svelte';
@@ -202,7 +202,13 @@
 							</Button>
 							{#if isOwner}
 								<Button onclick={() => startEdit(book)}><Icon name="pen" size={16} />Edit</Button>
-								<Button variant="danger" onclick={() => (confirmingDelete = true)}>
+								<Button
+									variant="danger"
+									onclick={() => {
+										deleteError = '';
+										confirmingDelete = true;
+									}}
+								>
 									<Icon name="trash" size={16} />Delete
 								</Button>
 							{/if}
@@ -289,33 +295,26 @@
 	</main>
 
 	{#if confirmingDelete}
-		<Dialog labelledby="delete-title" width={460} onclose={() => (confirmingDelete = false)}>
-			<div class="confirm">
-				<h2 id="delete-title">Delete <em>{book.title}</em>?</h2>
-				{#if seriesKeepsEntries}
-					<p>
-						This removes its parts, chapters and story text. Characters, places and systems that
-						appear only in this book stay in the series' story bible.
-					</p>
-				{:else}
-					<p>
-						This removes its parts, chapters and story text, and any characters, places or systems
-						that appear only in this book.
-					</p>
-				{/if}
-				{#if deleteError}
-					<p class="error" role="alert"><Icon name="alert-circle" size={16} />{deleteError}</p>
-				{/if}
-				<div class="confirm-actions">
-					<Button variant="quiet" onclick={() => (confirmingDelete = false)} disabled={deleting}>
-						Cancel
-					</Button>
-					<Button variant="danger" onclick={deleteBook} disabled={deleting}>
-						<Icon name="trash" size={16} />{deleting ? 'Deleting…' : 'Delete book'}
-					</Button>
-				</div>
-			</div>
-		</Dialog>
+		<ConfirmDelete
+			noun="book"
+			title={book.title}
+			busy={deleting}
+			error={deleteError}
+			onconfirm={deleteBook}
+			onclose={() => (confirmingDelete = false)}
+		>
+			{#if seriesKeepsEntries}
+				<p>
+					This removes its parts, chapters and story text. Characters, places and systems that
+					appear only in this book stay in the series' story bible. This can't be undone.
+				</p>
+			{:else}
+				<p>
+					This removes its parts, chapters and story text, and any characters, places or systems
+					that appear only in this book. This can't be undone.
+				</p>
+			{/if}
+		</ConfirmDelete>
 	{/if}
 {:else if $libraryStatus !== 'loading'}
 	<Missing noun="book" />
@@ -647,48 +646,6 @@
 	.add:hover {
 		border-color: var(--bb-sky);
 		color: var(--bb-text);
-	}
-
-	/* Delete confirmation */
-	.confirm {
-		padding: 28px 30px 26px;
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.confirm h2 {
-		font-family: var(--font-display);
-		font-weight: 400;
-		font-size: 30px;
-		line-height: 1.1;
-		color: var(--bb-text-strong);
-		overflow-wrap: break-word;
-	}
-
-	.confirm em {
-		font-family: var(--font-read);
-		font-style: italic;
-	}
-
-	.confirm p {
-		font-size: 15.5px;
-		line-height: 1.5;
-		color: var(--bb-text-2);
-	}
-
-	.confirm .error {
-		color: var(--bb-coral-soft);
-	}
-
-	.confirm-actions {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: flex-end;
-		gap: 10px;
-		margin-top: 14px;
-		padding-top: 20px;
-		border-top: 1px solid var(--bb-line-soft);
 	}
 
 	@media (max-width: 600px) {

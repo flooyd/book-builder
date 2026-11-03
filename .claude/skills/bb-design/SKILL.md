@@ -59,6 +59,7 @@ custom property is declared**, not where it is used. Consequences:
   - Other props: `block` and `glow`. Passing `href` renders a link.
   - Wraps `motion-press` for the tactile press.
 - **`Dialog`**: a native modal `<dialog>`. Mount it to open and unmount it to close. Takes `labelledby` (required), `onclose`, `width`. Focus is trapped and Esc closes.
+- **`ConfirmDelete`**: the dialog before a book, part or chapter is deleted, which the user asked to need the title typed. Its Delete button waits until `typedTitle` in `$lib/confirm.ts` matches. Capitals, accents, curly quotes, dashes and spacing don't have to match, and an item with no title asks for "delete". Takes `noun`, `title`, `busy`, `error`, `onconfirm`, `onclose`, and the explanation as children. The one way round it is the outline's Backspace in an empty title, which removes an item that has nothing in it.
 - **`Icon`**: 24×24 stroke icons in the `ICONS` map (a string is a path, a tuple is a circle). To add an icon, add its paths to the map. `IconName` types the names.
 - **Others**:
   - `BookCover`: a generated cover from the title (navy or paper variant by id hash; `sm`, `md`, `lg`; optional `tilt`).
