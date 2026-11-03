@@ -56,8 +56,7 @@
 			<a class="overline" href={bookHref}>{book.title}</a>
 			<h1><motion-headline by="chars" interval={0.03}>Insights</motion-headline></h1>
 			<p class="sub">
-				What the numbers say about your draft, counted from your saved story text with no AI
-				involved. Read them as questions, not verdicts.
+				What the numbers say about your draft, counted from your saved story text. Read them as questions, not verdicts.
 			</p>
 		</div>
 		<div class="actions">

@@ -80,7 +80,7 @@
 			<h1><motion-headline by="chars" interval={0.03}>Word map</motion-headline></h1>
 			<p class="sub">
 				The words your book is made of, and the words each character says. Counted from your saved
-				story text with no AI involved.
+				story text.
 			</p>
 		</div>
 		<div class="actions">
