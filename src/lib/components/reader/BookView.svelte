@@ -113,6 +113,9 @@
 	/** Spreads in an open book, pages one at a time. */
 	const count = $derived(single ? pages.length : Math.ceil(pages.length / 2));
 	const viewOf = (page: number) => (single ? page : Math.floor(page / 2));
+	/** The page or pages on show in a view. */
+	const pagesOn = (view: number): (BookPage | undefined)[] =>
+		single ? [pages[view]] : [pages[2 * view], pages[2 * view + 1]];
 
 	const folioOf = (key: string) => {
 		const start = layout.startOf[key];
@@ -121,14 +124,19 @@
 
 	/** Sets the pages for the space there is, keeping the reader at `keep`. */
 	async function measure(next: Geometry, keep: ReadingPosition | null) {
-		turning = null;
-		queued = null;
+		// The contents and the end aren't places in the story, but a reader there should stay there.
+		const around = pagesOn(turning?.to ?? at).find(
+			(page) => page?.kind === 'contents' || page?.kind === 'end'
+		)?.kind;
+		stop();
 		geo = next;
 		await tick();
 		// Lay the copies out first so a typeface not used yet starts loading, then wait for it.
 		void measureBox?.offsetHeight;
 		await document.fonts.ready;
 		if (!measureBox) return;
+		// A turn begun while measuring counted the old pages.
+		stop();
 		const columnsOf = (flow: HTMLElement) =>
 			Math.max(1, Math.round((flow.scrollWidth + next.gap) / (next.cw + next.gap)));
 		const columns = [...measureBox.querySelectorAll<HTMLElement>('[data-flow]')].map(columnsOf);
@@ -140,8 +148,14 @@
 			next.single,
 			data.book.title
 		);
-		const page = keep ? pageOf(layout, keep) : null;
-		at = page === null ? 0 : viewOf(page);
+		const page =
+			(keep && pageOf(layout, keep)) ??
+			(around === 'end'
+				? layout.pages.length - 1
+				: around === 'contents'
+					? layout.pages.findIndex((page) => page.kind === 'contents')
+					: 0);
+		at = viewOf(Math.max(0, page));
 		report();
 	}
 
@@ -171,6 +185,8 @@
 	/** A face: a page by index, the covers, or the blank back of a page (one at a time). */
 	type Ref = number | 'cover' | 'inside' | 'reverse' | null;
 	type Turn = {
+		/** Counts up with every turn: each gets a leaf of its own. */
+		id: number;
 		to: number;
 		back: boolean;
 		cover: boolean;
@@ -188,6 +204,12 @@
 	/** Before the cover opens. */
 	let closed = $state(true);
 	let reduced = false;
+	let turns = 0;
+	let backstop = 0;
+
+	/** How long a page and the cover take to turn; the CSS takes them from here. */
+	const TURN_MS = 750;
+	const COVER_MS = 1100;
 
 	const shown = $derived.by((): { left: Ref; right: Ref } => {
 		if (turning) return turning;
@@ -207,6 +229,8 @@
 	function show(target: number, animate = true) {
 		if (!geo || count === 0) return;
 		target = Math.min(count - 1, Math.max(0, target));
+		// The scrubber goes straight there, even mid-turn.
+		if (!animate) stop();
 		if (turning) {
 			queued = target;
 			return;
@@ -219,39 +243,61 @@
 			return;
 		}
 		const back = target < at;
-		turning = single
-			? {
-					to: target,
-					back,
-					cover: false,
-					left: null,
-					right: back ? at : target,
-					front: back ? target : at,
-					rear: 'reverse'
-				}
-			: back
+		begin(
+			single
 				? {
 						to: target,
 						back,
 						cover: false,
-						left: 2 * target,
-						right: 2 * at + 1,
-						front: 2 * target + 1,
-						rear: 2 * at
+						left: null,
+						right: back ? at : target,
+						front: back ? target : at,
+						rear: 'reverse'
 					}
-				: {
-						to: target,
-						back,
-						cover: false,
-						left: 2 * at,
-						right: 2 * target + 1,
-						front: 2 * at + 1,
-						rear: 2 * target
-					};
+				: back
+					? {
+							to: target,
+							back,
+							cover: false,
+							left: 2 * target,
+							right: 2 * at + 1,
+							front: 2 * target + 1,
+							rear: 2 * at
+						}
+					: {
+							to: target,
+							back,
+							cover: false,
+							left: 2 * at,
+							right: 2 * target + 1,
+							front: 2 * at + 1,
+							rear: 2 * target
+						}
+		);
 	}
 
-	function landed(event: AnimationEvent) {
-		if (event.target !== event.currentTarget || !turning) return;
+	/**
+	 * Starts a turn. It lands when the leaf's animation ends. The timer is a backstop in case that
+	 * never comes (an animation cancelled or skipped by the browser): every click waits on a turn
+	 * in progress, so one that never landed would stop the book turning at all.
+	 */
+	function begin(turn: Omit<Turn, 'id'>) {
+		const id = ++turns;
+		turning = { ...turn, id };
+		clearTimeout(backstop);
+		const check = () => {
+			if (turning?.id !== id) return;
+			// Still moving, on a device slow to start it: give it a little longer.
+			const moving = book?.getAnimations({ subtree: true }).some((a) => a.playState === 'running');
+			if (moving) backstop = window.setTimeout(check, 200);
+			else land(id);
+		};
+		backstop = window.setTimeout(check, (turn.cover ? COVER_MS : TURN_MS) + 250);
+	}
+
+	function land(id: number) {
+		if (turning?.id !== id) return;
+		clearTimeout(backstop);
 		at = turning.to;
 		turning = null;
 		report();
@@ -262,10 +308,23 @@
 		}
 	}
 
+	function landed(event: AnimationEvent) {
+		const leaf = event.currentTarget as HTMLElement;
+		// The leaf's own animation, not a shade's inside it, and only for the turn it belongs to.
+		if (event.target === leaf) land(Number(leaf.dataset.turn));
+	}
+
+	/** Drops the turn under way, if any, and any turn waiting on it. */
+	function stop() {
+		clearTimeout(backstop);
+		turning = null;
+		queued = null;
+	}
+
 	function open() {
 		closed = false;
 		if (reduced) return;
-		turning = {
+		begin({
 			to: at,
 			back: false,
 			cover: true,
@@ -273,7 +332,7 @@
 			right: single ? at : 2 * at + 1,
 			front: 'cover',
 			rear: 'inside'
-		};
+		});
 	}
 
 	/** Turn one page (spread) on or back. */
@@ -324,6 +383,12 @@
 		press = { x: event.clientX, y: event.clientY, touch: event.pointerType !== 'mouse' };
 	}
 
+	// Clicking quickly through the pages makes double and triple clicks. Left alone they select a
+	// word or a paragraph, and a click that leaves a selection doesn't turn the page.
+	function onmousedown(event: MouseEvent) {
+		if (event.detail > 1) event.preventDefault();
+	}
+
 	function onpointerup(event: PointerEvent) {
 		if (!press || !book) return;
 		const dx = event.clientX - press.x;
@@ -347,8 +412,8 @@
 	const pageLabel = $derived.by(() => {
 		if (pages.length === 0) return '';
 		const view = turning?.to ?? at;
-		const visible = (single ? [pages[view]] : [pages[2 * view], pages[2 * view + 1]]).filter(
-			(page) => page && page.kind !== 'endpaper'
+		const visible = pagesOn(view).filter(
+			(page): page is BookPage => !!page && page.kind !== 'endpaper'
 		);
 		const total = pages.filter((page) => page.kind !== 'endpaper').length;
 		const numbers = visible.map((page) => page.folio).join('–');
@@ -387,7 +452,8 @@
 			} else {
 				// A moment on the closed cover before it opens.
 				await new Promise((done) => setTimeout(done, reduced ? 0 : 450));
-				if (!gone) open();
+				// Unless the reader has already turned past it.
+				if (!gone && closed) open();
 			}
 			if (area) observer.observe(area);
 		})();
@@ -396,6 +462,7 @@
 			observer.disconnect();
 			document.fonts.removeEventListener('loadingdone', fontsLoaded);
 			clearTimeout(timer);
+			clearTimeout(backstop);
 		};
 	});
 </script>
@@ -629,10 +696,13 @@
 	style:--font="{geo?.font ?? 16}px"
 	style:--o="{geo?.overhang ?? 8}px"
 	style:--spine-x={single ? '0px' : `${geo?.pw ?? 0}px`}
+	style:--turn="{TURN_MS}ms"
+	style:--cover-turn="{COVER_MS}ms"
 >
 	{#if geo}
 		<!-- data-scheme: the pages are paper in either theme. Clicking a page turns it; the
 		     buttons below and the arrow keys do the same. -->
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions (onmousedown only stops quick clicks selecting words; the buttons and keys turn pages too) -->
 		<div
 			class="book"
 			class:single
@@ -644,6 +714,7 @@
 			aria-label={data.book.title}
 			{onpointerdown}
 			{onpointerup}
+			{onmousedown}
 		>
 			<div class="board" class:shut={closed || turning?.cover}></div>
 			{#if shown.left !== null}
@@ -660,26 +731,32 @@
 			</div>
 
 			{#if turning && !turning.cover}
-				<div
-					class="leaf"
-					class:back={turning.back}
-					onanimationend={landed}
-					aria-hidden="true"
-					inert
-				>
-					<div class="side front">
-						{@render face(turning.front, 'right')}<span class="shade"></span>
+				<!-- A new leaf for every turn. A turn that follows straight on from the last would
+				     otherwise get the finished leaf back: it never animates, so it never lands. -->
+				{#key turning.id}
+					<div
+						class="leaf"
+						class:back={turning.back}
+						data-turn={turning.id}
+						onanimationend={landed}
+						aria-hidden="true"
+						inert
+					>
+						<div class="side front">
+							{@render face(turning.front, 'right')}<span class="shade"></span>
+						</div>
+						<div class="side rear">
+							{@render face(turning.rear, single ? 'right' : 'left')}<span class="shade"></span>
+						</div>
 					</div>
-					<div class="side rear">
-						{@render face(turning.rear, single ? 'right' : 'left')}<span class="shade"></span>
-					</div>
-				</div>
+				{/key}
 			{/if}
 
 			{#if closed || turning?.cover}
 				<div
 					class="leaf cover-leaf"
 					class:turning={turning?.cover}
+					data-turn={turning?.id}
 					onanimationend={landed}
 					aria-hidden="true"
 					inert
@@ -762,7 +839,7 @@
 		perspective: 2600px;
 		font-size: var(--font);
 		color: var(--bb-text-read);
-		transition: transform 1.1s cubic-bezier(0.45, 0.05, 0.3, 1);
+		transition: transform var(--cover-turn) cubic-bezier(0.45, 0.05, 0.3, 1);
 	}
 
 	.book.single {
@@ -1303,7 +1380,7 @@
 		z-index: 2;
 		transform-origin: 0 50%;
 		transform-style: preserve-3d;
-		animation: turn 0.75s cubic-bezier(0.45, 0.05, 0.3, 1) both;
+		animation: turn var(--turn) cubic-bezier(0.45, 0.05, 0.3, 1) both;
 	}
 
 	.leaf.back,
@@ -1319,7 +1396,7 @@
 	}
 
 	.cover-leaf.turning {
-		animation: turn 1.1s cubic-bezier(0.45, 0.05, 0.3, 1) both;
+		animation: turn var(--cover-turn) cubic-bezier(0.45, 0.05, 0.3, 1) both;
 	}
 
 	.side {
@@ -1343,12 +1420,12 @@
 
 	.front .shade {
 		background: linear-gradient(to left, rgba(30, 20, 0, 0.3), rgba(30, 20, 0, 0) 75%);
-		animation: shade-in 0.75s ease-in both;
+		animation: shade-in var(--turn) ease-in both;
 	}
 
 	.rear .shade {
 		background: linear-gradient(to right, rgba(30, 20, 0, 0.3), rgba(30, 20, 0, 0) 75%);
-		animation: shade-out 0.75s ease-out both;
+		animation: shade-out var(--turn) ease-out both;
 	}
 
 	.cover-leaf .shade {
