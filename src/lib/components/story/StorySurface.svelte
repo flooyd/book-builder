@@ -58,7 +58,9 @@
 	}
 </script>
 
-<motion-reveal y={24} delay={0.15} duration={0.7}>
+<!-- Fades in once any of it is on screen. Chrome only counts the reveal's usual 10% as reached when
+     that much is in view, which a long chapter on a phone (ten screens and more) never is. -->
+<motion-reveal y={24} delay={0.15} duration={0.7} threshold={0}>
 	<div class="surface" class:paper data-scheme={paper ? 'light' : 'dark'}>
 		<div class="surface-head">
 			<span class="surface-label" id="story-label">Story text</span>
