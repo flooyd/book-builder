@@ -17,7 +17,7 @@ idea with that number here. If they name a number, start from its entry.
 - **Adding ideas.** Add them when the user asks for ideas or agrees to one. Say which are new.
 - **The public shelf is separate.** `src/lib/components/marketing/soon.ts` is what visitors see.
   Only add to it when the user asks, and take an entry off when it ships (see the `bb-homepage`
-  skill). An idea here isn't a promise there. The shelf holds 4 at the moment.
+  skill). An idea here isn't a promise there. The shelf holds 1 at the moment: Your account (4).
 - **Check before trusting it.** Copilot also commits to this repo, so read `git log` and glance at
   the code before calling something unbuilt.
 
@@ -39,12 +39,21 @@ Statuses: **Not started**, **In progress**, **Shipped**, **Dropped**.
 
 | #   | Idea                           | Status      | What it is                                                                                                                                                                                                                                                                                               |
 | --- | ------------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 6   | Mentions and story bible       | In progress | `@` links in story text, and a real page for every character, place and system. See "Idea 6" below for what's done and what's left.                                                                                                                                                                      |
-| 7   | Find and replace across a book | Not started | Rename a character everywhere, with a preview of each match. Mentions already follow a rename; this covers the plain text around them.                                                                                                                                                                   |
+| 6   | Mentions and story bible       | In progress | Links from story text to the bible, typed with `@` or found by name, and a real page for every character, place and system. See "Idea 6" below for what's done and what's left.                                                                                                                          |
+| 7   | Find and replace across a book | Not started | Rename a character everywhere, with a preview of each match. Mentions follow a rename, but a name written out doesn't, and since names link themselves by spelling, an old name left in the text stops linking, counting and filling casts. This closes that gap.                                        |
 | 8   | Series                         | Shipped     | Books grouped in a reading order, with a story bible worked out from their entries, an owner's page and a public page on the author profile, plus links between books in reading mode. Left out: an omnibus export, "Book 2 of…" on exported title pages, and series-wide goals, outlines and timelines. |
 | 9   | Plot threads                   | Not started | A grid of subplots against chapters, showing where a thread goes quiet.                                                                                                                                                                                                                                  |
 | 10  | Scenes                         | Not started | Smaller units inside chapters, each with its own point of view, location and status. A big change to both the data and the editor.                                                                                                                                                                       |
 | 11  | Timeline                       | Not started | Put events on an in-world calendar and warn when a character is in two places at once.                                                                                                                                                                                                                   |
+| 18  | Images                         | Not started | Portraits for characters, maps for places, and uploaded covers. Needs file storage (Vercel Blob or similar): the app's first running cost that grows with every writer, so it needs a size cap. The last big piece of 6.                                                                                 |
+| 19  | Connections map                | Not started | The bible's connections (`entry_link`) drawn as a web: family, rivals, allies, with each line labelled. The data is already there, and it's all drawn in the browser.                                                                                                                                    |
+
+### Writing and revising
+
+| #   | Idea            | Status      | What it is                                                                                                                                                                         |
+| --- | --------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 20  | Notes to self   | Not started | Margin notes and "TK" placeholders inside story text, listed per book so none are forgotten. Kept out of reading mode, share links, exports and word counts, the way mentions are. |
+| 21  | Story structure | Not started | Start an outline from a beat sheet (three acts, the hero's journey and so on), and see where each beat lands on the pacing chart from 15.                                          |
 
 ### Readers and collaborators
 
@@ -64,17 +73,23 @@ Statuses: **Not started**, **In progress**, **Shipped**, **Dropped**.
 
 ## Recommended order
 
-Version history (1), then the rest of 6. Version history comes first because it's the only idea
-here that stops writers permanently losing work. The user chose to start 6 first, on 2026-11-01,
-and had Export (2) built next, the same day.
+Version history (1), then Accounts and email (4), then Find and replace (7). Version history comes
+first because it's still the only idea here that stops writers permanently losing work. Accounts
+and email is the one thing the public shelf promises, and a forgotten password still locks someone
+out for good. Find and replace matters more now that names link themselves (see 7).
+
+So far the user has chosen 6 first (2026-11-01), then Export (2) the same day, Series (8),
+Insights (15) and Word maps (17), and names that link themselves (part of 6) on 2026-11-04.
 
 ## What depends on what
 
 - **Email (4):** needed for 13 and 14, and for comment alerts in 12.
-- **Image storage (nothing built yet):** needed for character portraits, uploaded covers and maps.
+- **Images (18):** needed for character portraits, uploaded covers and maps, and so for the rest
+  of 6.
+- **Connections map (19):** draws the `entry_link` rows that each entry's page already makes.
 - **Mentions (6):** the character-tracking parts of 11 and 15 work best on top of it.
-- **Insights (15):** 17 reuses its counting. The per-character map also leans on the names and
-  aliases in the story bible (6).
+- **Insights (15):** 17 reuses its counting, and 21 draws its beats on the pacing chart. The
+  per-character map also leans on the names and aliases in the story bible (6).
 
 ## Idea 6: what's done and what's left
 
@@ -87,13 +102,19 @@ Done:
 - Hover cards while writing. Mentions are plain words in reading mode and on share links.
 - A cast for places and systems: chosen in the outline's details panel, joined by a first mention,
   and filtered by in the outline.
+- Names that link themselves (2026-11-04). In the editor, a name, alias, first or last name from
+  the book's bible links as it's typed. The links are editor decorations, never saved, so reading
+  mode and share links can't see them. Written names count in "Appears in" and the bible's
+  counts, and a name written in a chapter for the first time adds its entry to the cast.
+  Chapters saved before then keep the casts they had. The user decided a one-off fill for them
+  isn't needed, so don't offer one.
 
 Left:
 
-- **Images:** portraits and maps, which wait on image storage.
+- **Images:** portraits and maps, now idea 18.
 - **Mentions in descriptions and notes:** they only work in story text so far.
-- **Finding names without an `@`:** suggesting links for names already in the text, so a book
-  written before mentions existed can catch up.
+- **Spotting names not in the bible yet:** a capitalised name that keeps turning up could be
+  offered as a new entry, in the editor or on the insights page (15 left this out too).
 
 ## Idea 17: telling who's speaking
 
