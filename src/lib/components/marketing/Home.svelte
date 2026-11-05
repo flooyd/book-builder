@@ -282,8 +282,64 @@
 					>
 				</motion-stagger>
 			</div>
+		</div>
 
-			<motion-reveal y={24} delay={0.35} duration={0.7}>
+		<div class="preview-column">
+			<motion-reveal class="preview-reveal" y={40} delay={0.1} duration={0.8}>
+				<div class="preview">
+					<div class="preview-bar">
+						<span class="preview-crumbs"
+							>The Glass Armada <span class="sep">/</span> Part One <span class="sep">/</span>
+							<span class="here">A Map of Dead Stars</span></span
+						>
+						<span class="preview-saved"><Icon name="check-circle" size={15} />Saved</span>
+					</div>
+					<div class="preview-body">
+						<h3 class="preview-title">
+							A Map of Dead Stars <span class="bullet">•</span> <span class="muted">Chapter 2</span>
+						</h3>
+						<p class="preview-desc">In which the beacon wakes</p>
+						<!-- A picture of the editor's toolbar, not a working one. -->
+						<div class="preview-tools" aria-hidden="true">
+							<span class="tool-pick">Paragraph</span>
+							<span class="tool-pick">Book</span>
+							<span class="tool-sep"></span>
+							<span class="tool-glyph bold">B</span>
+							<span class="tool-glyph italic on">I</span>
+							<span class="tool-glyph underline">U</span>
+							<span class="tool-sep"></span>
+							<span class="tool-glyph ink">A</span>
+							<span class="tool-icon"><Icon name="highlighter" size={15} /></span>
+							<span class="tool-sep"></span>
+							<span class="tool-icon on"><Icon name="align-left" size={15} /></span>
+							<span class="tool-icon"><Icon name="scene-break" size={16} /></span>
+							<span class="tool-glyph cap">A<span class="cap-lines"></span></span>
+						</div>
+						<!-- Set with the editor's own styles (prose.css), first letter and all. -->
+						<div
+							class="preview-text bb-prose cap-drop"
+							style="--cap-lines: 2; --cap-font: var(--font-display); --cap-color: var(--ink-accent)"
+						>
+							<p>
+								The beacon had been calling for
+								<span style="color: var(--ink-ruby)">three hundred years</span> before anyone
+								thought to answer. By the time the <em>Meridian</em> dropped out of the lane the
+								signal had gone quiet, and Captain Juno Halley set down her coffee and
+								<mark style="background-color: var(--mark-yellow)">looked into the dark</mark>.
+							</p>
+							<p><em>“That isn't a distress call,”</em> she said, though no one had asked her.</p>
+							<hr />
+							<p>
+								By the next watch the whole crew had a theory and none of them had a plan<span
+									class="caret"
+								></span>
+							</p>
+						</div>
+					</div>
+				</div>
+			</motion-reveal>
+
+			<motion-reveal y={24} delay={0.25} duration={0.7}>
 				<article class="history-card">
 					<!-- A picture of version history: the chapter's versions from this morning, one
 					     picked, and what's changed in the text since it. -->
@@ -319,60 +375,6 @@
 				</article>
 			</motion-reveal>
 		</div>
-
-		<motion-reveal class="preview-reveal" y={40} delay={0.1} duration={0.8}>
-			<div class="preview">
-				<div class="preview-bar">
-					<span class="preview-crumbs"
-						>The Glass Armada <span class="sep">/</span> Part One <span class="sep">/</span>
-						<span class="here">A Map of Dead Stars</span></span
-					>
-					<span class="preview-saved"><Icon name="check-circle" size={15} />Saved</span>
-				</div>
-				<div class="preview-body">
-					<h3 class="preview-title">
-						A Map of Dead Stars <span class="bullet">•</span> <span class="muted">Chapter 2</span>
-					</h3>
-					<p class="preview-desc">In which the beacon wakes</p>
-					<!-- A picture of the editor's toolbar, not a working one. -->
-					<div class="preview-tools" aria-hidden="true">
-						<span class="tool-pick">Paragraph</span>
-						<span class="tool-pick">Book</span>
-						<span class="tool-sep"></span>
-						<span class="tool-glyph bold">B</span>
-						<span class="tool-glyph italic on">I</span>
-						<span class="tool-glyph underline">U</span>
-						<span class="tool-sep"></span>
-						<span class="tool-glyph ink">A</span>
-						<span class="tool-icon"><Icon name="highlighter" size={15} /></span>
-						<span class="tool-sep"></span>
-						<span class="tool-icon on"><Icon name="align-left" size={15} /></span>
-						<span class="tool-icon"><Icon name="scene-break" size={16} /></span>
-						<span class="tool-glyph cap">A<span class="cap-lines"></span></span>
-					</div>
-					<!-- Set with the editor's own styles (prose.css), first letter and all. -->
-					<div
-						class="preview-text bb-prose cap-drop"
-						style="--cap-lines: 2; --cap-font: var(--font-display); --cap-color: var(--ink-accent)"
-					>
-						<p>
-							The beacon had been calling for
-							<span style="color: var(--ink-ruby)">three hundred years</span> before anyone thought
-							to answer. By the time the <em>Meridian</em> dropped out of the lane the signal had
-							gone quiet, and Captain Juno Halley set down her coffee and
-							<mark style="background-color: var(--mark-yellow)">looked into the dark</mark>.
-						</p>
-						<p><em>“That isn't a distress call,”</em> she said, though no one had asked her.</p>
-						<hr />
-						<p>
-							By the next watch the whole crew had a theory and none of them had a plan<span
-								class="caret"
-							></span>
-						</p>
-					</div>
-				</div>
-			</div>
-		</motion-reveal>
 	</section>
 
 	<section id="outline" class="section example outline-section">
@@ -1161,17 +1163,30 @@
 		color: var(--bb-sky);
 	}
 
-	/* Version history, under the editor's checks: drawn like the real list and its changes. */
-	.history-card {
+	/* The editor, then its version history under it. */
+	.preview-column {
 		display: flex;
 		flex-direction: column;
-		gap: 16px;
-		max-width: 500px;
-		margin-top: 8px;
-		padding: 14px 14px 20px;
+		gap: 18px;
+	}
+
+	/* Version history: drawn like the real list and its changes, the words beside the picture. */
+	.history-card {
+		display: grid;
+		grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+		align-items: center;
+		gap: 16px 20px;
+		padding: 14px;
 		border-radius: var(--r-card);
 		background: var(--bb-ink);
 		border: 1px solid var(--bb-line-soft);
+	}
+
+	@media (max-width: 600px) {
+		.history-card {
+			grid-template-columns: minmax(0, 1fr);
+			padding-bottom: 20px;
+		}
 	}
 
 	.history-demo {
@@ -1296,7 +1311,7 @@
 		color: var(--bb-text-2);
 	}
 
-	.preview-reveal,
+	.preview-column,
 	.board-reveal {
 		flex: 1 1 620px;
 		min-width: 0;
