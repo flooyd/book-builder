@@ -6,7 +6,7 @@ import { book, chapter, part, storyText } from '$lib/server/db/schema';
 import { findOwnedChapter, findOwnedPart } from '$lib/server/ownership';
 import { cleanValue } from '$lib/rich';
 import { recordWords, todayFor, wordsIn } from '$lib/server/goals';
-import { indexMentions, ownedMentions } from '$lib/server/bible';
+import { castNamed, indexMentions, ownedMentions } from '$lib/server/bible';
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -17,7 +17,8 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  * and the book become "updated" too, and the response says when (`touchedAt`). It also counts
  * toward the writer's daily goal, and the response says how many words that added and the
  * day's total (`writing`). Mentions in the text are indexed in the same transaction, and the
- * response lists any entries that joined the book by being mentioned (`linked`).
+ * response lists any entries that joined the book by being mentioned (`linked`). Anyone in the
+ * book's story bible named in the text for the first time joins its cast (`castNamed`).
  */
 export function storyTextHandlers(target: 'part' | 'chapter') {
 	const column = target === 'part' ? storyText.partId : storyText.chapterId;
@@ -105,6 +106,7 @@ export function storyTextHandlers(target: 'part' | 'chapter') {
 				targetId: owned.id,
 				bookId
 			});
+			await castNamed(tx, { target, targetId: owned.id, bookId, before: '', after: kept });
 			const delta = wordsIn(kept);
 			return {
 				row,
@@ -151,6 +153,13 @@ export function storyTextHandlers(target: 'part' | 'chapter') {
 				target,
 				targetId: owned.id,
 				bookId
+			});
+			await castNamed(tx, {
+				target,
+				targetId: owned.id,
+				bookId,
+				before: existing[0].content,
+				after: kept
 			});
 			const delta = wordsIn(kept) - before;
 			return {

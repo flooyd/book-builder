@@ -40,6 +40,8 @@ import {
 import { mapMentions, mentionsIn, plainText } from '$lib/rich';
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+/** The database, or a transaction on it, for reads that may happen inside one. */
+type Reader = Tx | typeof db;
 
 // The story bible on the server: characters, places and systems, the books they belong to, and
 // which story text mentions them. The three tables share their columns (only places and systems
@@ -214,6 +216,8 @@ export function entryListHandlers(type: EntryType) {
 				.values({ ...read.changes, name, userId: user.id })
 				.returning();
 			await tx.insert(link.table).values(bookIds.map((bookId) => linkRow(type, row.id, bookId)));
+			// Written before it had a page: it joins the cast wherever the story already names it.
+			for (const bookId of bookIds) await castByName(tx, bookId, type, row.id, null);
 			return row;
 		});
 		return json({ ...created, bookIds });
@@ -256,7 +260,22 @@ export function entryHandlers(type: EntryType) {
 			bookIds = books.bookIds;
 		}
 
+		const renamed =
+			(changes.name !== undefined && changes.name !== entry.name) ||
+			(changes.aliases !== undefined &&
+				JSON.stringify(changes.aliases) !== JSON.stringify(entry.aliases));
+
 		const updated = await db.transaction(async (tx) => {
+			// The story bible as it was, so the entry joins casts only where its names are new.
+			const booksBefore = renamed || bookIds ? await booksOf(type, id, tx) : [];
+			const castIn = (bookIds ?? booksBefore).filter(
+				(bookId) => renamed || !booksBefore.includes(bookId)
+			);
+			const before: Record<number, NamedEntry[]> = {};
+			for (const bookId of castIn) {
+				if (booksBefore.includes(bookId)) before[bookId] = await entriesOfBook(bookId, tx);
+			}
+
 			const [row] = await tx
 				.update(table)
 				.set({ ...changes, updatedAt: new Date() })
@@ -269,6 +288,7 @@ export function entryHandlers(type: EntryType) {
 				await tx.delete(link.table).where(eq(link.entry, id));
 				await tx.insert(link.table).values(bookIds.map((bookId) => linkRow(type, id, bookId)));
 			}
+			for (const bookId of castIn) await castByName(tx, bookId, type, id, before[bookId] ?? null);
 			return row;
 		});
 
@@ -407,13 +427,15 @@ export function setCast(
 	});
 }
 
+type NamedEntry = { type: EntryType; id: number; name: string; aliases: string[] };
+
 /** A book's story bible, as much of it as tells where an entry appears. */
-export async function entriesOfBook(bookId: number) {
+export async function entriesOfBook(bookId: number, reader: Reader = db): Promise<NamedEntry[]> {
 	const entries = await Promise.all(
 		ENTRY_TYPES.map(async (type) => {
 			const table = tableOf(type);
 			const link = linkOf(type);
-			const rows = await db
+			const rows = await reader
 				.select({ id: table.id, name: table.name, aliases: table.aliases })
 				.from(table)
 				.innerJoin(link.table, eq(link.entry, table.id))
@@ -530,24 +552,16 @@ export async function passEntriesOn(tx: Tx, bookId: number, heir: number) {
 
 // ---- Where an entry appears ------------------------------------------------------------------
 
-/**
- * How many times each entry's name is written in these books' story text, apart from its @
- * mentions, keyed by where ("chapter-3") and then by entry ("character-12"). A book finds only the
- * names in its own story bible, just as its editor links them, so a count is what the writer sees.
- * Nothing is stored: it's worked out on each call (a whole novel takes milliseconds), so a rename,
- * a new alias or a new entry counts at once, everywhere, and writing costs the server nothing.
- */
-async function namesWritten(bookIds: number[]) {
-	const written: Record<string, Record<string, number>> = {};
-	if (bookIds.length === 0) return written;
-
-	const parts = await db
+/** The story text of these books, a chapter or story-text part at a time, with its book. */
+async function bookTexts(bookIds: number[], reader: Reader = db) {
+	if (bookIds.length === 0) return [];
+	const parts = await reader
 		.select({ id: part.id, bookId: part.bookId })
 		.from(part)
 		.where(inArray(part.bookId, bookIds));
-	if (parts.length === 0) return written;
+	if (parts.length === 0) return [];
 	const partIds = parts.map((row) => row.id);
-	const chapters = await db
+	const chapters = await reader
 		.select({ id: chapter.id, partId: chapter.partId })
 		.from(chapter)
 		.where(inArray(chapter.partId, partIds));
@@ -555,7 +569,7 @@ async function namesWritten(bookIds: number[]) {
 	const bookOfPart = Object.fromEntries(parts.map((row) => [row.id, row.bookId]));
 	const bookOfChapter = Object.fromEntries(chapters.map((row) => [row.id, bookOfPart[row.partId]]));
 
-	const texts = await db
+	const rows = await reader
 		.select({
 			partId: storyText.partId,
 			chapterId: storyText.chapterId,
@@ -571,24 +585,96 @@ async function namesWritten(bookIds: number[]) {
 		// The first text of each, as everywhere else that reads them.
 		.orderBy(asc(storyText.createdAt));
 
+	const texts: { target: CastTarget; id: number; bookId: number; content: string }[] = [];
+	for (const row of rows) {
+		const target = row.chapterId ? 'chapter' : 'part';
+		const id = row.chapterId ?? row.partId ?? 0;
+		if (texts.some((text) => text.target === target && text.id === id)) continue;
+		const bookId = row.chapterId ? bookOfChapter[row.chapterId] : bookOfPart[id];
+		texts.push({ target, id, bookId, content: row.content });
+	}
+	return texts;
+}
+
+/** How many times each entry's name is written in some story text, apart from its @ mentions. */
+const namesIn = (value: string, find: ReturnType<typeof nameFinder>) =>
+	countNames(plainText(value, 'story', NOT_TEXT), find);
+
+/** Entries given by key ("character-12") join one chapter's or story-text part's cast. */
+async function joinCastByKey(tx: Tx, target: CastTarget, targetId: number, keys: string[]) {
+	for (const type of ENTRY_TYPES) {
+		const ids = keys
+			.filter((key) => key.startsWith(`${type}-`))
+			.map((key) => Number(key.slice(type.length + 1)));
+		if (ids.length > 0) await joinCast(tx, target, targetId, type, ids);
+	}
+}
+
+/**
+ * Saving story text: anyone in the book's story bible whose name is written here for the first
+ * time joins the cast, just as a first @ mention does. "First" is against the text as it was
+ * before this save, so anyone the writer took out of the cast by hand stays out while their name
+ * stays on the page. Cheap: one chapter, read twice, in a save that reads it anyway.
+ */
+export async function castNamed(
+	tx: Tx,
+	saved: { target: CastTarget; targetId: number; bookId: number; before: string; after: string }
+) {
+	const entries = await entriesOfBook(saved.bookId, tx);
+	if (entries.length === 0) return;
+	const find = nameFinder(entries);
+	const before = Object.keys(namesIn(saved.before, find));
+	const fresh = Object.keys(namesIn(saved.after, find)).filter((key) => !before.includes(key));
+	await joinCastByKey(tx, saved.target, saved.targetId, fresh);
+}
+
+/**
+ * An entry joined this book, or its name or aliases changed: it joins the cast of every chapter
+ * whose story text names it now and didn't before (`before` is the book's story bible as it was,
+ * or null if the entry wasn't in it). It reads the whole book, so it waits for one of these rare
+ * changes rather than running as the writer types.
+ */
+async function castByName(
+	tx: Tx,
+	bookId: number,
+	type: EntryType,
+	id: number,
+	before: NamedEntry[] | null
+) {
+	const key = `${type}-${id}`;
+	const findNow = nameFinder(await entriesOfBook(bookId, tx));
+	const findThen = before ? nameFinder(before) : null;
+	for (const text of await bookTexts([bookId], tx)) {
+		if (!namesIn(text.content, findNow)[key]) continue;
+		if (findThen && namesIn(text.content, findThen)[key]) continue;
+		await joinCast(tx, text.target, text.id, type, [id]);
+	}
+}
+
+/**
+ * How many times each entry's name is written in these books' story text, apart from its @
+ * mentions, keyed by where ("chapter-3") and then by entry ("character-12"). A book finds only the
+ * names in its own story bible, just as its editor links them, so a count is what the writer sees.
+ * Nothing is stored: it's worked out on each call (a whole novel takes milliseconds), so a rename,
+ * a new alias or a new entry counts at once, everywhere, and writing costs the server nothing.
+ */
+async function namesWritten(bookIds: number[]) {
+	const written: Record<string, Record<string, number>> = {};
 	const finders = Object.fromEntries(
 		await Promise.all(
 			bookIds.map(async (bookId) => [bookId, nameFinder(await entriesOfBook(bookId))] as const)
 		)
 	);
-	for (const row of texts) {
-		const where = row.chapterId ? `chapter-${row.chapterId}` : `part-${row.partId}`;
-		const bookId = row.chapterId ? bookOfChapter[row.chapterId] : bookOfPart[row.partId ?? -1];
-		if (written[where] || !finders[bookId]) continue;
-		written[where] = countNames(plainText(row.content, 'story', NOT_TEXT), finders[bookId]);
+	for (const text of await bookTexts(bookIds)) {
+		written[`${text.target}-${text.id}`] = namesIn(text.content, finders[text.bookId]);
 	}
 	return written;
 }
 
 /** The books an entry belongs to. */
-async function booksOf(type: EntryType, id: number) {
+async function booksOf(type: EntryType, id: number, reader: Reader = db) {
 	const link = linkOf(type);
-	const rows = await db
+	const rows = await reader
 		.select({ bookId: link.table.bookId })
 		.from(link.table)
 		.where(eq(link.entry, id));
