@@ -24,9 +24,12 @@ import {
 import { descriptionField, ownedBookIds, textField } from '$lib/server/ownership';
 import {
 	ENTRY_TYPES,
+	NOT_TEXT,
 	cleanAliases,
 	cleanDetails,
+	countNames,
 	isEntryType,
+	nameFinder,
 	renamedLabel,
 	type Appearance,
 	type Cast,
@@ -34,7 +37,7 @@ import {
 	type EntryDetail,
 	type EntryType
 } from '$lib/bible';
-import { mapMentions, mentionsIn } from '$lib/rich';
+import { mapMentions, mentionsIn, plainText } from '$lib/rich';
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -527,7 +530,72 @@ export async function passEntriesOn(tx: Tx, bookId: number, heir: number) {
 
 // ---- Where an entry appears ------------------------------------------------------------------
 
-/** Every chapter and story-text part an entry appears in, by mention or by cast. */
+/**
+ * How many times each entry's name is written in these books' story text, apart from its @
+ * mentions, keyed by where ("chapter-3") and then by entry ("character-12"). A book finds only the
+ * names in its own story bible, just as its editor links them, so a count is what the writer sees.
+ * Nothing is stored: it's worked out on each call (a whole novel takes milliseconds), so a rename,
+ * a new alias or a new entry counts at once, everywhere, and writing costs the server nothing.
+ */
+async function namesWritten(bookIds: number[]) {
+	const written: Record<string, Record<string, number>> = {};
+	if (bookIds.length === 0) return written;
+
+	const parts = await db
+		.select({ id: part.id, bookId: part.bookId })
+		.from(part)
+		.where(inArray(part.bookId, bookIds));
+	if (parts.length === 0) return written;
+	const partIds = parts.map((row) => row.id);
+	const chapters = await db
+		.select({ id: chapter.id, partId: chapter.partId })
+		.from(chapter)
+		.where(inArray(chapter.partId, partIds));
+	const chapterIds = chapters.map((row) => row.id);
+	const bookOfPart = Object.fromEntries(parts.map((row) => [row.id, row.bookId]));
+	const bookOfChapter = Object.fromEntries(chapters.map((row) => [row.id, bookOfPart[row.partId]]));
+
+	const texts = await db
+		.select({
+			partId: storyText.partId,
+			chapterId: storyText.chapterId,
+			content: storyText.content
+		})
+		.from(storyText)
+		.where(
+			or(
+				inArray(storyText.partId, partIds),
+				chapterIds.length ? inArray(storyText.chapterId, chapterIds) : undefined
+			)
+		)
+		// The first text of each, as everywhere else that reads them.
+		.orderBy(asc(storyText.createdAt));
+
+	const finders = Object.fromEntries(
+		await Promise.all(
+			bookIds.map(async (bookId) => [bookId, nameFinder(await entriesOfBook(bookId))] as const)
+		)
+	);
+	for (const row of texts) {
+		const where = row.chapterId ? `chapter-${row.chapterId}` : `part-${row.partId}`;
+		const bookId = row.chapterId ? bookOfChapter[row.chapterId] : bookOfPart[row.partId ?? -1];
+		if (written[where] || !finders[bookId]) continue;
+		written[where] = countNames(plainText(row.content, 'story', NOT_TEXT), finders[bookId]);
+	}
+	return written;
+}
+
+/** The books an entry belongs to. */
+async function booksOf(type: EntryType, id: number) {
+	const link = linkOf(type);
+	const rows = await db
+		.select({ bookId: link.table.bookId })
+		.from(link.table)
+		.where(eq(link.entry, id));
+	return rows.map((row) => row.bookId);
+}
+
+/** Every chapter and story-text part an entry appears in: by @ mention, by name, or by cast. */
 export async function appearancesOf(type: EntryType, id: number) {
 	const found: Record<string, Appearance> = {};
 	const at = (target: CastTarget, targetId: number) =>
@@ -545,6 +613,12 @@ export async function appearancesOf(type: EntryType, id: number) {
 	for (const row of mentions) {
 		if (row.chapterId) at('chapter', row.chapterId).uses += row.uses;
 		else if (row.partId) at('part', row.partId).uses += row.uses;
+	}
+
+	const key = `${type}-${id}`;
+	for (const [where, counts] of Object.entries(await namesWritten(await booksOf(type, id)))) {
+		const [target, targetId] = where.split('-');
+		if (counts[key]) at(target as CastTarget, Number(targetId)).uses += counts[key];
 	}
 
 	for (const target of ['chapter', 'part'] as const) {
@@ -599,6 +673,9 @@ export async function appearanceCounts(bookIds: number[]) {
 		for (const type of ENTRY_TYPES) {
 			for (const id of cast[type]) add(`${type}-${id}`, where);
 		}
+	}
+	for (const [where, counts] of Object.entries(await namesWritten(bookIds))) {
+		for (const entry of Object.keys(counts)) add(entry, where);
 	}
 
 	return Object.fromEntries(Object.entries(seen).map(([entry, list]) => [entry, list.length]));

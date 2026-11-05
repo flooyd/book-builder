@@ -4,8 +4,8 @@
 	import { bookOutline, plural } from '$lib/library';
 	import { booksStore, chaptersStore, partsStore } from '$lib/stores';
 
-	// Where an entry appears, book by book in reading order: by being mentioned, by being in the
-	// cast, or both.
+	// Where an entry appears, book by book in reading order: by being mentioned (with @ or just by
+	// name), by being in the cast, or both.
 	let { type, appearances }: { type: EntryType; appearances: Appearance[] } = $props();
 
 	const uid = $props.id();
@@ -77,8 +77,8 @@
 		</div>
 	{:else}
 		<p class="empty">
-			Not in a chapter yet. Type @ in your story text, or add {type === 'character' ? 'them' : 'it'}
-			to a chapter in the outline.
+			Not in a chapter yet. Write {type === 'character' ? 'their' : 'its'} name in your story text, or
+			add {type === 'character' ? 'them' : 'it'} to a chapter in the outline.
 		</p>
 	{/each}
 </section>

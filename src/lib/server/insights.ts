@@ -1,5 +1,5 @@
 import { eq, inArray } from 'drizzle-orm';
-import { firstName, lastName, type EntryType } from '$lib/bible';
+import { firstName, lastName, storyNames, type EntryType } from '$lib/bible';
 import {
 	analyseManuscript,
 	type EntryInput,
@@ -16,23 +16,12 @@ import { storyTexts } from '$lib/server/outline';
 import { buildWordMaps } from '$lib/word-map';
 
 /** Everything the story might call an entry, for finding it in text with no mentions. */
-function namesOf(entry: {
+const namesOf = (entry: {
 	type: EntryType;
 	id: number;
 	name: string;
 	aliases: string[];
-}): EntryInput {
-	// Only people go by a single word of their name: the "Lantern" of the Lantern Gate could be any
-	// lantern at the start of a sentence. "The Meridian" is plain "Meridian" as often as not.
-	const short = entry.type === 'character' ? [firstName(entry.name), lastName(entry.name)] : [];
-	const bare = entry.name.replace(/^(?:the|a|an)\s+/i, '');
-	return {
-		type: entry.type,
-		id: entry.id,
-		name: entry.name,
-		names: [...new Set([entry.name, bare, ...short.filter(Boolean), ...entry.aliases])] as string[]
-	};
-}
+}): EntryInput => ({ type: entry.type, id: entry.id, name: entry.name, names: storyNames(entry) });
 
 /** What a person's name can be shortened to in the text. */
 const shortNames = (name: string) =>

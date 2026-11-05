@@ -16,7 +16,8 @@
 
 	// The rich text editor (Tiptap): a toolbar over a WYSIWYG area set like reading mode. Changes
 	// reach `onchange` as a stored value (see $lib/rich), a moment after typing stops and at once
-	// on blur or flush(). Given a `bookId`, typing @ links the story bible (see ./mention.ts).
+	// on blur or flush(). Given a `bookId`, typing @ links the story bible (see ./mention.ts), and
+	// the bible's names link themselves wherever they're written (see ./auto-mention.ts).
 	let {
 		value,
 		kind = 'story',
@@ -51,7 +52,7 @@
 		italic?: boolean;
 		/** Show the formatting toolbar (keyboard shortcuts work either way). */
 		toolbar?: boolean;
-		/** The book this story text belongs to: turns on @ mentions. */
+		/** The book this story text belongs to: turns on @ mentions and links its bible's names. */
 		bookId?: number;
 		/** After every change of text or selection (focus mode's typewriter). */
 		ontransaction?: (editor: Editor, transaction: Transaction) => void;
@@ -156,8 +157,11 @@
 
 		// The writer's card for a mention: on hover, or on a tap where there's no hover.
 		const area = host;
+		// A mention made with @, or a name from the story bible linked where it's written.
 		const mentionAt = (event: Event) =>
-			(event.target as HTMLElement | null)?.closest?.<HTMLElement>('[data-type="mention"]');
+			(event.target as HTMLElement | null)?.closest?.<HTMLElement>(
+				'[data-type="mention"], [data-auto-mention]'
+			);
 		const over = (event: MouseEvent) => {
 			const mention = mentionAt(event);
 			if (mention && !event.buttons) mentionCard?.show(mention);

@@ -100,7 +100,7 @@
 		{
 			title: 'Mentions',
 			icon: 'at-sign',
-			body: 'Type @ as you write to link a name to its page, hover for its card, and see every chapter it appears in.'
+			body: 'Names from your story bible link themselves as you write, so a hover shows their card. Type @ to add someone new.'
 		}
 	];
 </script>

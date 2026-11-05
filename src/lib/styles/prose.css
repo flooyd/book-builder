@@ -85,6 +85,16 @@
 	background: var(--bb-sky-wash);
 }
 
+/* A name the editor linked by itself is still words being written: the caret goes in it. */
+.bb-prose .bb-mention-auto {
+	cursor: text;
+}
+
+/* Inside an @ being typed the menu has the floor, so no link is drawn in the middle of it. */
+.bb-prose :is(.bb-mention-typing.bb-mention-auto, .bb-mention-typing .bb-mention-auto) {
+	text-decoration: none;
+}
+
 /* The @ being typed, while the menu is open. */
 .bb-prose .bb-mention-typing {
 	border-radius: 0.18em;

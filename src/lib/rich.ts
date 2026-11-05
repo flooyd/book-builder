@@ -277,26 +277,32 @@ export function cleanValue(value: string, kind: RichKind): string {
 
 // ---- Plain text ------------------------------------------------------------------------------
 
-function textOf(node: RichNode): string {
+function textOf(node: RichNode, mention?: string): string {
 	if (node.type === 'text') return node.text ?? '';
-	if (node.type === 'mention') return String(node.attrs?.label ?? '');
+	if (node.type === 'mention') return mention ?? String(node.attrs?.label ?? '');
 	if (node.type === 'hardBreak') return '\n';
-	return (node.content ?? []).map(textOf).join('');
+	return (node.content ?? []).map((child) => textOf(child, mention)).join('');
 }
 
 const BLOCK_TYPES = new Set(['paragraph', 'heading']);
 
-function blockLines(nodes: RichNode[], out: string[]) {
+function blockLines(nodes: RichNode[], out: string[], mention?: string) {
 	for (const node of nodes) {
-		if (BLOCK_TYPES.has(node.type)) out.push(textOf(node));
-		else if (node.content) blockLines(node.content, out);
+		if (BLOCK_TYPES.has(node.type)) out.push(textOf(node, mention));
+		else if (node.content) blockLines(node.content, out, mention);
 	}
 	return out;
 }
 
-/** The words alone, a line per paragraph (word counts, search, plain-text export). */
-export function plainText(value: string, kind: RichKind = 'story') {
-	return isRich(value) ? blockLines(parse(value, kind).content ?? [], []).join('\n') : value;
+/**
+ * The words alone, a line per paragraph (word counts, search, plain-text export). Given a
+ * `mention`, each mention reads as that instead of its words: looking for names in what's left
+ * mustn't find a mention a second time.
+ */
+export function plainText(value: string, kind: RichKind = 'story', mention?: string) {
+	return isRich(value)
+		? blockLines(parse(value, kind).content ?? [], [], mention).join('\n')
+		: value;
 }
 
 function isEmpty(doc: RichDoc) {

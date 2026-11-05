@@ -9,6 +9,7 @@ import Typography from '@tiptap/extension-typography';
 import { Focus, Placeholder } from '@tiptap/extensions';
 import { FONTS, HIGHLIGHTS, INKS, SIZES, highlightVar, inkVar, type RichKind } from '$lib/rich';
 import { mentionExtension, type MentionBridge } from './mention';
+import { autoMentionExtension } from './auto-mention';
 
 /** The document keeps the story's first-letter settings (see $lib/rich DropCap). */
 const StoryDocument = Document.extend({
@@ -91,8 +92,10 @@ export function extensionsFor(
 		Placeholder.configure({ placeholder }),
 		// Marks the paragraph being written (.has-focus): focus mode can dim the rest.
 		...(story ? [Focus.configure({ className: 'has-focus', mode: 'shallowest' })] : []),
-		// Story text can always hold mentions; `mentions` is what lets the writer add them.
+		// Story text can always hold mentions; `mentions` is what lets the writer add them, and
+		// links the story bible's names wherever they're written.
 		...(story ? [mentionExtension(mentions)] : []),
+		...(story && mentions ? [autoMentionExtension(mentions.bookId)] : []),
 		EscapeKey(onescape)
 	];
 }

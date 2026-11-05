@@ -218,7 +218,7 @@
 					onkeydown={submitOnEnter}
 				/>
 				<p id="{uid}-aliases-hint" class="hint">
-					Type any of these after @ and the story shows the words you chose.
+					Your story text links these wherever you write them, and they work after @ too.
 				</p>
 			</div>
 		</div>
