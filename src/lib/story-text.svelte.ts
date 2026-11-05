@@ -4,6 +4,8 @@ import { plainText } from '$lib/rich';
 import { recordMentions, recordWriting, touchLibrary } from '$lib/library';
 
 type Status = 'loading' | 'load-error' | 'ready' | 'saving' | 'saved' | 'error';
+type Writing = Parameters<typeof recordWriting>[2];
+type Linked = Parameters<typeof recordMentions>[2];
 
 /**
  * The story text of a part that has no chapters, or of a chapter. POST vs PUT is decided by
@@ -27,6 +29,9 @@ export class StoryTextDoc {
 	/** Set by the editor: hands over typing it hasn't reported yet. */
 	flush: (() => void) | null = null;
 
+	/** Where the text is saved: `/api/story-text/{part|chapter}/[id]`, which its versions sit under. */
+	readonly url: string;
+
 	#exists = false;
 	#loading: Promise<void> | null = null;
 	#target: 'part' | 'chapter';
@@ -36,7 +41,7 @@ export class StoryTextDoc {
 	constructor(target: 'part' | 'chapter', id: number) {
 		this.#target = target;
 		this.#id = id;
-		this.#url = `/api/story-text/${target}/${id}`;
+		this.url = this.#url = `/api/story-text/${target}/${id}`;
 	}
 
 	load() {
@@ -78,15 +83,56 @@ export class StoryTextDoc {
 			this.#exists = true;
 			this.saved = content;
 			this.status = 'saved';
-			// "Updated today" on the chapter, its part and its book, wherever they're listed.
-			const { touchedAt, writing, linked } = await response.json().catch(() => ({}));
-			if (touchedAt) touchLibrary(this.#target, this.#id, touchedAt);
-			if (writing) recordWriting(this.#target, this.#id, writing);
-			if (linked?.length) recordMentions(this.#target, this.#id, linked);
+			this.#record(await response.json().catch(() => ({})));
 		} catch (error) {
 			this.error = message(error, "Couldn't save the story text.");
 			this.status = 'error';
 		}
+	}
+
+	/**
+	 * Put a kept version back (see $lib/story-versions). Unsaved typing is saved first, so the
+	 * text it replaces is kept as a version too. Returns the id of that version, which restoring
+	 * undoes this; throws with a message to show if it fails.
+	 */
+	async restore(versionId: number): Promise<number | null> {
+		this.flush?.();
+		if (this.dirty) await this.save();
+		if (this.dirty || this.status === 'error')
+			throw new Error(this.error || 'Save your text first.');
+		if (this.status !== 'ready' && this.status !== 'saved') throw new Error('Wait a moment.');
+		const before = this.status;
+		this.status = 'saving';
+		try {
+			const response = await fetch(`${this.#url}/versions/${versionId}/restore`, {
+				method: 'POST'
+			});
+			if (!response.ok) throw new Error(await errorText(response));
+			const body = await response.json();
+			this.#exists = true;
+			this.saved = this.content = body.content;
+			this.status = 'saved';
+			this.#record(body);
+			return body.kept ?? null;
+		} catch (error) {
+			this.status = before;
+			throw new Error(message(error, "Couldn't bring back that version."), { cause: error });
+		}
+	}
+
+	/** What a save tells the rest of the app: "updated today", today's words, new links. */
+	#record({
+		touchedAt,
+		writing,
+		linked
+	}: {
+		touchedAt?: string;
+		writing?: Writing;
+		linked?: Linked;
+	}) {
+		if (touchedAt) touchLibrary(this.#target, this.#id, touchedAt);
+		if (writing) recordWriting(this.#target, this.#id, writing);
+		if (linked?.length) recordMentions(this.#target, this.#id, linked);
 	}
 
 	#send(method: 'POST' | 'PUT', content: string) {

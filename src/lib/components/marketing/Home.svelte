@@ -282,6 +282,42 @@
 					>
 				</motion-stagger>
 			</div>
+
+			<motion-reveal y={24} delay={0.35} duration={0.7}>
+				<article class="history-card">
+					<!-- A picture of version history: the chapter's versions from this morning, one
+					     picked, and what's changed in the text since it. -->
+					<div class="history-demo" aria-hidden="true">
+						<span class="history-demo-day">Today</span>
+						<span class="history-demo-row"
+							><strong>10:42 AM</strong><span class="words">2,310 words</span><span class="up"
+								>+184</span
+							></span
+						>
+						<span class="history-demo-row on"
+							><strong>9:58 AM</strong><span class="words">2,126 words</span><span class="down"
+								>−312</span
+							></span
+						>
+						<span class="history-demo-row"
+							><strong>9:21 AM</strong><span class="words">2,438 words</span><span class="kept"
+								><Icon name="book-marked" size={13} />Before the rewrite</span
+							></span
+						>
+						<span class="history-demo-diff"
+							>By the next watch <del>everyone</del> <ins>the whole crew</ins> had
+							<ins>a theory and none of them had</ins> a plan</span
+						>
+					</div>
+					<div class="history-card-copy">
+						<h3><Icon name="clock" size={18} />Version history</h3>
+						<p>
+							Every chapter keeps its earlier versions as you write. See what's changed since one,
+							and bring it back.
+						</p>
+					</div>
+				</article>
+			</motion-reveal>
 		</div>
 
 		<motion-reveal class="preview-reveal" y={40} delay={0.1} duration={0.8}>
@@ -1123,6 +1159,141 @@
 		border-radius: 50%;
 		background: var(--bb-sky-wash);
 		color: var(--bb-sky);
+	}
+
+	/* Version history, under the editor's checks: drawn like the real list and its changes. */
+	.history-card {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		max-width: 500px;
+		margin-top: 8px;
+		padding: 14px 14px 20px;
+		border-radius: var(--r-card);
+		background: var(--bb-ink);
+		border: 1px solid var(--bb-line-soft);
+	}
+
+	.history-demo {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		padding: 12px;
+		border-radius: 14px;
+		background: var(--bb-night);
+		border: 1px solid var(--bb-line-faint);
+		font-size: 13.5px;
+	}
+
+	.history-demo-day {
+		padding: 0 10px 6px;
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--bb-text-3);
+	}
+
+	.history-demo-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 2px 10px;
+		padding: 7px 10px;
+		border-radius: 10px;
+		color: var(--bb-text);
+	}
+
+	.history-demo-row.on {
+		background: var(--bb-raised);
+		box-shadow: inset 2px 0 0 var(--bb-sky);
+	}
+
+	.history-demo-row strong {
+		font-weight: 600;
+		color: var(--bb-text-strong);
+	}
+
+	.history-demo-row .words {
+		font-size: 12.5px;
+		color: var(--bb-text-3);
+	}
+
+	.history-demo-row .up,
+	.history-demo-row .down {
+		margin-left: auto;
+		font-size: 12px;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.history-demo-row .up {
+		color: var(--ink-moss);
+	}
+
+	.history-demo-row .down {
+		color: var(--bb-coral);
+	}
+
+	.history-demo-row .kept {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		flex-basis: 100%;
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--bb-sky);
+	}
+
+	.history-demo-diff {
+		margin: 8px 2px 0;
+		padding: 12px 8px 0;
+		border-top: 1px solid var(--bb-line-faint);
+		font-family: var(--font-read);
+		font-size: 15.5px;
+		line-height: 1.7;
+		color: var(--bb-text-read);
+	}
+
+	.history-demo-diff ins {
+		border-radius: 3px;
+		background: var(--mark-green);
+		color: var(--bb-text-strong);
+		text-decoration: none;
+	}
+
+	.history-demo-diff del {
+		border-radius: 3px;
+		background: var(--bb-coral-wash);
+		color: var(--bb-coral-soft);
+		text-decoration: line-through;
+		text-decoration-color: var(--bb-coral);
+	}
+
+	.history-card-copy {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		padding: 0 8px;
+	}
+
+	.history-card-copy h3 {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		font-family: var(--font-display);
+		font-weight: 400;
+		font-size: 23px;
+		color: var(--bb-text-strong);
+	}
+
+	.history-card-copy h3 :global(svg) {
+		color: var(--bb-sky);
+	}
+
+	.history-card-copy p {
+		font-size: 15px;
+		line-height: 1.6;
+		color: var(--bb-text-2);
 	}
 
 	.preview-reveal,

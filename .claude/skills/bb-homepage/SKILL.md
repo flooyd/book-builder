@@ -10,7 +10,7 @@ description: Book Builder's signed-out homepage and marketing content, covering 
 1. **Hero**: the headline, calls to action, and `AnimatedBook.svelte` (the decorative 3D book with floating tags).
 2. **Marquee**, then numbered sections, each a `<section id=...>` with a `<p class="overline">0N — Name</p>` label:
    - `#features` **01 — How it's organized**: books, parts, chapters, the story bible and mentions, with a sample tree card.
-   - `#example` **02 — The editor**: a sample page of story text with formatting and a first letter.
+   - `#example` **02 — The editor**: a sample page of story text with formatting and a first letter. Under its checks, a Version history card (`.history-card`) draws the real version list (this morning's versions, one kept as "Before the rewrite") and the changes since the picked one, on the editor's own last line.
    - `#outline` **03 — The outline**: a corkboard picture from the `board` array, with statuses in the outline's colours.
    - `#focus` **04 — Focus, goals, insights and share**: four cards, two by two: focus mode, the author page (the "Oriel Vance" picture, with a "See the demo author" link to the real Demo Author page) writing goals (a picture of today's progress, a streak and two weeks of bars) and manuscript insights (a small pacing chart, drawn like the real one, and one finding).
    - `#soon` **05 — On the shelf next**: the Coming soon shelf, rendered from `SOON`, and hidden (with its header link) when the list is empty.
@@ -19,7 +19,7 @@ description: Book Builder's signed-out homepage and marketing content, covering 
 ### How the user wants it
 
 - **Lean.** "Keep it lean like it is now". When a feature ships, the user usually wants it showcased. Prefer adding a card or a line to an existing section over a new section. Add a section only for something big, and renumber the labels if you do.
-- **Coming soon.** `SOON` in `marketing/soon.ts` holds the user's planned features (currently Your account, Version history, Find and replace and Connections map). Remove an entry when it ships. The full working list is in the `bb-roadmap` skill. Only add entries the user asks for: it's their roadmap. While it's empty, the section and its nav link disappear on their own.
+- **Coming soon.** `SOON` in `marketing/soon.ts` holds the user's planned features (currently Your account, Find and replace and Connections map). Remove an entry when it ships. The full working list is in the `bb-roadmap` skill. Only add entries the user asks for: it's their roadmap. While it's empty, the section and its nav link disappear on their own.
 - **Real product.** Showcases depict the real product, so mirror the real UI's look (paper surface, statuses, covers) rather than inventing features that don't exist.
 - **Breakpoints.** Check it at 1440 and 390 in both themes (see the `bb-verify` skill). The hero book scales down on phones (`scale(0.56)`, then `0.5` under 420px).
 

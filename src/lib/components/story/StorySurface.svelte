@@ -7,10 +7,42 @@
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import RichEditor from '$lib/components/rich/RichEditor.svelte';
 	import FocusMode from './FocusMode.svelte';
+	import VersionHistory from './VersionHistory.svelte';
+	import { versionWhen, type VersionInfo } from '$lib/story-versions';
 
 	// The writing surface: the rich text editor with its toolbar, live word count, Night / Paper,
-	// and focus mode.
+	// focus mode and version history.
 	let { doc, title, bookId }: { doc: StoryTextDoc; title: string; bookId: number } = $props();
+
+	let historyOpen = $state(false);
+	// The version last put back, and the one holding the text it replaced, for an undo. The notice
+	// lasts until the text is saved again.
+	let restored = $state<{ version: VersionInfo; kept: number | null; content: string } | null>(
+		null
+	);
+	const showRestored = $derived(restored !== null && doc.saved === restored.content);
+	let undoing = $state(false);
+	let undoError = $state('');
+
+	function onrestored(result: { version: VersionInfo; kept: number | null }) {
+		historyOpen = false;
+		restored = { ...result, content: doc.saved };
+		undoError = '';
+	}
+
+	async function undoRestore() {
+		if (!restored?.kept || undoing) return;
+		undoing = true;
+		undoError = '';
+		try {
+			await doc.restore(restored.kept);
+			restored = null;
+		} catch (error) {
+			undoError = error instanceof Error ? error.message : 'Couldn’t undo that.';
+		} finally {
+			undoing = false;
+		}
+	}
 
 	let editor = $state<RichEditor>();
 	let focusing = $state(false);
@@ -69,7 +101,13 @@
 				{#if doc.status !== 'loading' && doc.status !== 'load-error'}
 					<button
 						type="button"
-						class="focus-button"
+						class="tool-button"
+						title="Earlier versions of this story text, to compare or bring back"
+						onclick={() => (historyOpen = true)}><Icon name="clock" size={15} />History</button
+					>
+					<button
+						type="button"
+						class="tool-button"
 						title="Write full screen, with nothing else on the page"
 						onclick={enterFocus}><Icon name="focus" size={15} />Focus</button
 					>
@@ -93,6 +131,26 @@
 			<p class="loading">Writing in focus mode…</p>
 			<FocusMode bind:this={focusView} {doc} {title} {paper} {bookId} onexit={leaveFocus} />
 		{:else}
+			{#if showRestored && restored}
+				<div class="restored" role="status">
+					<Icon name="check-circle" size={16} />
+					<span>
+						Brought back your text from {versionWhen(restored.version.savedAt)}.
+						{#if undoError}<span class="undo-error">{undoError}</span>{/if}
+					</span>
+					{#if restored.kept}
+						<button type="button" class="undo" onclick={undoRestore} disabled={undoing}>
+							{undoing ? 'Undoing…' : 'Undo'}
+						</button>
+					{/if}
+					<button
+						type="button"
+						class="dismiss"
+						aria-label="Dismiss"
+						onclick={() => (restored = null)}><Icon name="x" size={15} /></button
+					>
+				</div>
+			{/if}
 			<RichEditor
 				bind:this={editor}
 				id="story"
@@ -106,6 +164,9 @@
 		{/if}
 	</div>
 </motion-reveal>
+{#if historyOpen}
+	<VersionHistory {doc} {title} {onrestored} onclose={() => (historyOpen = false)} />
+{/if}
 {#if doc.status === 'error'}
 	<p class="save-error" role="alert">
 		<Icon name="alert-circle" size={16} />{doc.error} Your text is still here; try saving again.
@@ -158,7 +219,7 @@
 		color: var(--surface-muted);
 	}
 
-	.focus-button {
+	.tool-button {
 		display: inline-flex;
 		align-items: center;
 		gap: 7px;
@@ -171,15 +232,16 @@
 		font: 600 12.5px var(--font-ui);
 	}
 
-	.focus-button:hover {
+	.tool-button:hover {
 		border-color: var(--bb-sky);
 		color: var(--surface-text);
 	}
 
 	.surface-tools {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
-		gap: 14px;
+		gap: 10px 14px;
 	}
 
 	.words {
@@ -227,6 +289,59 @@
 		caret-color: var(--surface-caret);
 		font-family: var(--font-read);
 		font-size: 20px;
+	}
+
+	.restored {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px 12px;
+		margin: -8px 0 22px;
+		padding: 10px 12px 10px 14px;
+		border-radius: 12px;
+		border: 1px solid var(--surface-line);
+		color: var(--surface-text);
+		font: 14px var(--font-ui);
+	}
+
+	.restored > :global(svg) {
+		color: var(--ink-moss);
+	}
+
+	.restored > span {
+		flex: 1 1 220px;
+	}
+
+	.undo-error {
+		display: block;
+		color: var(--bb-coral-soft);
+	}
+
+	.undo,
+	.dismiss {
+		min-height: 32px;
+		border: 1px solid var(--surface-line);
+		border-radius: 9px;
+		background: transparent;
+		color: var(--surface-text);
+		font: 600 13px var(--font-ui);
+	}
+
+	.undo {
+		padding: 0 12px;
+	}
+
+	.dismiss {
+		display: grid;
+		place-items: center;
+		width: 32px;
+		border-color: transparent;
+		color: var(--surface-muted);
+	}
+
+	.undo:hover,
+	.dismiss:hover {
+		border-color: var(--bb-sky);
 	}
 
 	.loading {

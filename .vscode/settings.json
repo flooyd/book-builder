@@ -1,6 +1,6 @@
 {
-    "chat.tools.terminal.autoApprove": {
-        "yarn run check": true,
-        "yarn lint": true
-    }
+	"chat.tools.terminal.autoApprove": {
+		"yarn run check": true,
+		"yarn lint": true
+	}
 }

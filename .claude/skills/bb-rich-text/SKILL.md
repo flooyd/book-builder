@@ -101,3 +101,4 @@ purpose, and run the editor through `bb-verify` afterwards.
 
 - **Client.** `$lib/story-text.svelte.ts` (`StoryTextDoc`, `guardStoryText`) handles debounced saves, Ctrl/Cmd+S (not with Shift, since Ctrl+Shift+S is the editor's strikethrough), asking before leaving with unsaved text, and a `flush` before navigation.
 - **Server.** `$lib/server/story-text.ts` cleans the value, saves it, touches `updatedAt` up the chain and returns `touchedAt`. Focus mode autosaves 2.5s after typing stops.
+- **Versions.** The same save keeps the text it replaces as a version when one is due, and `StoryTextDoc.restore` puts one back (see Version history in the `bb-feature-map` skill). A version is stored in the value format above, so anything that reads values reads versions too, and a restore cleans it again in case the allow-list has changed.

@@ -340,6 +340,25 @@ export const storyText = pgTable('story_text', {
 		.$onUpdate(() => new Date())
 });
 
+//an earlier state of a piece of story text, kept so a save can be undone (see
+//$lib/server/story-versions). saved_at is when that text was saved, created_at when it was kept.
+//A version with a label was named by the writer and is never thinned out
+export const storyVersion = pgTable(
+	'story_version',
+	{
+		id: serial('id').primaryKey(),
+		storyTextId: integer('story_text_id')
+			.references(() => storyText.id, { onDelete: 'cascade' })
+			.notNull(),
+		content: text('content').notNull(),
+		words: integer('words').notNull().default(0),
+		label: text('label'),
+		savedAt: timestamp('saved_at').notNull(),
+		createdAt: timestamp('created_at').notNull().defaultNow()
+	},
+	(table) => [index('story_version_story_text_idx').on(table.storyTextId, table.savedAt)]
+);
+
 //who and what a piece of story text mentions, and how often: an index of the mention nodes in
 //its content, rebuilt on every save (see $lib/server/bible). entry_type is character, place or
 //system; entry_id points into that table, so nothing here cascades from the entry

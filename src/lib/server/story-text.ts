@@ -5,8 +5,9 @@ import { db } from '$lib/server/db';
 import { book, chapter, part, storyText } from '$lib/server/db/schema';
 import { findOwnedChapter, findOwnedPart } from '$lib/server/ownership';
 import { cleanValue } from '$lib/rich';
-import { recordWords, todayFor, wordsIn } from '$lib/server/goals';
+import { dayFor, recordWords, todayFor, wordsIn } from '$lib/server/goals';
 import { castNamed, indexMentions, ownedMentions } from '$lib/server/bible';
+import { findVersion, keepVersion } from '$lib/server/story-versions';
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -18,7 +19,9 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  * toward the writer's daily goal, and the response says how many words that added and the
  * day's total (`writing`). Mentions in the text are indexed in the same transaction, and the
  * response lists any entries that joined the book by being mentioned (`linked`). Anyone in the
- * book's story bible named in the text for the first time joins its cast (`castNamed`).
+ * book's story bible named in the text for the first time joins its cast (`castNamed`). A save
+ * that replaces text keeps a version of what it replaced when one is due (`keepVersion`), and
+ * `RESTORE` puts a version back.
  */
 export function storyTextHandlers(target: 'part' | 'chapter') {
 	const column = target === 'part' ? storyText.partId : storyText.chapterId;
@@ -122,25 +125,29 @@ export function storyTextHandlers(target: 'part' | 'chapter') {
 		});
 	};
 
-	const PUT = async (event: RequestEvent) => {
-		const owned = await ownedId(event);
-		if ('error' in owned) return owned.error;
-
-		const existing = await db.select().from(storyText).where(eq(column, owned.id));
-		if (existing.length === 0) {
-			return json({ error: `Story text does not exist for this ${target}` }, { status: 404 });
-		}
-
-		const content = await readContent(event);
-		if (content === null) {
-			return json({ error: 'Content must be a string' }, { status: 400 });
-		}
-
+	/**
+	 * Replace the saved text with `content`, keeping a version of the text it replaces when one is
+	 * due. A restore always keeps one, and its change in words counts toward today only when the
+	 * version was kept today: then it undoes today's edits, and otherwise it would count old words
+	 * as new.
+	 */
+	async function replace(
+		event: RequestEvent,
+		owned: { id: number; userId: string },
+		existing: typeof storyText.$inferSelect,
+		content: string,
+		restoring?: { createdAt: Date }
+	) {
 		const at = new Date();
 		const day = todayFor(event);
-		const before = wordsIn(existing[0].content);
+		const before = wordsIn(existing.content);
 		const updated = await db.transaction(async (tx) => {
 			const kept = await ownedMentions(tx, owned.userId, content);
+			const after = wordsIn(kept);
+			const version =
+				kept === existing.content && !restoring
+					? null
+					: await keepVersion(tx, existing, { nextWords: after, now: at, always: !!restoring });
 			const [row] = await tx
 				.update(storyText)
 				.set({ content: kept, updatedAt: at })
@@ -158,23 +165,65 @@ export function storyTextHandlers(target: 'part' | 'chapter') {
 				target,
 				targetId: owned.id,
 				bookId,
-				before: existing[0].content,
+				before: existing.content,
 				after: kept
 			});
-			const delta = wordsIn(kept) - before;
+			const counts = !restoring || dayFor(event, restoring.createdAt) === day;
+			const delta = counts ? after - before : 0;
 			return {
 				row,
 				linked,
+				version,
 				writing: { day, delta, today: await recordWords(tx, owned.userId, day, delta) }
 			};
 		});
-		return json({
+		return {
 			...updated.row,
 			touchedAt: at.toISOString(),
 			writing: updated.writing,
-			linked: updated.linked
-		});
+			linked: updated.linked,
+			/** The version that holds the text from before this save, if any (a restore's undo). */
+			kept: updated.version
+		};
+	}
+
+	const PUT = async (event: RequestEvent) => {
+		const owned = await ownedId(event);
+		if ('error' in owned) return owned.error;
+
+		const existing = await db.select().from(storyText).where(eq(column, owned.id));
+		if (existing.length === 0) {
+			return json({ error: `Story text does not exist for this ${target}` }, { status: 404 });
+		}
+
+		const content = await readContent(event);
+		if (content === null) {
+			return json({ error: 'Content must be a string' }, { status: 400 });
+		}
+
+		return json(await replace(event, owned, existing[0], content));
 	};
 
-	return { GET, POST, PUT };
+	/**
+	 * POST /api/story-text/{part|chapter}/[id]/versions/[versionId]/restore: put a version back.
+	 * The text it replaces is kept as a version first, so a restore can be undone the same way.
+	 */
+	const RESTORE = async (event: RequestEvent) => {
+		const owned = await ownedId(event);
+		if ('error' in owned) return owned.error;
+
+		const existing = await db.select().from(storyText).where(eq(column, owned.id));
+		const versionId = Number(event.params.versionId);
+		const version =
+			existing.length > 0 && Number.isInteger(versionId)
+				? await findVersion(existing[0].id, versionId)
+				: undefined;
+		if (!version) return json({ error: 'Version not found' }, { status: 404 });
+
+		// Cleaned again: the allow-list may have changed since the version was saved.
+		const content = cleanValue(version.content, 'story');
+		return json(await replace(event, owned, existing[0], content, version));
+	};
+
+	return { GET, POST, PUT, RESTORE };
 }

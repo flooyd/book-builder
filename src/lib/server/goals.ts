@@ -18,11 +18,14 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 const HISTORY_DAYS = 400;
 
-/** The writer's day right now, from the time zone the layout reported (UTC until it has). */
-export function todayFor(event: RequestEvent) {
+/** The writer's day at `at`, from the time zone the layout reported (UTC until it has). */
+export function dayFor(event: RequestEvent, at = new Date()) {
 	const timeZone = validTimeZone(event.cookies.get(TIME_ZONE_COOKIE)) ?? 'UTC';
-	return dayIn(timeZone);
+	return dayIn(timeZone, at);
 }
+
+/** The writer's day right now. */
+export const todayFor = (event: RequestEvent) => dayFor(event);
 
 /** Words in a saved piece of story text, counted as the editor counts them. */
 export const wordsIn = (content: string) => countWords(plainText(content));

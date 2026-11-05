@@ -17,9 +17,9 @@ idea with that number here. If they name a number, start from its entry.
 - **Adding ideas.** Add them when the user asks for ideas or agrees to one. Say which are new.
 - **The public shelf is separate.** `src/lib/components/marketing/soon.ts` is what visitors see.
   Only add to it when the user asks, and take an entry off when it ships (see the `bb-homepage`
-  skill). An idea here isn't a promise there. The shelf holds 4 at the moment: Your account (4),
-  Version history (1), Find and replace (7) and Connections map (19), the last three added at the
-  user's request on 2026-11-04.
+  skill). An idea here isn't a promise there. The shelf holds 3 at the moment: Your account (4),
+  Find and replace (7) and Connections map (19), the last two added at the user's request on
+  2026-11-04.
 - **Check before trusting it.** Copilot also commits to this repo, so read `git log` and glance at
   the code before calling something unbuilt.
 
@@ -29,13 +29,13 @@ Statuses: **Not started**, **In progress**, **Shipped**, **Dropped**.
 
 ### Protect the writer's work
 
-| #   | Idea               | Status      | What it is                                                                                                                                                                                                                                                              |
-| --- | ------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Version history    | Not started | Snapshots of each chapter, with compare and restore. Today a save replaces the only copy (`PUT` in `src/lib/server/story-text.ts`), so a mistaken delete can't be undone once it's saved.                                                                               |
-| 2   | Export             | Shipped     | PDF and Word of a book or one part, from the book page and the part page, for the owner. Left out: EPUB, the drawn cover in Word, and other scripts in the PDF (it covers Latin, Greek, Cyrillic and Vietnamese; the rest become `?` with a note, and Word keeps them). |
-| 3   | Manuscript import  | Not started | Upload a Word document and split it into parts and chapters. "Import from text" only takes outlines, so an existing novel has to be pasted in chapter by chapter.                                                                                                       |
-| 4   | Accounts and email | Not started | Password reset and account deletion. A forgotten password locks someone out for good, and the app can't send email at all.                                                                                                                                              |
-| 5   | Offline writing    | Not started | Keep drafts on the device and sync them when back online, which also helps on phones. There's no service worker and nothing is stored locally.                                                                                                                          |
+| #   | Idea               | Status      | What it is                                                                                                                                                                                                                                                                                                                                                                                      |
+| --- | ------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Version history    | Shipped     | Every chapter's and story-text part's earlier text, kept as it's saved: compare a version with the text now, word by word, keep one for good with a name, and bring one back with an undo. See "Idea 1" below. Left out: history in focus mode, comparing two old versions with each other, versions of descriptions and notes, and a way back for a deleted chapter (its versions go with it). |
+| 2   | Export             | Shipped     | PDF and Word of a book or one part, from the book page and the part page, for the owner. Left out: EPUB, the drawn cover in Word, and other scripts in the PDF (it covers Latin, Greek, Cyrillic and Vietnamese; the rest become `?` with a note, and Word keeps them).                                                                                                                         |
+| 3   | Manuscript import  | Not started | Upload a Word document and split it into parts and chapters. "Import from text" only takes outlines, so an existing novel has to be pasted in chapter by chapter.                                                                                                                                                                                                                               |
+| 4   | Accounts and email | Not started | Password reset and account deletion. A forgotten password locks someone out for good, and the app can't send email at all.                                                                                                                                                                                                                                                                      |
+| 5   | Offline writing    | Not started | Keep drafts on the device and sync them when back online, which also helps on phones. There's no service worker and nothing is stored locally.                                                                                                                                                                                                                                                  |
 
 ### Build the world
 
@@ -75,13 +75,13 @@ Statuses: **Not started**, **In progress**, **Shipped**, **Dropped**.
 
 ## Recommended order
 
-Version history (1), then Accounts and email (4), then Find and replace (7). Version history comes
-first because it's still the only idea here that stops writers permanently losing work. Accounts
-and email is the one thing the public shelf promises, and a forgotten password still locks someone
-out for good. Find and replace matters more now that names link themselves (see 7).
+Accounts and email (4), then Find and replace (7). Accounts and email is on the public shelf, and a
+forgotten password still locks someone out for good. Find and replace matters more now that names
+link themselves (see 7).
 
 So far the user has chosen 6 first (2026-11-01), then Export (2) the same day, Series (8),
-Insights (15) and Word maps (17), and names that link themselves (part of 6) on 2026-11-04.
+Insights (15) and Word maps (17), names that link themselves (part of 6), and Version history (1)
+on 2026-11-04.
 
 ## What depends on what
 
@@ -117,6 +117,24 @@ Left:
 - **Mentions in descriptions and notes:** they only work in story text so far.
 - **Spotting names not in the bible yet:** a capitalised name that keeps turning up could be
   offered as a new entry, in the editor or on the insights page (15 left this out too).
+
+## Idea 1: how versions are kept
+
+The rules are in `lib/story-versions.ts` (no imports), the server side in
+`lib/server/story-versions.ts`, and the window in `lib/components/story/VersionHistory.svelte`.
+
+- **When.** A save keeps the text it replaces when the newest version is ten minutes old or more,
+  and always before a cut of 100 words or more, so a slip costs ten minutes of work at worst. A
+  restore always keeps the text it replaces, which is what its Undo puts back.
+- **Thinning.** Every version from the last two days, then the last of each day for a month, then
+  the last of each week, counted in UTC. One the writer keeps (a `label`, even an empty one) never
+  goes.
+- **What it costs.** One indexed read per save. A copy and the thinning happen only when a version
+  is kept. Each version is a whole copy of the text, which Postgres compresses. The comparison runs
+  in the browser (`lib/diff.ts`, Myers' algorithm, paragraphs then words), so the server only ever
+  sends the text.
+- **Goals.** A restore counts toward today's words only when the version was kept today: then it
+  undoes today's edits. An older one would count old words as new.
 
 ## Idea 17: telling who's speaking
 
