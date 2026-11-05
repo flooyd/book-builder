@@ -17,7 +17,9 @@ idea with that number here. If they name a number, start from its entry.
 - **Adding ideas.** Add them when the user asks for ideas or agrees to one. Say which are new.
 - **The public shelf is separate.** `src/lib/components/marketing/soon.ts` is what visitors see.
   Only add to it when the user asks, and take an entry off when it ships (see the `bb-homepage`
-  skill). An idea here isn't a promise there. The shelf holds 1 at the moment: Your account (4).
+  skill). An idea here isn't a promise there. The shelf holds 4 at the moment: Your account (4),
+  Version history (1), Find and replace (7) and Connections map (19), the last three added at the
+  user's request on 2026-11-04.
 - **Check before trusting it.** Copilot also commits to this repo, so read `git log` and glance at
   the code before calling something unbuilt.
 
