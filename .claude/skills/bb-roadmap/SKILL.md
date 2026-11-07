@@ -17,9 +17,9 @@ idea with that number here. If they name a number, start from its entry.
 - **Adding ideas.** Add them when the user asks for ideas or agrees to one. Say which are new.
 - **The public shelf is separate.** `src/lib/components/marketing/soon.ts` is what visitors see.
   Only add to it when the user asks, and take an entry off when it ships (see the `bb-homepage`
-  skill). An idea here isn't a promise there. The shelf holds 2 at the moment: Your account (4)
-  and Find and replace (7), the second added at the user's request on 2026-11-04. Connections map
-  (19) was on it too, and came off when it shipped on 2026-11-06.
+  skill). An idea here isn't a promise there. The shelf holds 1 at the moment: Find and replace
+  (7), added at the user's request on 2026-11-04. Connections map (19) came off when it shipped on
+  2026-11-06, and Your account (4) when it shipped on 2026-11-07.
 - **Check before trusting it.** Copilot also commits to this repo, so read `git log` and glance at
   the code before calling something unbuilt.
 
@@ -34,7 +34,7 @@ Statuses: **Not started**, **In progress**, **Shipped**, **Dropped**.
 | 1   | Version history    | Shipped     | Every chapter's and story-text part's earlier text, kept as it's saved: compare a version with the text now, word by word, keep one for good with a name, and bring one back with an undo. See "Idea 1" below. Left out: history in focus mode, comparing two old versions with each other, versions of descriptions and notes, and a way back for a deleted chapter (its versions go with it). |
 | 2   | Export             | Shipped     | PDF and Word of a book or one part, from the book page and the part page, for the owner. Left out: EPUB, the drawn cover in Word, and other scripts in the PDF (it covers Latin, Greek, Cyrillic and Vietnamese; the rest become `?` with a note, and Word keeps them).                                                                                                                         |
 | 3   | Manuscript import  | Not started | Upload a Word document and split it into parts and chapters. "Import from text" only takes outlines, so an existing novel has to be pasted in chapter by chapter.                                                                                                                                                                                                                               |
-| 4   | Accounts and email | Not started | Password reset and account deletion. A forgotten password locks someone out for good, and the app can't send email at all.                                                                                                                                                                                                                                                                      |
+| 4   | Accounts and email | Shipped     | Confirming a new account's email, password reset and account deletion, with email through Resend. Left out: changing the email address, a "your account was deleted" email, sign-in with Google and the like, and a way back for a deleted account. Needs a domain verified in Resend (`EMAIL_FROM`) before anyone but the Resend account's owner gets mail.                                    |
 | 5   | Offline writing    | Not started | Keep drafts on the device and sync them when back online, which also helps on phones. There's no service worker and nothing is stored locally.                                                                                                                                                                                                                                                  |
 
 ### Build the world
@@ -75,13 +75,12 @@ Statuses: **Not started**, **In progress**, **Shipped**, **Dropped**.
 
 ## Recommended order
 
-Accounts and email (4), then Find and replace (7). Accounts and email is on the public shelf, and a
-forgotten password still locks someone out for good. Find and replace matters more now that names
-link themselves (see 7).
+Find and replace (7): it's the last thing on the public shelf, and it matters more now that names
+link themselves (see 7). Email (4) is in now, which opens up 12, 13 and 14.
 
 So far the user has chosen 6 first (2026-11-01), then Export (2) the same day, Series (8),
 Insights (15) and Word maps (17), names that link themselves (part of 6), Version history (1)
-on 2026-11-04, and Connections map (19) on 2026-11-06.
+on 2026-11-04, Connections map (19) on 2026-11-06, and Accounts and email (4) on 2026-11-07.
 
 ## What depends on what
 

@@ -18,7 +18,9 @@ const handleTheme: Handle = ({ event, resolve }) => {
 const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	const session = await auth.api.getSession({ headers: event.request.headers });
 
-	if (session) {
+	// Better Auth gives an unconfirmed account no session to begin with; this makes sure one never
+	// counts as signed in, so nothing in the app opens before the email is confirmed.
+	if (session?.user.emailVerified) {
 		event.locals.session = session.session;
 		event.locals.user = session.user;
 	}

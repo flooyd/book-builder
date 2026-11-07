@@ -59,6 +59,7 @@ Every screenshot shows the real app, filled with _The Glass Armada_, the sample 
 - **Export:** download a book or a single part as a PDF typeset at 6×9 in, or as a Word document.
 - **Outline import:** paste an outline as plain text, or copy yours back out.
 - **Light and dark themes**, with a Night or Paper writing surface.
+- **Your account:** reset a forgotten password by email, and delete your account, with everything in it, whenever you choose.
 
 ## Run it locally
 
@@ -78,6 +79,8 @@ Fill in `.env`:
 | `DATABASE_URL`       | Your Postgres connection string                                       |
 | `ORIGIN`             | The app's address, `http://localhost:5173` for local work             |
 | `BETTER_AUTH_SECRET` | A long random string, such as the output of `openssl rand -base64 32` |
+| `RESEND_API_KEY`     | Optional locally: a [Resend](https://resend.com) key for email        |
+| `EMAIL_FROM`         | The sender, on a domain verified in Resend                            |
 
 Then build the schema and start the dev server:
 
@@ -86,7 +89,7 @@ yarn db:push
 yarn dev
 ```
 
-Open <http://localhost:5173> and sign up. Accounts live in your own database.
+Open <http://localhost:5173> and sign up. Accounts live in your own database. A new account is confirmed by email: with no `RESEND_API_KEY`, the dev server prints each email to the terminal, link and all, instead of sending it.
 
 ## Commands
 

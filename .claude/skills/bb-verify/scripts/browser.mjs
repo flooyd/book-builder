@@ -9,6 +9,7 @@
 import puppeteer from 'puppeteer-core';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 export const BASE = process.env.BB_BASE ?? 'http://localhost:5199';
 export const OUT = path.resolve(process.env.BB_SHOTS ?? path.join(import.meta.dirname, 'shots'));
@@ -114,6 +115,30 @@ export const TEST_USER = {
 	password: 'correct-horse-battery'
 };
 
+/**
+ * Marks the test user's email confirmed on the throwaway database (port 54329, or BB_PG_PORT),
+ * the step a new account otherwise waits on. Only ever the scratch database: never Neon.
+ */
+export function confirmTestUser() {
+	const bin = process.env.PG_BIN ?? 'C:/Program Files/PostgreSQL/18/bin';
+	const psql = path.join(bin, process.platform === 'win32' ? 'psql.exe' : 'psql');
+	const port = process.env.BB_PG_PORT ?? '54329';
+	const sql = `update "user" set email_verified = true where email = '${TEST_USER.email}'`;
+	execFileSync(psql, [
+		'-h',
+		'localhost',
+		'-p',
+		port,
+		'-U',
+		'bb',
+		'-d',
+		'bookbuilder',
+		'-q',
+		'-c',
+		sql
+	]);
+}
+
 /** Signs the test user in on the throwaway database, signing them up the first time. */
 export async function ensureSignedIn(page) {
 	await page.goto(BASE + '/login', { waitUntil: 'networkidle0' });
@@ -126,6 +151,13 @@ export async function ensureSignedIn(page) {
 		page.click('button[formaction="?/signUpEmail"]')
 	]);
 	await sleep(500);
+	// New accounts wait on "check your inbox" (/verify) until their email is confirmed.
+	if (!page.url().includes('/login')) {
+		confirmTestUser();
+		await page.goto(BASE + '/login', { waitUntil: 'networkidle0' });
+		await page.type('input[name=email]', TEST_USER.email);
+		await page.type('input[name=password]', TEST_USER.password);
+	}
 	if (page.url().includes('/login')) {
 		// Already registered: sign in instead (the form's default action).
 		// Enter in the password field submits the default action; a selector like

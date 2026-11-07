@@ -33,9 +33,10 @@
 	const reading = $derived(
 		page.route.id === '/book/[id]/read' || page.route.id === '/read/[shareId]'
 	);
-	// Signed-out pages that draw their own header and footer.
+	// Signed-out pages that draw their own header and footer: the home page and the account pages.
+	const ACCOUNT_PAGES = ['/login', '/verify', '/forgot-password', '/reset-password'];
 	const ownsChrome = $derived(
-		reading || page.url.pathname === '/' || page.url.pathname === '/login'
+		reading || page.url.pathname === '/' || ACCOUNT_PAGES.includes(page.url.pathname)
 	);
 	const siteChrome = $derived(!user && !ownsChrome);
 

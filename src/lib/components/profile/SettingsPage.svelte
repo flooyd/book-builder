@@ -8,10 +8,11 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import RichEditor from '$lib/components/rich/RichEditor.svelte';
+	import DeleteAccount from './DeleteAccount.svelte';
 
 	type Settings = { handle: string | null; bio: string; website: string; isPublic: boolean };
 
-	// Your profile (name, bio, website, public page) and account (email, password).
+	// Your profile (name, bio, website, public page) and account (email, password, deleting it).
 	let {
 		name: savedName,
 		email,
@@ -115,6 +116,8 @@
 			changing = false;
 		}
 	}
+
+	let deleting = $state(false);
 </script>
 
 <svelte:head>
@@ -281,7 +284,24 @@
 			</div>
 		</form>
 	</section>
+
+	<section class="card" aria-labelledby="h-delete">
+		<h2 id="h-delete">Delete your account</h2>
+		<p class="hint">
+			Your account goes, and everything in it: every book, series and story bible entry, and your
+			author page. It can't be undone.
+		</p>
+		<div class="actions">
+			<Button variant="danger" onclick={() => (deleting = true)}>
+				<Icon name="trash" size={16} />Delete my account…
+			</Button>
+		</div>
+	</section>
 </main>
+
+{#if deleting}
+	<DeleteAccount publicPage={saved.isPublic} onclose={() => (deleting = false)} />
+{/if}
 
 <style>
 	.settings {

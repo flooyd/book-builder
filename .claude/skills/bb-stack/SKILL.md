@@ -17,6 +17,7 @@ can belong to several books. It's deployed on Vercel from `main`.
 | Database        | Drizzle ORM on `postgres` (postgres-js), Neon in production                    | Schema in `src/lib/server/db/schema.ts`. See the `bb-database` skill.              |
 | Auth            | Better Auth with the SvelteKit cookies plugin                                  | `src/lib/server/auth.ts`; `hooks.server.ts` puts `locals.user` / `locals.session`. |
 | Rich text       | Tiptap **3.32.0, pinned exactly** (every `@tiptap/*` package the same version) | See the `bb-rich-text` skill.                                                      |
+| Email           | Resend's REST API through `fetch`, no package                                  | `src/lib/server/email.ts`; `RESEND_API_KEY`, `EMAIL_FROM` (a verified domain).     |
 | Export          | PDFKit, fontkit and hyphen (PDF), docx (Word)                                  | See "Adding a package" below: PDFKit's `@noble` versions clash with Better Auth's. |
 | Motion          | `motion-components` custom elements                                            | Registered in `$lib/motion.ts` after hydration.                                    |
 | Deploy          | `@sveltejs/adapter-vercel` 6.x, runtime `nodejs24.x`                           | Stay on adapter 6.x: 7.x needs SvelteKit 3.                                        |

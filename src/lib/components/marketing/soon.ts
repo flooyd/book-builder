@@ -6,11 +6,6 @@ import type { IconName } from '$lib/components/ui/Icon.svelte';
  */
 export const SOON: { title: string; icon: IconName; body: string }[] = [
 	{
-		title: 'Your account',
-		icon: 'lock',
-		body: 'Reset a forgotten password by email, and delete your account whenever you choose.'
-	},
-	{
 		title: 'Find and replace',
 		icon: 'search',
 		body: 'Change a word or a name across your whole book at once, with a look at every match first.'

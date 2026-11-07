@@ -21,3 +21,6 @@ export const confirmWord = (title: string) => (typeable(title) ? title.trim() : 
 /** Whether what's been typed is the title, give or take capitals, accents, quotes and spaces. */
 export const typedTitle = (typed: string, title: string) =>
 	typeable(typed) === typeable(confirmWord(title));
+
+/** What has to be typed before an account is deleted, along with its password. */
+export const ACCOUNT_PHRASE = 'delete my account';

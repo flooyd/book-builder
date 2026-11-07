@@ -10,15 +10,15 @@ proves it without touching their real data.
 
 Bundled scripts (in `scripts/` next to this file):
 
-| Script                | What it does                                                                                                                                                                             |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scratch-db.sh`       | Creates and starts a throwaway Postgres on port 54329, builds the current schema with drizzle-kit, prints the `DATABASE_URL`. Also `stop` and `url`.                                     |
-| `browser.mjs`         | puppeteer-core helpers: `launch`, `watch` (console errors, failed requests), `shot`, `overflow`, `freeze` (pause CSS animations), `ensureSignedIn` (signs up or signs in the test user). |
-| `seed-long-book.py`   | Prints SQL for "The Long Light", a long sample book (prologue, two parts, five chapters, rich text with a scene break, heading, quote and a three-line drop cap).                        |
-| `pdf-sheet.mjs`       | Draws pages of a PDF onto a contact sheet to look at. Run it from the scratch folder after `npm i pdfjs-dist`: `node pdf-sheet.mjs out/book.pdf name 1-8 4 340`.                         |
-| `word-check.ps1`      | Opens a `.docx` in real Word, read-only. Lists its contents and the page each heading really lands on, and can save Word's own PDF.                                                      |
-| `serve-func.mjs`      | Runs one built Vercel function from a copy outside the repo, the closest thing to Vercel here.                                                                                           |
-| `measure-ambient.mjs` | Renders every ambient sound offline in real Chrome and prints its loudness, peaks, stereo width, loudest jump and spectrum by octave, with a spectrogram sheet.                          |
+| Script                | What it does                                                                                                                                                                                                                                                            |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scratch-db.sh`       | Creates and starts a throwaway Postgres on port 54329, builds the current schema with drizzle-kit, prints the `DATABASE_URL`. Also `stop` and `url`.                                                                                                                    |
+| `browser.mjs`         | puppeteer-core helpers: `launch`, `watch` (console errors, failed requests), `shot`, `overflow`, `freeze` (pause CSS animations), `ensureSignedIn` (signs up or signs in the test user; a new one's email is confirmed in the throwaway database by `confirmTestUser`). |
+| `seed-long-book.py`   | Prints SQL for "The Long Light", a long sample book (prologue, two parts, five chapters, rich text with a scene break, heading, quote and a three-line drop cap).                                                                                                       |
+| `pdf-sheet.mjs`       | Draws pages of a PDF onto a contact sheet to look at. Run it from the scratch folder after `npm i pdfjs-dist`: `node pdf-sheet.mjs out/book.pdf name 1-8 4 340`.                                                                                                        |
+| `word-check.ps1`      | Opens a `.docx` in real Word, read-only. Lists its contents and the page each heading really lands on, and can save Word's own PDF.                                                                                                                                     |
+| `serve-func.mjs`      | Runs one built Vercel function from a copy outside the repo, the closest thing to Vercel here.                                                                                                                                                                          |
+| `measure-ambient.mjs` | Renders every ambient sound offline in real Chrome and prints its loudness, peaks, stereo width, loudest jump and spectrum by octave, with a spectrogram sheet.                                                                                                         |
 
 ## 1. A throwaway database
 
@@ -37,8 +37,10 @@ bash .claude/skills/bb-verify/scripts/scratch-db.sh start "<scratch>/pgdata"   #
 
 ```bash
 DATABASE_URL="postgres://bb@localhost:54329/bookbuilder" ORIGIN="http://localhost:5199" \
-  npx vite dev --port 5199 --strictPort
+  RESEND_API_KEY="" npx vite dev --port 5199 --strictPort > "<scratch>/dev.log" 2>&1
 ```
+
+- **Email.** The empty `RESEND_API_KEY` keeps test emails away from Resend: the dev server prints each one to its log instead, link and all (`[email] To …`), so a test can read the link and follow it. Sends are limited to one a minute per address, so between runs that send to the same address, clear them with `delete from verification where identifier like 'bb-email:%'`.
 
 - **Start it.** Start it as a background task. Wait for it with `until curl -s -o /dev/null http://localhost:5199/; do sleep 1; done`. The other variables (`BETTER_AUTH_SECRET`) come from `.env`, and the variables given on the command line win.
 - **Stop it.** Stopping the background task can leave Vite running on Windows. Kill whatever listens on the port:
