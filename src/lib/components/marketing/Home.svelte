@@ -7,6 +7,7 @@
 	import SiteHeader from './SiteHeader.svelte';
 	import SiteFooter from './SiteFooter.svelte';
 	import { SOON } from './soon';
+	import { curve, type RelationKind } from '$lib/connections';
 
 	// The corkboard picture in "03 — The outline". Statuses are the outline's colours (see .board).
 	const board: {
@@ -80,6 +81,41 @@
 		{ word: 'Systems', outline: false },
 		{ word: 'Story Text', outline: true, italic: true }
 	];
+
+	// The connections map picture in "01 — How it's organized": a corner of the Glass Armada's web,
+	// drawn with the real map's curves and arrowheads (see $lib/connections).
+	const webEntries = {
+		ade: { name: 'Ade', type: 'character', x: 72, y: 58, r: 20 },
+		pell: { name: 'Pell', type: 'character', x: 328, y: 52, r: 20 },
+		juno: { name: 'Juno Halley', type: 'character', x: 206, y: 118, r: 25 },
+		tamsin: { name: 'Tamsin', type: 'character', x: 352, y: 196, r: 20 },
+		meridian: { name: 'The Meridian', type: 'place', x: 50, y: 188, r: 20 },
+		kesh: { name: 'Kesh', type: 'place', x: 210, y: 214, r: 18 }
+	} as const;
+	type WebKey = keyof typeof webEntries;
+
+	const webLines: { from: WebKey; to: WebKey; label: string; kind: RelationKind }[] = [
+		{ from: 'pell', to: 'ade', label: 'Rival of', kind: 'rivals' },
+		{ from: 'ade', to: 'juno', label: 'Loyal to', kind: 'allies' },
+		{ from: 'juno', to: 'meridian', label: 'Captain of', kind: 'other' },
+		{ from: 'pell', to: 'tamsin', label: 'Brother of', kind: 'family' },
+		{ from: 'tamsin', to: 'juno', label: 'Mentor of', kind: 'allies' },
+		{ from: 'meridian', to: 'kesh', label: 'Bound for', kind: 'other' }
+	];
+
+	const web = webLines.map((line) => {
+		const [a, b] = [webEntries[line.from], webEntries[line.to]];
+		return { ...line, width: line.label.length * 6 + 18, ...curve(a, b, 0, a.r + 3, b.r + 5) };
+	});
+
+	/** "JH" for Juno Halley, "M" for The Meridian. */
+	const initialsOf = (name: string) =>
+		name
+			.replace(/^the\s+/i, '')
+			.split(/\s+/)
+			.map((word) => word[0])
+			.join('')
+			.slice(0, 2);
 
 	const features: { title: string; icon: IconName; body: string }[] = [
 		{
@@ -254,6 +290,63 @@
 				</motion-stagger>
 			</div>
 		</div>
+
+		<motion-reveal class="web-reveal" y={24} delay={0.1} duration={0.7}>
+			<article class="web-card">
+				<!-- A picture of the connections map: who's tied to whom, each line labelled and coloured
+				     by its kind, the way the real map draws them. -->
+				<svg class="web-demo" viewBox="0 0 400 252" aria-hidden="true">
+					{#each web as line (line.label)}
+						<g class="web-line {line.kind}">
+							<path class="web-stroke" d={line.path} />
+							<path
+								class="web-head"
+								d="M0 0-9-4.5-9 4.5z"
+								transform="translate({line.end.x} {line.end.y}) rotate({line.angle})"
+							/>
+							<rect
+								class="web-pill"
+								x={line.mid.x - line.width / 2}
+								y={line.mid.y - 9.5}
+								width={line.width}
+								height="19"
+								rx="9.5"
+							/>
+							<text class="web-label" x={line.mid.x} y={line.mid.y + 0.5}>{line.label}</text>
+						</g>
+					{/each}
+					{#each Object.values(webEntries) as entry (entry.name)}
+						<g class="web-entry {entry.type}" transform="translate({entry.x} {entry.y})">
+							{#if entry.type === 'place'}
+								<rect
+									x={-entry.r}
+									y={-entry.r}
+									width={entry.r * 2}
+									height={entry.r * 2}
+									rx={entry.r * 0.6}
+								/>
+							{:else}
+								<circle r={entry.r} />
+							{/if}
+							<text class="web-initials" y="1">{initialsOf(entry.name)}</text>
+							<text class="web-name" y={entry.r + 13}>{entry.name}</text>
+						</g>
+					{/each}
+				</svg>
+				<div class="web-card-copy">
+					<h3><Icon name="network" size={19} />Connections map</h3>
+					<p>
+						Your story bible as a web: who's family, who's a rival and who owes whom. Every line
+						says how two are tied, and takes its colour from it.
+					</p>
+					<ul class="web-kinds" aria-label="Kinds of tie">
+						<li class="family">Family</li>
+						<li class="allies">Allies</li>
+						<li class="rivals">Rivals</li>
+					</ul>
+				</div>
+			</article>
+		</motion-reveal>
 	</section>
 
 	<section id="example" class="section example">
@@ -1168,6 +1261,181 @@
 		display: flex;
 		flex-direction: column;
 		gap: 18px;
+	}
+
+	/* Connections map: a corner of the web beside the words, under the feature cards. */
+	.web-reveal {
+		display: block;
+		margin-top: 24px;
+	}
+
+	.web-card {
+		display: grid;
+		grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+		align-items: center;
+		gap: 16px 28px;
+		padding: 14px;
+		border-radius: var(--r-card);
+		background: var(--bb-ink);
+		border: 1px solid var(--bb-line-soft);
+	}
+
+	/* The map's dotted ground; the picture keeps its shape and sits in the middle of it. */
+	.web-demo {
+		width: 100%;
+		max-width: none;
+		height: 290px;
+		padding: 12px;
+		border-radius: 14px;
+		background-color: var(--bb-night);
+		background-image: radial-gradient(circle, var(--bb-line-mid) 1.1px, transparent 1.6px);
+		background-size: 22px 22px;
+		border: 1px solid var(--bb-line-faint);
+	}
+
+	.family {
+		--tie: var(--bb-tie-family);
+	}
+
+	.allies {
+		--tie: var(--bb-tie-allies);
+	}
+
+	.rivals {
+		--tie: var(--bb-tie-rivals);
+	}
+
+	.other {
+		--tie: var(--bb-tie-other);
+	}
+
+	.web-stroke {
+		fill: none;
+		stroke: var(--tie);
+		stroke-width: 2;
+		stroke-linecap: round;
+	}
+
+	.web-head {
+		fill: var(--tie);
+	}
+
+	.web-pill {
+		fill: var(--bb-night);
+		stroke: color-mix(in srgb, var(--tie) 50%, transparent);
+	}
+
+	.web-label {
+		fill: var(--tie);
+		font: 600 10.5px var(--font-ui);
+		text-anchor: middle;
+		dominant-baseline: central;
+	}
+
+	.web-entry circle,
+	.web-entry rect {
+		filter: drop-shadow(0 6px 8px light-dark(rgba(74, 56, 28, 0.18), rgba(0, 0, 0, 0.5)));
+	}
+
+	.web-entry.character circle {
+		fill: var(--bb-paper);
+		stroke: light-dark(rgba(60, 40, 10, 0.2), transparent);
+	}
+
+	.web-entry.place rect {
+		fill: var(--bb-royal);
+	}
+
+	.web-initials {
+		font-family: var(--font-display);
+		font-size: 15px;
+		text-anchor: middle;
+		dominant-baseline: central;
+		fill: #141c45;
+	}
+
+	.place .web-initials {
+		fill: #fff;
+	}
+
+	.web-name {
+		font: 600 11.5px var(--font-ui);
+		text-anchor: middle;
+		dominant-baseline: central;
+		fill: var(--bb-text-strong);
+		paint-order: stroke;
+		stroke: var(--bb-night);
+		stroke-width: 4px;
+		stroke-linejoin: round;
+	}
+
+	.web-card-copy {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		padding: 0 8px;
+	}
+
+	.web-card-copy h3 {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		font-family: var(--font-display);
+		font-weight: 400;
+		font-size: 26px;
+		color: var(--bb-text-strong);
+	}
+
+	.web-card-copy h3 :global(svg) {
+		color: var(--bb-sky);
+	}
+
+	.web-card-copy p {
+		font-size: 15.5px;
+		line-height: 1.6;
+		color: var(--bb-text-2);
+	}
+
+	.web-kinds {
+		margin: 4px 0 0;
+		padding: 0;
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.web-kinds li {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 3px 11px 4px;
+		border-radius: 999px;
+		border: 1px solid color-mix(in srgb, var(--tie) 45%, transparent);
+		color: var(--tie);
+		font-size: 13px;
+		font-weight: 600;
+	}
+
+	.web-kinds li::before {
+		content: '';
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--tie);
+	}
+
+	@media (max-width: 760px) {
+		.web-card {
+			grid-template-columns: minmax(0, 1fr);
+			padding-bottom: 20px;
+		}
+
+		.web-demo {
+			height: auto;
+			aspect-ratio: 400 / 252;
+			padding: 6px;
+		}
 	}
 
 	/* Version history: drawn like the real list and its changes, the words beside the picture. */

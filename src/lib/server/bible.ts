@@ -1,5 +1,6 @@
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { and, asc, eq, inArray, ne, or } from 'drizzle-orm';
+import type { PgColumn } from 'drizzle-orm/pg-core';
 import { requireUser } from '$lib/server/auth-guard';
 import { db } from '$lib/server/db';
 import {
@@ -788,6 +789,43 @@ export function connectionsOf(userId: string, type: EntryType, id: number) {
 					and(eq(entryLink.fromType, type), eq(entryLink.fromId, id)),
 					and(eq(entryLink.toType, type), eq(entryLink.toId, id))
 				)
+			)
+		)
+		.orderBy(asc(entryLink.createdAt));
+}
+
+/**
+ * Every connection that touches an entry in these books, for the connections map. One end may be
+ * an entry from somewhere else, which the map shows as visiting. A single query: the books' entries
+ * are found in their link tables, and each side of a connection is looked up by its own index.
+ */
+export async function connectionsIn(userId: string, bookIds: number[]) {
+	if (bookIds.length === 0) return [];
+	const inBooks = (typeColumn: PgColumn, idColumn: PgColumn) =>
+		or(
+			...ENTRY_TYPES.map((type) => {
+				const link = linkOf(type);
+				const ids = db
+					.select({ id: link.entry })
+					.from(link.table)
+					.where(inArray(link.table.bookId, bookIds));
+				return and(eq(typeColumn, type), inArray(idColumn, ids));
+			})
+		);
+	return db
+		.select({
+			id: entryLink.id,
+			fromType: entryLink.fromType,
+			fromId: entryLink.fromId,
+			toType: entryLink.toType,
+			toId: entryLink.toId,
+			label: entryLink.label
+		})
+		.from(entryLink)
+		.where(
+			and(
+				eq(entryLink.userId, userId),
+				or(inBooks(entryLink.fromType, entryLink.fromId), inBooks(entryLink.toType, entryLink.toId))
 			)
 		)
 		.orderBy(asc(entryLink.createdAt));

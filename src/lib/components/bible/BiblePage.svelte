@@ -69,6 +69,9 @@
 			to the text.
 		{/snippet}
 		{#snippet links()}
+			<Button href={resolve('/book/[id]/bible/connections', { id: String(id) })}>
+				<Icon name="network" size={16} />Connections
+			</Button>
 			{#if series}
 				<Button href={resolve('/series/[id]/bible', { id: String(series.id) })}>
 					<Icon name="library" size={16} />Series bible

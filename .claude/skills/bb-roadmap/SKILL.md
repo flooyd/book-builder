@@ -17,9 +17,9 @@ idea with that number here. If they name a number, start from its entry.
 - **Adding ideas.** Add them when the user asks for ideas or agrees to one. Say which are new.
 - **The public shelf is separate.** `src/lib/components/marketing/soon.ts` is what visitors see.
   Only add to it when the user asks, and take an entry off when it ships (see the `bb-homepage`
-  skill). An idea here isn't a promise there. The shelf holds 3 at the moment: Your account (4),
-  Find and replace (7) and Connections map (19), the last two added at the user's request on
-  2026-11-04.
+  skill). An idea here isn't a promise there. The shelf holds 2 at the moment: Your account (4)
+  and Find and replace (7), the second added at the user's request on 2026-11-04. Connections map
+  (19) was on it too, and came off when it shipped on 2026-11-06.
 - **Check before trusting it.** Copilot also commits to this repo, so read `git log` and glance at
   the code before calling something unbuilt.
 
@@ -39,16 +39,16 @@ Statuses: **Not started**, **In progress**, **Shipped**, **Dropped**.
 
 ### Build the world
 
-| #   | Idea                           | Status      | What it is                                                                                                                                                                                                                                                                                               |
-| --- | ------------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 6   | Mentions and story bible       | In progress | Links from story text to the bible, typed with `@` or found by name, and a real page for every character, place and system. See "Idea 6" below for what's done and what's left.                                                                                                                          |
-| 7   | Find and replace across a book | Not started | Rename a character everywhere, with a preview of each match. Mentions follow a rename, but a name written out doesn't, and since names link themselves by spelling, an old name left in the text stops linking, counting and filling casts. This closes that gap.                                        |
-| 8   | Series                         | Shipped     | Books grouped in a reading order, with a story bible worked out from their entries, an owner's page and a public page on the author profile, plus links between books in reading mode. Left out: an omnibus export, "Book 2 of…" on exported title pages, and series-wide goals, outlines and timelines. |
-| 9   | Plot threads                   | Not started | A grid of subplots against chapters, showing where a thread goes quiet.                                                                                                                                                                                                                                  |
-| 10  | Scenes                         | Not started | Smaller units inside chapters, each with its own point of view, location and status. A big change to both the data and the editor.                                                                                                                                                                       |
-| 11  | Timeline                       | Not started | Put events on an in-world calendar and warn when a character is in two places at once.                                                                                                                                                                                                                   |
-| 18  | Images                         | Not started | Portraits for characters, maps for places, and uploaded covers. Needs file storage (Vercel Blob or similar): the app's first running cost that grows with every writer, so it needs a size cap. The last big piece of 6.                                                                                 |
-| 19  | Connections map                | Not started | The bible's connections (`entry_link`) drawn as a web: family, rivals, allies, with each line labelled. The data is already there, and it's all drawn in the browser.                                                                                                                                    |
+| #   | Idea                           | Status      | What it is                                                                                                                                                                                                                                                                                                                                     |
+| --- | ------------------------------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 6   | Mentions and story bible       | In progress | Links from story text to the bible, typed with `@` or found by name, and a real page for every character, place and system. See "Idea 6" below for what's done and what's left.                                                                                                                                                                |
+| 7   | Find and replace across a book | Not started | Rename a character everywhere, with a preview of each match. Mentions follow a rename, but a name written out doesn't, and since names link themselves by spelling, an old name left in the text stops linking, counting and filling casts. This closes that gap.                                                                              |
+| 8   | Series                         | Shipped     | Books grouped in a reading order, with a story bible worked out from their entries, an owner's page and a public page on the author profile, plus links between books in reading mode. Left out: an omnibus export, "Book 2 of…" on exported title pages, and series-wide goals, outlines and timelines.                                       |
+| 9   | Plot threads                   | Not started | A grid of subplots against chapters, showing where a thread goes quiet.                                                                                                                                                                                                                                                                        |
+| 10  | Scenes                         | Not started | Smaller units inside chapters, each with its own point of view, location and status. A big change to both the data and the editor.                                                                                                                                                                                                             |
+| 11  | Timeline                       | Not started | Put events on an in-world calendar and warn when a character is in two places at once.                                                                                                                                                                                                                                                         |
+| 18  | Images                         | Not started | Portraits for characters, maps for places, and uploaded covers. Needs file storage (Vercel Blob or similar): the app's first running cost that grows with every writer, so it needs a size cap. The last big piece of 6.                                                                                                                       |
+| 19  | Connections map                | Shipped     | The bible's connections drawn as a web, for a book or a whole series, at `/book/[id]/bible/connections` and `/series/[id]/bible/connections`: see "Idea 19" below. Left out: saving the arrangement to the account (it's kept in the browser), editing a label in place, choosing a connection's kind by hand, and saving the map as an image. |
 
 ### Writing and revising
 
@@ -80,8 +80,8 @@ forgotten password still locks someone out for good. Find and replace matters mo
 link themselves (see 7).
 
 So far the user has chosen 6 first (2026-11-01), then Export (2) the same day, Series (8),
-Insights (15) and Word maps (17), names that link themselves (part of 6), and Version history (1)
-on 2026-11-04.
+Insights (15) and Word maps (17), names that link themselves (part of 6), Version history (1)
+on 2026-11-04, and Connections map (19) on 2026-11-06.
 
 ## What depends on what
 
@@ -117,6 +117,31 @@ Left:
 - **Mentions in descriptions and notes:** they only work in story text so far.
 - **Spotting names not in the bible yet:** a capitalised name that keeps turning up could be
   offered as a new entry, in the editor or on the insights page (15 left this out too).
+
+## Idea 19: how the map is drawn
+
+The rules are in `lib/connections.ts` (type imports only, so it can be tested on its own), and
+the page is `lib/components/bible/ConnectionsPage.svelte` with `ConnectionsMap`,
+`ConnectionsPanel` and `ConnectionsList`.
+
+- **What the server does.** One query per page load (`connectionsIn` in `lib/server/bible.ts`):
+  every connection touching an entry in the book or series, found through the link tables and the
+  `entry_link` indexes. Everything else happens in the browser, as the user prefers.
+- **Kinds.** A line's colour comes from its label, by word lists in `relationKind`: family, then
+  rivals, then allies, first match wins, so "Estranged sister of" is family and "Sworn enemy of" a
+  rival. Anything else ("Captain of", "Owes") is other. The colours are the `--bb-tie-*` tokens.
+- **Layout.** A force layout with no randomness, so a web always comes out the same. Lines pull
+  towards a length that leaves room for their label, entries push apart (more sideways than up and
+  down, for their names), and entries keep off lines that aren't theirs. Webs up to 60 entries are
+  laid out from five starts and the one with the fewest crossings and hidden names wins. On random
+  test webs: 25 entries in about 15 ms, 250 in about 200 ms.
+- **Arrangement.** Entries the writer drags (or moves with the arrow keys) stay where they're put,
+  in `localStorage` under `bb-connections-book-<id>` or `-series-<id>`. New entries find a place
+  among them without moving anything. Tidy up lays the whole web out afresh, with an Undo.
+- **Visiting entries.** A connection to an entry outside the book or series brings that entry in
+  with a dashed outline, "From another book".
+- **Phones.** A chosen entry opens in a sheet over the page. The panel under the map stays in the
+  flow, so opening the sheet never changes the page's height or scrolls it.
 
 ## Idea 1: how versions are kept
 

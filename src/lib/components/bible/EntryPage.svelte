@@ -38,13 +38,15 @@
 			? {
 					label: series.title,
 					href: resolve('/series/[id]', { id: String(series.id) }),
-					bible: resolve('/series/[id]/bible', { id: String(series.id) })
+					bible: resolve('/series/[id]/bible', { id: String(series.id) }),
+					map: resolve('/series/[id]/bible/connections', { id: String(series.id) })
 				}
 			: book
 				? {
 						label: book.title,
 						href: resolve('/book/[id]', { id: String(book.id) }),
-						bible: resolve('/book/[id]/bible', { id: String(book.id) })
+						bible: resolve('/book/[id]/bible', { id: String(book.id) }),
+						map: resolve('/book/[id]/bible/connections', { id: String(book.id) })
 					}
 				: null
 	);
@@ -68,7 +70,14 @@
 </svelte:head>
 
 {#if entry}
-	<EntrySheet {type} {entry} {appearances} {connections} backHref={parent?.bible ?? resolve('/')} />
+	<EntrySheet
+		{type}
+		{entry}
+		{appearances}
+		{connections}
+		backHref={parent?.bible ?? resolve('/')}
+		mapHref={parent ? `${parent.map}?focus=${type}-${id}` : undefined}
+	/>
 {:else}
 	<Missing noun={type} />
 {/if}

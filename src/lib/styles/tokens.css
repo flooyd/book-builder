@@ -86,6 +86,12 @@
 	--mark-pink: light-dark(#f9d6e4, rgba(255, 143, 189, 0.26));
 	--mark-violet: light-dark(#e5daf9, rgba(195, 166, 255, 0.28));
 
+	/* The kinds of tie on the connections map (see $lib/connections). */
+	--bb-tie-family: var(--bb-amber);
+	--bb-tie-allies: var(--ink-moss);
+	--bb-tie-rivals: var(--bb-coral);
+	--bb-tie-other: var(--bb-text-3);
+
 	/* Shadows. --bb-drop is the color of drop shadows: warm and soft on paper, near black at night. */
 	--bb-drop: light-dark(rgba(74, 56, 28, 0.4), rgba(0, 0, 0, 0.95));
 	--shadow-card: 0 30px 60px -40px light-dark(rgba(74, 56, 28, 0.45), rgba(0, 0, 0, 0.9));

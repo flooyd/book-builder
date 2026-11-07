@@ -1,18 +1,34 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { ENTRY_COPY, ENTRY_TYPES, type Connection, type EntryType } from '$lib/bible';
+	import { LABEL_SUGGESTIONS, relationKind, RELATION_COPY } from '$lib/connections';
 	import { sendJSON } from '$lib/library';
 	import { charactersStore, placesStore, systemsStore, type Entry } from '$lib/stores';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 
 	// How an entry relates to the rest of the story bible: "captain of the Meridian". A connection
-	// shows on both entries' pages, with an arrow saying which way it reads.
+	// shows on both entries' pages, with an arrow saying which way it reads. The connections map
+	// uses this panel too, and hears about each change through `onadd` and `onremove`.
 	let {
 		type,
 		entry,
-		connections: initial
-	}: { type: EntryType; entry: Entry; connections: Connection[] } = $props();
+		connections: initial,
+		mapHref,
+		onpick,
+		onadd,
+		onremove
+	}: {
+		type: EntryType;
+		entry: Entry;
+		connections: Connection[];
+		/** The connections map this entry is on, to link to from here. */
+		mapHref?: string;
+		/** Choosing a connected entry calls this instead of opening its page. */
+		onpick?: (type: EntryType, id: number) => void;
+		onadd?: (connection: Connection) => void;
+		onremove?: (id: number) => void;
+	} = $props();
 
 	const uid = $props.id();
 	// svelte-ignore state_referenced_locally
@@ -40,8 +56,6 @@
 		})
 	);
 
-	const SUGGESTED_LABELS = ['Sister of', 'Brother of', 'Parent of', 'Rival of', 'Captain of'];
-
 	async function add(event: SubmitEvent) {
 		event.preventDefault();
 		const [toType, toId] = target.split('-');
@@ -58,6 +72,7 @@
 				label
 			});
 			connections.push(row);
+			onadd?.(row);
 			target = '';
 			label = '';
 		} catch (cause) {
@@ -72,6 +87,7 @@
 		try {
 			await sendJSON('DELETE', `/api/bible/links/${id}`);
 			connections = connections.filter((connection) => connection.id !== id);
+			onremove?.(id);
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : "Couldn't remove that.";
 		}
@@ -79,16 +95,32 @@
 </script>
 
 <section class="panel" aria-labelledby="{uid}-title">
-	<h2 id="{uid}-title">Connections</h2>
+	<div class="title">
+		<h2 id="{uid}-title">Connections</h2>
+		{#if mapHref && rows.length > 0}
+			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- mapHref is resolve()d -->
+			<a class="map" href={mapHref}><Icon name="network" size={15} />See the map</a>
+		{/if}
+	</div>
 
 	{#if rows.length > 0}
 		<ul>
 			{#each rows as { connection, outgoing, otherType, other } (connection.id)}
+				{@const kind = relationKind(connection.label)}
 				<li>
-					<a href={resolve('/bible/[type]/[id]', { type: otherType, id: String(other.id) })}>
+					<a
+						class="row"
+						href={resolve('/bible/[type]/[id]', { type: otherType, id: String(other.id) })}
+						onclick={(event) => {
+							if (!onpick || event.metaKey || event.ctrlKey || event.shiftKey) return;
+							event.preventDefault();
+							onpick(otherType, other.id);
+						}}
+					>
 						<span class="name">{other.name}</span>
 						{#if connection.label}
 							<span class="label">
+								<span class="tie {kind}" title={RELATION_COPY[kind].long}></span>
 								<Icon name={outgoing ? 'arrow-right' : 'arrow-left'} size={13} />
 								<span class="sr-only">{outgoing ? `${entry.name} is` : `${other.name} is`}</span>
 								{connection.label}
@@ -135,7 +167,7 @@
 				bind:value={label}
 			/>
 			<datalist id="{uid}-labels">
-				{#each SUGGESTED_LABELS as suggestion (suggestion)}
+				{#each LABEL_SUGGESTIONS as suggestion (suggestion)}
 					<option value={suggestion}></option>
 				{/each}
 			</datalist>
@@ -151,6 +183,24 @@
 </section>
 
 <style>
+	.title {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 4px 12px;
+	}
+
+	.map {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		min-height: 44px;
+		font-size: 14px;
+		font-weight: 600;
+		text-decoration: none;
+	}
+
 	h2 {
 		font-family: var(--font-display);
 		font-weight: 400;
@@ -172,7 +222,7 @@
 		gap: 4px;
 	}
 
-	a {
+	.row {
 		flex: 1;
 		min-width: 0;
 		display: flex;
@@ -186,7 +236,7 @@
 		text-decoration: none;
 	}
 
-	a:hover {
+	.row:hover {
 		background: var(--bb-hover);
 	}
 
@@ -202,6 +252,29 @@
 		gap: 5px;
 		font-size: 13px;
 		color: var(--bb-text-3);
+	}
+
+	.tie {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--tie);
+	}
+
+	.family {
+		--tie: var(--bb-tie-family);
+	}
+
+	.allies {
+		--tie: var(--bb-tie-allies);
+	}
+
+	.rivals {
+		--tie: var(--bb-tie-rivals);
+	}
+
+	.other {
+		--tie: var(--bb-tie-other);
 	}
 
 	.remove {

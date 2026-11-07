@@ -29,7 +29,8 @@
 		entry,
 		appearances,
 		connections,
-		backHref
+		backHref,
+		mapHref
 	}: {
 		type: EntryType;
 		entry: Entry;
@@ -37,6 +38,8 @@
 		connections: Connection[];
 		/** Where to go after deleting (already resolved). */
 		backHref: string;
+		/** The connections map with this entry picked out (already resolved). */
+		mapHref?: string;
 	} = $props();
 
 	const copy = $derived(ENTRY_COPY[type]);
@@ -297,7 +300,7 @@
 
 	<aside class="side">
 		<EntryAppearances {type} {appearances} />
-		<EntryConnections {type} {entry} {connections} />
+		<EntryConnections {type} {entry} {connections} {mapHref} />
 
 		<section class="panel" aria-labelledby="{uid}-books">
 			<h2 id="{uid}-books">Books</h2>

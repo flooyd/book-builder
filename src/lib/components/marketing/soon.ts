@@ -14,10 +14,5 @@ export const SOON: { title: string; icon: IconName; body: string }[] = [
 		title: 'Find and replace',
 		icon: 'search',
 		body: 'Change a word or a name across your whole book at once, with a look at every match first.'
-	},
-	{
-		title: 'Connections map',
-		icon: 'users',
-		body: "See your story bible as a web: who's family, who's a rival and who owes whom."
 	}
 ];

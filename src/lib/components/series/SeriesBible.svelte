@@ -14,6 +14,7 @@
 		type Entry
 	} from '$lib/stores';
 	import Button from '$lib/components/ui/Button.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
 	import Kbd from '$lib/components/ui/Kbd.svelte';
 	import BibleShelf from '$lib/components/bible/BibleShelf.svelte';
 	import Missing from '$lib/components/story/Missing.svelte';
@@ -76,6 +77,11 @@
 		{#snippet intro()}
 			Everyone and everything in this series, whichever book they're from. Type
 			<Kbd key="@" size="xs" /> in any of its books to link them to the text.
+		{/snippet}
+		{#snippet links()}
+			<Button href={resolve('/series/[id]/bible/connections', { id: String(id) })}>
+				<Icon name="network" size={16} />Connections
+			</Button>
 		{/snippet}
 	</BibleShelf>
 {:else if series}
