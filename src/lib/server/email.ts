@@ -9,8 +9,17 @@ import { verification } from '$lib/server/db/schema';
 // up, asks for a new link or forgets their password. Without RESEND_API_KEY, the dev server prints
 // each email to the terminal instead, so the links can be followed locally.
 
-/** Resend only sends from a domain verified in its dashboard; resend.dev reaches the owner alone. */
-const from = () => env.EMAIL_FROM || 'Book Builder <onboarding@resend.dev>';
+/** Resend only sends from a domain verified in its dashboard; resend.dev reaches the owner alone.
+ * Quotes pasted in with the value (as written in .env) would make Resend refuse it, so they go,
+ * and a bare address gets the app's name so inboxes don't show "hello". */
+const from = () => {
+	const sender = (env.EMAIL_FROM ?? '')
+		.trim()
+		.replace(/^(["'])(.*)\1$/, '$2')
+		.trim();
+	if (!sender) return 'Book Builder <onboarding@resend.dev>';
+	return sender.includes('<') ? sender : `Book Builder <${sender}>`;
+};
 
 /** Thrown when an address or a visitor has had too many emails lately. */
 export class EmailTooSoon extends Error {

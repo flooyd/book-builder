@@ -1,4 +1,3 @@
-import { env } from '$env/dynamic/private';
 import type { Email } from './email';
 
 // The emails Book Builder sends, drawn like the app: the wordmark, then one paper card with a
@@ -30,7 +29,15 @@ const escape = (text: string) =>
 		.replace(/"/g, '&quot;')
 		.replace(/'/g, '&#39;');
 
-const origin = () => (env.ORIGIN ?? '').replace(/\/+$/, '');
+/** The site the email's link is on, for the logo and the wordmark: Better Auth builds the link
+ * from ORIGIN, or from the request when ORIGIN isn't set, so it's right either way. */
+const origin = (link: string) => {
+	try {
+		return new URL(link).origin;
+	} catch {
+		return '';
+	}
+};
 /** "Hi Juno," from Juno Halley: a first name reads like a person wrote it. */
 const greeting = (name: string) => {
 	const first = name.trim().split(/\s+/)[0];
@@ -83,7 +90,7 @@ function text(content: Letter) {
 
 function html(to: string, content: Letter) {
 	const url = escape(content.button.url);
-	const home = origin();
+	const home = origin(content.button.url);
 	const host = home.replace(/^https?:\/\//, '');
 	const paragraphs = content.paragraphs
 		.map(
