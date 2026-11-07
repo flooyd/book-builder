@@ -9,12 +9,21 @@ import { user as userTable } from '$lib/server/db/schema';
 import { sendEmail } from '$lib/server/email';
 import { resetPasswordEmail, verifyEmail } from '$lib/server/emails';
 
+/** ORIGIN as it was typed into Vercel or .env, made exact: a trailing slash or quotes would give
+ * Better Auth links to an address it doesn't recognise. Unset, it follows each request's site. */
+const origin =
+	(env.ORIGIN ?? '')
+		.trim()
+		.replace(/^(["'])(.*)\1$/, '$2')
+		.trim()
+		.replace(/\/+$/, '') || undefined;
+
 // A new account can't be used until its email is confirmed: signing up sends the link, and
 // logging in before then sends a fresh one instead of a session. The link signs them in. The log-in
 // page sends those two itself (sendConfirmation in ./account), so it knows when one fails; Better
 // Auth would only log it.
 export const auth = betterAuth({
-	baseURL: env.ORIGIN,
+	baseURL: origin,
 	secret: env.BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, { provider: 'pg' }),
 	emailAndPassword: {
