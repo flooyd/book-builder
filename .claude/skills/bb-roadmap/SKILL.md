@@ -22,9 +22,10 @@ start from its row, and read its notes file in `ideas/` before anything else.
   rewrite the file as the record of what was built and how it works.
 - **The public shelf is separate.** `src/lib/components/marketing/soon.ts` is what visitors see.
   Only add to it when the user asks, and take an entry off when it ships (see the `bb-homepage`
-  skill). An idea here isn't a promise there. The shelf holds 1 at the moment: Find and replace
-  (7), added at the user's request on 2026-11-04. Connections map (19) came off when it shipped on
-  2026-11-06, and Your account (4) when it shipped on 2026-11-07.
+  skill). An idea here isn't a promise there. The shelf holds 3 at the moment, all added at the
+  user's request: Find and replace (7) on 2026-11-04, and Footnotes (23) and Art studio (25) on
+  2026-11-09. Connections map (19) came off when it shipped on 2026-11-06, and Your account (4)
+  when it shipped on 2026-11-07.
 - **Check before trusting it.** Copilot also commits to this repo, so read `git log` and glance at
   the code before calling something unbuilt.
 
@@ -141,9 +142,9 @@ For the direction the user set on 2026-11-09:
    second.
 5. **Book design (26)** and the rest of 24, as the user asks for them.
 
-Still owed apart from that: Find and replace (7) is the one thing on the public shelf, and it
-matters more now that names link themselves (see 7). It needs nothing else, so it can come at any
-point. Email (4) is in, which opens up 12, 13 and 14.
+Footnotes (23) and the art studio (25) are on the public shelf now, so they're promises. So is
+Find and replace (7), which matters more now that names link themselves (see 7). It needs nothing
+else, so it can come at any point. Email (4) is in, which opens up 12, 13 and 14.
 
 So far the user has chosen 6 first (2026-11-01), then Export (2) the same day, Series (8),
 Insights (15) and Word maps (17), names that link themselves (part of 6), Version history (1)
