@@ -6,6 +6,8 @@ import { FacePicker, faces, type Style } from './fonts';
 import {
 	contentsOf,
 	descriptionLines,
+	NOTE_SCALE,
+	noteInlines,
 	plainRun,
 	runsOf,
 	storyOf,
@@ -20,7 +22,8 @@ import {
  * A manuscript as a finished book: a 6 × 9 inch trade paperback with a cover, a title page,
  * contents, running heads and facing pages. pdfkit draws; the setting is done here, because a book
  * needs what its own text layout doesn't do: hyphenation, a first letter that sits across lines,
- * and no line stranded alone at the top or foot of a page.
+ * no line stranded alone at the top or foot of a page, and footnotes at the foot of the page their
+ * number is on.
  *
  * Pages are numbered as a book is. Front matter has none, the story starts on page 1, and that
  * first page is always a right-hand one. y runs down the page, as it does in pdfkit.
@@ -43,6 +46,16 @@ const SHRINK = 0.82;
 const STRETCH = 1.3;
 /** A line may end in a hyphen this many times running. */
 const HYPHENS_RUNNING = 2;
+
+/** How far a raised character (a footnote's number) sits above the line, against the text's size. */
+const RISE = 0.36;
+
+/** Footnotes: their type, the room above them for the short rule, and how a long one splits. */
+const NOTE_SIZE = 8.6;
+const NOTE_LEADING = 11.6;
+const NOTE_SPACE = 14;
+/** A note too long for the page runs on to the next, but only after this many lines of it. */
+const NOTE_FIRST_LINES = 2;
 
 const INK = {
 	text: '#24232b',
@@ -81,6 +94,8 @@ type Line = {
 	/** Ends its paragraph or a line break, so it isn't justified. */
 	end: boolean;
 	marker?: string;
+	/** The footnotes whose numbers are in it, which go at the foot of its page. */
+	notes: number[];
 };
 
 /** A title set for the cover, before it's put on the page. */
@@ -110,6 +125,8 @@ const bodyFlow = (changes: Partial<Flow> = {}): Flow => ({
 	...changes
 });
 
+const NOTE_FLOW = bodyFlow({ size: NOTE_SIZE, leading: NOTE_LEADING });
+
 /** The line a first letter takes out of its paragraph. */
 type Cap = FirstLetter & { face: string; size: number; width: number; box: number };
 
@@ -134,6 +151,19 @@ class Book {
 	/** Printed page of each section. */
 	pages: Record<string, number> = {};
 
+	// Footnotes. Each line of text brings its notes' lines with it, and they're set at the foot of
+	// the page once the page is full: `reserved` is the room they take there, which moves the foot
+	// of the text up. A note that doesn't fit runs on (`carrying`), and nothing with a note of its
+	// own goes on that page after it.
+	/** The notes of the section being set, note 1 first. */
+	#notes: string[] = [];
+	/** Each note set as lines, by its number, as they're needed. */
+	#noteLines: Line[][] = [];
+	/** Note lines waiting for the foot of this page, in order. */
+	#queue: Line[] = [];
+	#reserved = 0;
+	#carrying = false;
+
 	constructor(doc: PDFKit.PDFDocument, picker: FacePicker, title: string) {
 		this.doc = doc;
 		this.#picker = picker;
@@ -156,10 +186,12 @@ class Book {
 	}
 
 	addPage() {
+		this.#footnotes();
 		this.doc.addPage();
 		this.#fill = '';
 		this.y = TOP;
 		this.#fresh = true;
+		if (this.#queue.length) this.#runOn();
 	}
 
 	/** A page of the book proper: its number at the foot, and a running head if it wants one. */
@@ -189,7 +221,7 @@ class Book {
 	}
 
 	#room(height: number) {
-		return this.y + height <= FOOT + 0.5;
+		return this.y + height <= FOOT - this.#reserved + 0.5;
 	}
 
 	/** Turn the page unless this much will fit. */
@@ -350,7 +382,22 @@ class Book {
 		let size = 0;
 		for (const word of words) for (const piece of word.pieces) size = Math.max(size, piece.size);
 		const height = flow.leading * Math.max(1, size / flow.size);
-		return { words, natural, room, inset, height, ascent: height - flow.leading * 0.28, end };
+		const notes: number[] = [];
+		for (const word of words) {
+			for (const { run } of word.pieces) {
+				if (run.note !== null && !notes.includes(run.note)) notes.push(run.note);
+			}
+		}
+		return {
+			words,
+			natural,
+			room,
+			inset,
+			height,
+			ascent: height - flow.leading * 0.28,
+			end,
+			notes
+		};
 	}
 
 	/** Lines for a paragraph; `box` gives each line's indent and width. */
@@ -415,6 +462,7 @@ class Book {
 		const left = this.left + flow.left + line.inset;
 		const slack = line.room - line.natural;
 		const gaps = line.words.slice(0, -1).filter((word) => word.space > 0).length;
+		const rise = (run: Run) => (run.raise ? flow.size * RISE : 0);
 
 		let extra = 0;
 		let x = left;
@@ -462,11 +510,18 @@ class Book {
 			this.#fill = colour;
 			doc
 				.fillColor(colour)
-				.rect(x, baseline - piece.size * 0.82, width, piece.size * 1.06)
+				.rect(x, baseline - rise(piece.run) - piece.size * 0.82, width, piece.size * 1.06)
 				.fill();
 		});
 
-		type Group = { text: string; x: number; face: string; size: number; color: string };
+		type Group = {
+			text: string;
+			x: number;
+			face: string;
+			size: number;
+			color: string;
+			rise: number;
+		};
 		let group = null as Group | null;
 		const paint = () => {
 			if (!group) return;
@@ -474,7 +529,7 @@ class Book {
 			doc
 				.font(group.face)
 				.fontSize(group.size)
-				.text(group.text, group.x, baseline, {
+				.text(group.text, group.x, baseline - group.rise, {
 					lineBreak: false,
 					baseline: 'alphabetic',
 					...(extra && { wordSpacing: extra })
@@ -484,11 +539,17 @@ class Book {
 		let spaced = false;
 		for (const { piece, x, spaced: next } of placed) {
 			const color = piece.run.color ?? flow.color;
-			if (group?.face === piece.face && group.size === piece.size && group.color === color) {
+			const lift = rise(piece.run);
+			if (
+				group?.face === piece.face &&
+				group.size === piece.size &&
+				group.color === color &&
+				group.rise === lift
+			) {
 				group.text += `${spaced ? ' ' : ''}${piece.text}`;
 			} else {
 				paint();
-				group = { text: piece.text, x, face: piece.face, size: piece.size, color };
+				group = { text: piece.text, x, face: piece.face, size: piece.size, color, rise: lift };
 			}
 			spaced = next;
 		}
@@ -501,25 +562,35 @@ class Book {
 			doc.lineWidth(Math.max(0.4, piece.size * 0.05)).strokeColor(color);
 			if (run.underline) {
 				const end = x + piece.width + across(index, (other) => other.underline);
-				const y = baseline + piece.size * 0.12;
+				const y = baseline - rise(run) + piece.size * 0.12;
 				doc.moveTo(x, y).lineTo(end, y).stroke();
 			}
 			if (run.strike) {
 				const end = x + piece.width + across(index, (other) => other.strike);
-				const y = baseline - piece.size * 0.27;
+				const y = baseline - rise(run) - piece.size * 0.27;
 				doc.moveTo(x, y).lineTo(end, y).stroke();
 			}
 		});
 	}
 
-	/** Set lines down the page, keeping two together at the foot and the head of a page. */
+	/**
+	 * Set lines down the page, keeping two together at the foot and the head of a page. A line only
+	 * fits if its notes fit under it too (see #footFor).
+	 */
 	#place(lines: Line[], flow: Flow, before?: (first: Line) => void) {
 		let index = 0;
 		while (index < lines.length) {
 			let fit = 0;
 			let used = 0;
-			while (index + fit < lines.length && this.#room(used + lines[index + fit].height)) {
-				used += lines[index + fit].height;
+			let reserved = this.#reserved;
+			let carrying = this.#carrying;
+			while (index + fit < lines.length) {
+				const line = lines[index + fit];
+				const foot = this.#footFor(line, this.y + used + line.height, reserved, carrying);
+				if (!foot.fits) break;
+				used += line.height;
+				reserved += foot.take;
+				carrying ||= foot.partial;
 				fit++;
 			}
 			if (lines.length - index - fit === 1 && fit > 0) fit--;
@@ -531,9 +602,110 @@ class Book {
 				this.#draw(line, flow);
 				this.y += line.height;
 				this.#fresh = false;
+				this.#hang(line);
 			}
 			index += fit;
 			if (index < lines.length) this.storyPage(true);
+		}
+	}
+
+	// ---- Footnotes -----------------------------------------------------------------------------
+
+	/** A note set as lines: its number, raised, then its words. */
+	#noteSet(number: number) {
+		const known = this.#noteLines[number];
+		if (known) return known;
+		const inlines: Inline[] = [
+			plainRun(String(number), { raise: true, scale: NOTE_SCALE }),
+			plainRun(' '),
+			...noteInlines(this.#notes[number - 1] ?? '')
+		];
+		const lines = this.#lines(inlines, NOTE_FLOW, () => ({ inset: 0, room: MEASURE }));
+		this.#noteLines[number] = lines;
+		return lines;
+	}
+
+	/**
+	 * What a line's notes take from the foot of the page, if the line ends at `bottom` with
+	 * `reserved` already taken there. The line fits on the page if its notes fit whole under it, or
+	 * a long one by its first lines, the rest running on to the next page.
+	 */
+	#footFor(line: Line, bottom: number, reserved: number, carrying: boolean) {
+		const lines = line.notes.flatMap((number) => this.#noteSet(number));
+		const clear = bottom <= FOOT - reserved + 0.5;
+		if (!lines.length) return { fits: clear, take: 0, lines, partial: false };
+		const space = reserved > 0 ? 0 : NOTE_SPACE;
+		const room = FOOT - reserved - space - bottom;
+		let take = 0;
+		let count = 0;
+		while (count < lines.length && take + lines[count].height <= room + 0.5) {
+			take += lines[count].height;
+			count++;
+		}
+		const least = lines.length <= NOTE_FIRST_LINES + 1 ? lines.length : NOTE_FIRST_LINES;
+		return {
+			fits: clear && !carrying && count >= least,
+			take: count ? take + space : 0,
+			lines,
+			partial: count < lines.length
+		};
+	}
+
+	/** A line has been set: its notes wait for the foot of the page. */
+	#hang(line: Line) {
+		const foot = this.#footFor(line, this.y, this.#reserved, this.#carrying);
+		if (!foot.lines.length) return;
+		this.#reserved += foot.take;
+		this.#carrying ||= foot.partial;
+		this.#queue.push(...foot.lines);
+	}
+
+	/** This page's notes, under a short rule at its foot. What doesn't fit waits for the next. */
+	#footnotes() {
+		if (!this.#queue.length) return;
+		const y = this.y;
+		let set = 0;
+		if (this.#reserved > NOTE_SPACE) {
+			const top = FOOT - this.#reserved;
+			this.doc
+				.lineWidth(0.5)
+				.strokeColor(INK.rule)
+				.moveTo(this.left, top + 5)
+				.lineTo(this.left + 72, top + 5)
+				.stroke();
+			this.y = top + NOTE_SPACE;
+			while (set < this.#queue.length && this.y + this.#queue[set].height <= FOOT + 0.5) {
+				this.#draw(this.#queue[set], NOTE_FLOW);
+				this.y += this.#queue[set].height;
+				set++;
+			}
+		}
+		this.#queue = this.#queue.slice(set);
+		this.#reserved = 0;
+		this.#carrying = false;
+		this.y = y;
+	}
+
+	/** A new page: the rest of a note from the page before goes first at its foot. */
+	#runOn() {
+		// It leaves the page some lines of its own, unless the notes are all it holds.
+		const room = FOOT - TOP - NOTE_SPACE - LEADING * 4;
+		let take = 0;
+		let count = 0;
+		while (count < this.#queue.length && take + this.#queue[count].height <= room) {
+			take += this.#queue[count].height;
+			count++;
+		}
+		this.#reserved = count ? take + NOTE_SPACE : 0;
+		this.#carrying = count < this.#queue.length;
+	}
+
+	/** The end of a section: its last notes, on pages of their own if they run on. */
+	#lastNotes() {
+		this.#footnotes();
+		while (this.#queue.length) {
+			this.storyPage(true);
+			this.#footnotes();
 		}
 	}
 
@@ -852,8 +1024,11 @@ class Book {
 			this.#titleBlock(section, 25);
 			this.y += 30;
 		}
-		const { blocks, cap } = storyOf(section.text);
+		const { blocks, cap, notes } = storyOf(section.text);
+		this.#notes = notes;
+		this.#noteLines = [];
 		this.#blocks(blocks, { cap });
+		this.#lastNotes();
 	}
 
 	// ---- Front matter --------------------------------------------------------------------------

@@ -487,7 +487,8 @@
 		padding-bottom: 55vh;
 	}
 
-	.page :global(.focus-editor .rich-area) {
+	/* The story's own text, not a footnote's note, whose editor sits inside this one. */
+	.page :global(.focus-editor > .area > .rich-area) {
 		min-height: 40vh;
 		font-family: var(--font-read);
 		font-size: 21px;
@@ -506,11 +507,11 @@
 	}
 
 	/* Dim: only the paragraph being written stays bright. */
-	.dim :global(.rich-area > *) {
+	.dim :global(.focus-editor > .area > .rich-area > *) {
 		transition: opacity 0.25s;
 	}
 
-	.dim :global(.rich-area.ProseMirror-focused > :not(.has-focus)) {
+	.dim :global(.focus-editor > .area > .rich-area.ProseMirror-focused > :not(.has-focus)) {
 		opacity: 0.28;
 	}
 
@@ -531,13 +532,13 @@
 			padding-right: 18px;
 		}
 
-		.page :global(.focus-editor .rich-area) {
+		.page :global(.focus-editor > .area > .rich-area) {
 			font-size: 19px;
 		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.dim :global(.rich-area > *),
+		.dim :global(.focus-editor > .area > .rich-area > *),
 		.today-track > span {
 			transition: none;
 		}

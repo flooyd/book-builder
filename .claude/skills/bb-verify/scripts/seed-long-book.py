@@ -6,7 +6,9 @@
 #
 # The owner (default wren@example.test, the browser helper's test user) must have signed up
 # first. Story text is compact Tiptap JSON (it must start exactly with {"type":"doc"), with a
-# scene break, a heading, a quote, emphasis and a three-line drop cap in chapter 2.
+# scene break, a heading, a quote, emphasis, a three-line drop cap in chapter 2, and footnotes in
+# every chapter: a short one, one with italics, and a long one of three paragraphs that has to run
+# on to the next page in the PDF.
 import json
 import random
 import sys
@@ -52,11 +54,38 @@ def paragraph(words):
     return {'type': 'paragraph', 'content': content}
 
 
+def note(*paragraphs):
+    """A footnote's note: a description value, so plain text, or compact JSON when formatted."""
+    if all(isinstance(p, str) for p in paragraphs) and len(paragraphs) == 1:
+        return paragraphs[0]
+    doc = {'type': 'doc', 'content': [
+        {'type': 'paragraph', 'content': [text(p)] if isinstance(p, str) else p} for p in paragraphs
+    ]}
+    return json.dumps(doc, ensure_ascii=False, separators=(',', ':'))
+
+
+# Added to the paragraph at that place in each chapter, without touching the random sequence, so
+# the words are the same as before footnotes were seeded.
+FOOTNOTES = {
+    1: note('Ship’s time, which ran eleven minutes behind the gate’s.'),
+    4: note([text('Its call sign was '), text('Vesper', [{'type': 'italic'}]), text(', though nobody used it.')]),
+    9: note(
+        'The Armada kept its logs in three hands at once: the pilot’s, the engineer’s and the chaplain’s. '
+        + ' '.join(SENTENCES[:6]),
+        'Only the chaplain’s survive whole. They were bound in glass, which the others thought a vanity. '
+        + ' '.join(SENTENCES[6:12]),
+        'What the pilot wrote is known only from what the chaplain copied. ' + ' '.join(SENTENCES[3:9]),
+    ),
+}
+
+
 def story(words, extras=True, cap=None):
     blocks, total = [], 0
     while total < words:
         n = random.choice([25, 40, 60, 80, 110])
         blocks.append(paragraph(n))
+        if extras and len(blocks) in FOOTNOTES:
+            blocks[-1]['content'].append({'type': 'footnote', 'attrs': {'note': FOOTNOTES[len(blocks)]}})
         total += n
         if extras and len(blocks) == 7:
             blocks.append({'type': 'horizontalRule'})

@@ -21,7 +21,8 @@ The rules are in `lib/story-versions.ts` (no imports), the server side in
 
 ## What new kinds of text mean for it
 
-The comparison reads `plainText`, so anything `plainText` doesn't read (a picture, the words of a
-footnote) can change without the window showing a change. Ideas 22 and 23 both have to settle
-that. A version is cleaned again when it's restored, so a kind of node that's taken off the
-allow-list later disappears from old versions too.
+Anything the comparison doesn't read can change without the window showing a change. Footnotes
+(23) settled it for themselves: the window compares `textWithNotes`, which puts each number where
+it sits and the notes after the story, since `plainText` leaves notes out. Pictures (22) still
+have to settle it. A version is cleaned again when it's restored, so a kind of node that's taken
+off the allow-list later disappears from old versions too.

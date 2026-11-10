@@ -9,7 +9,7 @@
 		type ReaderPrefs,
 		type ReadingPosition
 	} from '$lib/reading';
-	import { plainText } from '$lib/rich';
+	import { textWithNotes } from '$lib/rich';
 	import { nextBookHref, seriesHref } from '$lib/series';
 	import RichText from '$lib/components/rich/RichText.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
@@ -401,7 +401,8 @@
 			return;
 		}
 		if (Math.hypot(dx, dy) > 6) return;
-		if ((event.target as Element).closest('a, button, input')) return;
+		// A footnote's number opens its note (Reader's NotePopover), and doesn't turn the page.
+		if ((event.target as Element).closest('a, button, input, .bb-fn-ref')) return;
 		if (getSelection()?.toString()) return;
 		const rect = book.getBoundingClientRect();
 		const x = (event.clientX - rect.left) / rect.width;
@@ -538,7 +539,7 @@
 			{/if}
 		</header>
 	{/if}
-	{#if plainText(text).trim()}
+	{#if textWithNotes(text).trim()}
 		<RichText value={text} kind="story" class="prose" />
 	{:else}
 		<p class="no-text">

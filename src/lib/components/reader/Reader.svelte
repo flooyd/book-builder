@@ -5,16 +5,16 @@
 	import { chapterHeading, partHeading } from '$lib/headings';
 	import {
 		DEFAULT_PREFS,
-		countWords,
 		TEXT_SIZES,
 		readingTime,
 		saveReaderPrefs,
+		storyWords,
 		type ReaderData,
 		type ReaderPrefs,
 		type ReadingPosition,
 		type ReadingSection
 	} from '$lib/reading';
-	import { plainText } from '$lib/rich';
+	import { plainText, textWithNotes } from '$lib/rich';
 	import { nextBookHref, seriesHref } from '$lib/series';
 	import BookCover from '$lib/components/ui/BookCover.svelte';
 	import RichText from '$lib/components/rich/RichText.svelte';
@@ -24,6 +24,7 @@
 	import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
 	import Wordmark from '$lib/components/ui/Wordmark.svelte';
 	import BookView from './BookView.svelte';
+	import NotePopover from './NotePopover.svelte';
 
 	// Reading mode: the whole book typeset on one page (title page, contents, then every part and
 	// chapter in order), with a bar that slides away while reading, a progress line, text
@@ -34,7 +35,7 @@
 	const outline = $derived(bookOutline(data.book.id, data.parts, data.chapters));
 	const chapterCount = $derived(outline.reduce((sum, entry) => sum + entry.chapters.length, 0));
 	const words = $derived(
-		Object.values(data.texts).reduce((sum, text) => sum + countWords(plainText(text)), 0)
+		Object.values(data.texts).reduce((sum, text) => sum + storyWords(text), 0)
 	);
 
 	const facts = $derived(
@@ -101,6 +102,8 @@
 	// ---- Book view -----------------------------------------------------------------------------
 	const bookMode = $derived(prefs.view === 'book');
 	let bookView = $state<ReturnType<typeof BookView>>();
+	/** A footnote's note, shown by its number when the number is tapped (either view). */
+	let notePopover = $state<ReturnType<typeof NotePopover>>();
 	/** Where the book opens when switching to it from the scroll view. */
 	let bookStart = $state<ReadingPosition | null>(null);
 
@@ -283,7 +286,12 @@
 	{/if}
 </svelte:head>
 
-<svelte:window {onscroll} onresize={onscroll} {onkeydown} />
+<svelte:window
+	{onscroll}
+	onresize={onscroll}
+	{onkeydown}
+	onclick={(event) => notePopover?.click(event)}
+/>
 
 {#snippet ornament()}
 	<svg class="ornament" width="64" height="10" viewBox="0 0 64 10" aria-hidden="true"
@@ -340,8 +348,9 @@
 
 {#snippet prose(key: string, editHref: string)}
 	{@const text = data.texts[key] ?? ''}
-	{#if plainText(text).trim()}
-		<RichText value={text} kind="story" class="prose" />
+	{#if textWithNotes(text).trim()}
+		<!-- notes: the section's key, so its footnotes' links are its own on this one long page. -->
+		<RichText value={text} kind="story" class="prose" notes={key} />
 	{:else}
 		<p class="no-text">
 			No story text yet.
@@ -353,6 +362,7 @@
 
 <!-- data-scheme: lets print (below) set this subtree to the light theme. -->
 <div class="reader" class:book-mode={bookMode} data-scheme="">
+	<NotePopover bind:this={notePopover} />
 	<div class="progress" style:transform="scaleX({progress})" aria-hidden="true"></div>
 
 	<header class="bar" class:hidden={!bookMode && barHidden && !settingsOpen && !contentsOpen}>

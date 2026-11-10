@@ -10,6 +10,7 @@ import { Focus, Placeholder } from '@tiptap/extensions';
 import { FONTS, HIGHLIGHTS, INKS, SIZES, highlightVar, inkVar, type RichKind } from '$lib/rich';
 import { mentionExtension, type MentionBridge } from './mention';
 import { autoMentionExtension } from './auto-mention';
+import { footnoteExtension, type FootnoteBridge } from './footnote';
 
 /** The document keeps the story's first-letter settings (see $lib/rich DropCap). */
 const StoryDocument = Document.extend({
@@ -65,7 +66,8 @@ export function extensionsFor(
 	kind: RichKind,
 	placeholder: string,
 	onescape?: () => void,
-	mentions?: MentionBridge
+	mentions?: MentionBridge,
+	footnotes?: FootnoteBridge
 ) {
 	const story = kind === 'story';
 	return [
@@ -96,6 +98,8 @@ export function extensionsFor(
 		// links the story bible's names wherever they're written.
 		...(story ? [mentionExtension(mentions)] : []),
 		...(story && mentions ? [autoMentionExtension(mentions.bookId)] : []),
+		// Story text can always hold footnotes; `footnotes` is the box their notes open in.
+		...(story ? [footnoteExtension(footnotes)] : []),
 		EscapeKey(onescape)
 	];
 }

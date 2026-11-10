@@ -1,7 +1,7 @@
 import { chapterHeading, partHeading, type Heading } from '$lib/headings';
 import { bookOutline, type OutlinePart } from '$lib/library';
-import { countWords } from '$lib/reading';
-import { capOf, parse, plainText, type DropCap, type RichNode } from '$lib/rich';
+import { storyWords } from '$lib/reading';
+import { capOf, parse, textWithNotes, type DropCap, type RichNode } from '$lib/rich';
 import type { ReadableBook } from '$lib/server/reading';
 
 /**
@@ -110,11 +110,11 @@ export function partManuscript(data: ReadableBook, partId: number): Manuscript |
 }
 
 export const hasStoryText = (manuscript: Manuscript) =>
-	manuscript.sections.some((section) => plainText(section.text).trim());
+	manuscript.sections.some((section) => textWithNotes(section.text).trim());
 
 /** How many words of story text it holds. */
 export const wordsOf = (manuscript: Manuscript) =>
-	manuscript.sections.reduce((words, section) => words + countWords(plainText(section.text)), 0);
+	manuscript.sections.reduce((words, section) => words + storyWords(section.text), 0);
 
 /** Sections that have a line in the contents. */
 export const contentsOf = (manuscript: Manuscript) =>
@@ -136,6 +136,10 @@ export type Run = {
 	scale: number;
 	color: string | null;
 	highlight: string | null;
+	/** Set above the line, as a footnote's number is. */
+	raise: boolean;
+	/** The footnote this is the number of, counted from 1 in its section (see storyOf). */
+	note: number | null;
 };
 
 export type Inline = Run | 'break';
@@ -183,8 +187,13 @@ export const plainRun = (text: string, style: Partial<Run> = {}): Run => ({
 	scale: 1,
 	color: null,
 	highlight: null,
+	raise: false,
+	note: null,
 	...style
 });
+
+/** How big a footnote's number is against the text it sits in. */
+export const NOTE_SCALE = 0.68;
 
 /**
  * A block's text as runs. `base` is the style around it; with `roman`, emphasis in italic text
@@ -199,6 +208,14 @@ export function runsOf(
 	for (const node of nodes) {
 		if (node.type === 'hardBreak') {
 			runs.push('break');
+			continue;
+		}
+		// Numbered by storyOf. The number has its own look, whatever is around it.
+		if (node.type === 'footnote') {
+			const number = Number(node.attrs?.number);
+			if (Number.isInteger(number) && number > 0) {
+				runs.push(plainRun(String(number), { raise: true, scale: NOTE_SCALE, note: number }));
+			}
 			continue;
 		}
 		// Readable text has no mentions left, but its words must never vanish if one gets through.
@@ -222,6 +239,25 @@ export function runsOf(
 	}
 	return runs;
 }
+
+/** A footnote's note, a paragraph at a time. Empty paragraphs are left out. */
+export function noteParagraphs(value: string): Inline[][] {
+	const paragraphs: Inline[][] = [];
+	const collect = (nodes: RichNode[]) => {
+		for (const node of nodes) {
+			if (node.type === 'paragraph' || node.type === 'heading') {
+				const runs = runsOf(node.content);
+				if (runs.length) paragraphs.push(runs);
+			} else if (node.content) collect(node.content);
+		}
+	};
+	collect(parse(value, 'description').content ?? []);
+	return paragraphs;
+}
+
+/** A footnote's note as one run of text, its paragraphs kept apart by line breaks. */
+export const noteInlines = (value: string): Inline[] =>
+	noteParagraphs(value).flatMap((runs, index) => (index ? ['break' as const, ...runs] : runs));
 
 /** A description's lines, as it shows under a title: italic, with emphasis turned upright. */
 export function descriptionLines(value: string): Inline[][] {
@@ -248,20 +284,43 @@ export type FirstLetter = Omit<DropCap, 'color'> & {
 
 const FIRST_LETTER = /^\s*([\p{P}\p{S}]*[\p{L}\p{N}]\p{M}*)/u;
 
-/** The story's blocks, ready to set, and the letter to take out of its first paragraph. */
-export function storyOf(text: string): { blocks: RichNode[]; cap: FirstLetter | null } {
+export type Story = {
+	blocks: RichNode[];
+	/** The letter to take out of the first paragraph, if it has one. */
+	cap: FirstLetter | null;
+	/** The footnotes' notes, note 1 first, each a description value. */
+	notes: string[];
+};
+
+/**
+ * The story's blocks, ready to set. Each footnote is given its number (attrs.number), counted in
+ * reading order as reading mode counts them, and its note is listed in `notes`.
+ */
+export function storyOf(text: string): Story {
 	const blocks = parse(text, 'story').content ?? [];
+	const notes: string[] = [];
+	const number = (nodes: RichNode[]) => {
+		for (const node of nodes) {
+			if (node.type === 'footnote') {
+				notes.push(String(node.attrs?.note ?? ''));
+				node.attrs = { ...node.attrs, number: notes.length };
+			} else if (node.content) number(node.content);
+		}
+	};
+	number(blocks);
+
 	const settings = capOf(text);
-	if (settings.style === 'none') return { blocks, cap: null };
+	if (settings.style === 'none') return { blocks, cap: null, notes };
 
 	// :first-of-type in prose.css: the first paragraph, even with a heading above it.
 	const first = blocks.find((block) => block.type === 'paragraph')?.content?.[0];
 	const letter = first?.text?.match(FIRST_LETTER);
-	if (!first?.text || !letter) return { blocks, cap: null };
+	if (!first?.text || !letter) return { blocks, cap: null, notes };
 
 	first.text = first.text.slice(letter[0].length);
 	return {
 		blocks,
-		cap: { ...settings, letter: letter[1], color: colourOf(settings.color, INKS) ?? INKS.accent }
+		cap: { ...settings, letter: letter[1], color: colourOf(settings.color, INKS) ?? INKS.accent },
+		notes
 	};
 }

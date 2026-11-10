@@ -163,7 +163,8 @@ node .claude/skills/bb-verify/scripts/test-lib.mjs "<scratch>/tests/rich.test.ts
 
 - **What it can load.** `rich`, `bible`, `diff`, `story-versions`, `insights`, `speakers`,
   `word-map`, `word-cloud`, `connections`, `goals`, `headings`, `cover`, `confirm`, `status`,
-  `export`, `profile` and `outline-text`, and `countWords` from `reading` (checked 2026-11-09).
+  `export`, `profile` and `outline-text`, and `countWords` and `storyWords` from `reading`
+  (checked 2026-11-09).
 - **What it can't.** Anything that reaches `$app/...`, `$env/...` or a `.svelte` file. That's
   `library.ts`, `series.ts` and everything under `lib/server`, the export's `manuscript.ts`
   included. The error is `Cannot find package '$app'` (or `'$env'`). Test those through the dev

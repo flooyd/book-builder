@@ -1,76 +1,76 @@
 # Idea 23: footnotes
 
-**A plan, written 2026-11-09. Nothing here is built.** It needs nothing else first: no storage, no
-running cost, and no choice that has to wait for the user. The traps below were found by reading
-the code that day, so check they still hold.
+**A record. Shipped 2026-11-09.** What was built, where it lives, and the choices behind it. The
+plan it was built from is in git history (commit `2fcd543`).
 
 ## What the user asked for
 
 "I want the editor to be more sophisticated and allow images in page, footnotes, etc."
-(2026-11-09)
-
-## What it is
-
-A note tied to a place in the text. On paper it's a small number in the line and the note at the
-foot of the page. On a screen it's the number, and the note a tap away. Non-fiction needs them,
-and some novelists write half the book in them.
-
-Adding it follows "Adding a kind of node or mark" in the `bb-rich-text` skill, and the two export
-writers are covered in `bb-export`. What's below is what's particular to footnotes.
+(2026-11-09), then "Begin work on footnotes :D" the same day.
 
 ## The node
 
-An inline node in story text that carries its own note, the way a mention carries its label.
+An inline atom in **story text only**, carrying its own note:
+`{"type":"footnote","attrs":{"note":"…"}}`.
 
-- **The note is a value `rich.ts` already understands.** Keep it as a value of the `description`
-  kind (plain text, or inline formatting as JSON). Then `cleanValue`, `toHTML`, `plainText` and
-  the exports' `descriptionLines` can already read it, and the box it's edited in is a
-  `RichEditor` with `kind="description"`. Notes need italics for titles, and little else.
-- **Numbers are never stored.** A note's number is its place among the notes of its chapter,
-  counted wherever it's drawn. Move a paragraph and the numbers follow.
-- **No notes inside notes, and no mentions inside them** in a first version. A description already
-  turns a mention into plain words.
-- **Write our own, as `mention.ts` is.** There's a community package, `tiptap-footnotes` (3.0.1,
-  for Tiptap 3), but it keeps the notes as a list at the end of the document. Here that list
-  would be read as paragraphs of the story by everything that reads `plainText` (word counts,
-  goals, Insights, who's speaking), and it isn't pinned with our Tiptap packages.
+- **The note is a description value.** It's plain text, or inline formatting as compact JSON, so
+  everything that reads descriptions reads it, and it's edited in a `RichEditor` with
+  `kind="description"`. Mentions in it become plain words, and there are no notes inside notes.
+- **Numbers are never stored.** A number is its note's place among the notes of its text (one
+  chapter, or one part with its own story text), counted wherever it's drawn. Move a paragraph and
+  the numbers follow. In the editor a CSS counter draws them (`.bb-footnote::after`).
+- **The cleaner** (`cleanInline` in `rich.ts`) keeps `note` and nothing else, cleans it as a
+  description (`noteOf`), caps it at `MAX_NOTE` (100,000 characters) and drops a footnote whose
+  note is blank. In a description, a footnote is dropped.
+- **Text holding only a footnote is kept.** `isEmpty` counts footnotes, and reading mode and the
+  export ask `textWithNotes(text).trim()`, not `plainText`.
+
+## What counts
+
+| Reads                                 | With                     | The notes' words |
+| ------------------------------------- | ------------------------ | ---------------- |
+| Word counts, goals, the outline       | `storyWords` (`reading`) | Counted          |
+| Insights, word maps, names, casts     | `plainText`              | Left out         |
+| Version history's comparison          | `textWithNotes`          | Shown, inline    |
+| Is there anything here to read/export | `textWithNotes`          | Counted          |
+
+`plainText` leaves notes out on purpose, so a note isn't read as narration (who's speaking, the
+words a writer leans on). `storyWords` adds them back: the writer wrote them. Insights' chapter
+word counts are narration only, so they can be a little under the writing surface's count.
+`textWithNotes` puts superscript numbers where they sit and the notes after the story, a line each,
+so an edit inside a note shows in version history.
 
 ## Where the note goes
 
-| Where                   | The note                                                                                                                                                                                 |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Editor and focus mode   | A small box by the number to read and edit it. Mount it inside the editor, in the top layer, as the mention menu is: focus mode is a modal dialog, and everything outside it goes inert. |
-| Reading mode, scrolling | Listed at the end of the chapter, with a link each way, and shown beside the number on a tap. The whole book is one page, so each link needs the chapter's key in it.                    |
-| Reading mode, as a book | The same. Chapters are set in CSS columns, and browsers can't put a note at the foot of the column its number is in.                                                                     |
-| Word                    | Real footnotes. `docx` has them (`FootnoteReferenceRun`, and `footnotes` on the `Document`), and Word places them.                                                                       |
-| PDF                     | The foot of the page, set by our own typesetter. This is the hard part: see below.                                                                                                       |
+| Where                   | How                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Editor and focus mode   | `rich/footnote.ts` (the node, Ctrl+Alt+F, the toolbar's footnote button) and `rich/FootnoteBox.svelte`, a top-layer popover inside the editor that holds the note's own editor. Adding one opens the box with the caret in it; a click on a number opens it to write in; arrowing onto a number shows it without taking the caret. Esc goes back to the text after the number. A note left empty takes its number with it. Remove deletes both. |
+| Reading mode, scrolling | `toHTML(value, 'story', key)` numbers the notes and lists them after the chapter (`aside.bb-notes`), with a link each way (`{key}-ref-N`, `{key}-note-N`). A tap on a number shows its note beside it (`reader/NotePopover.svelte`, which copies the note from that list). A click with Ctrl, Cmd, Shift or Alt is left to the browser.                                                                                                         |
+| Reading mode, as a book | The same list after the chapter, and the same tap. No ids or links, since the text is drawn more than once (hidden copies to count pages). A tap on a number doesn't turn the page.                                                                                                                                                                                                                                                             |
+| PDF                     | At the foot of the page the number is on, under a short rule. A line only fits on a page if its notes fit under it. A note of more than 3 lines may split, with at least 2 on the page (`NOTE_FIRST_LINES`), and run on to the foot of the next. Numbers are raised runs (`Run.raise`, `RISE`). A section's last notes may take pages of their own (`#lastNotes`).                                                                              |
+| Word                    | Real footnotes (`FootnoteReferenceRun`) in Word's Footnote Text style, one paragraph per paragraph of the note. Word numbers and places them.                                                                                                                                                                                                                                                                                                   |
 
-## Traps in the code today
+## Things that tripped it up
 
-1. **The PDF can't raise a character.** A `Run` in `manuscript.ts` has a `scale` and nothing that
-   lifts it off the line. The number needs that, and so do superscript and subscript in idea 24,
-   so add it once.
-2. **The PDF's page has one fixed foot.** `#room` in `pdf.ts` tests against the constant `FOOT`,
-   and `#place` fills a page line by line, keeping two lines together at the top and bottom. With
-   notes, the foot moves up on any page that has one, a line only fits if its note fits under it,
-   and a long note may have to run on to the next page. A first version could set a chapter's
-   notes at its end and say so under "left out". Don't promise notes at the foot until it works.
-3. **`toHTML` knows nothing about where it is.** It's given one chapter's value and returns
-   markup. Links between a number and its note need ids that are unique across the book, so it
-   needs the chapter's key passed in.
-4. **`plainText` decides what counts.** An inline node it doesn't know adds no words, which is
-   right for the number. Decide about the note's own words: counted toward goals and word counts
-   (the writer wrote them) but kept out of the paragraph they hang from, so Insights and the word
-   maps don't read a note as narration. Whatever is decided, the comparison in version history
-   reads `plainText` too, and an edit inside a note must show there.
-5. **Descriptions can't hold one.** `cleanInline` has to drop it there, as it turns a mention into
-   plain words.
-6. **Pasting from Word.** Its footnotes arrive as links to anchors with the notes at the end. A
-   first version takes them as plain text.
-7. **Others that read the document.** Find and replace (idea 7) must look inside notes, and
-   manuscript import (idea 3) should turn Word's footnotes into these.
+- **The box changes the document from inside a view update.** The plugin view calls the box, and
+  the box may delete the footnote, which can't happen mid-update, so the bridge calls wait for a
+  microtask (`queueMicrotask`).
+- **Tiptap loads late.** `FootnoteBox` is part of the page, so it imports Tiptap's types only;
+  `footnoteAt` and `footnoteNumber` live in it, not in `footnote.ts`.
+- **The note's editor is an editor inside an editor.** Rules aimed at the story's
+  `.rich-area` (StorySurface's 520px minimum height, focus mode's dimming) reached the note too.
+  They're now child selectors (`.surface-editor > .area > .rich-area`). Write any new one that way.
+- **A box opened by adding a footnote never has a node selection**, so leaving is also caught in
+  `track` when the selection moves anywhere else.
+- **Paste.** `cleanPastedHTML` keeps `data-` attributes, so a footnote copied inside the editor
+  keeps its note. One copied out of the editor has no number in it (the counter isn't text).
 
-## Leave out at first
+## Left out
 
-Endnotes for the whole book, symbols in place of numbers (\*, †), and whatever of the PDF's
-placing isn't finished.
+- Endnotes for the whole book, and symbols in place of numbers (\*, †).
+- Footnotes pasted from Word arrive as text: the `[1]` and the notes as paragraphs at the end.
+- Numbering differs in Word: the file is one section, so Word numbers notes straight through the
+  book, where the app and the PDF start again in each chapter.
+- Mentions inside notes (they become plain words), and notes in descriptions.
+- Find and replace (7) has to look inside notes, and manuscript import (3) should turn Word's
+  footnotes into these.

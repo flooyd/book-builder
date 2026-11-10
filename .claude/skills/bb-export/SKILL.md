@@ -41,14 +41,17 @@ words. Never load the book another way for an export.
   the part's own page. Chapters keep the numbers they have in the book.
 - **`Run`.** A stretch of text in one style: bold, italic, underline, strike, `family` (`read`,
   `display`, `ui` or `mono`), `scale` (its size against the text around it), `color` and
-  `highlight`. `runsOf` makes them from a block's inline nodes, and a line break is the string
-  `'break'`.
+  `highlight`, and `raise` (lifted off the line) with `note`, for a footnote's number.
+  `runsOf` makes them from a block's inline nodes, and a line break is the string `'break'`.
 - **Colours are for paper.** `INKS` and `MARKS` in `manuscript.ts` hold the light values of
   `--ink-*` and `--mark-*`, since a page is always paper. A colour picked with "Any colour" is
   already `#rrggbb` and passes straight through.
-- **`storyOf(text)`** returns the story's blocks and the first letter, already taken out of the
-  first paragraph. **`descriptionLines`** returns a description's lines, italic with emphasis
-  turned upright.
+- **`storyOf(text)`** returns the story's blocks, the first letter, already taken out of the
+  first paragraph, and the footnotes' notes, note 1 first. It numbers each footnote node in
+  reading order as it goes (`attrs.number`), and `runsOf` turns one into its raised number.
+  **`noteParagraphs`** and **`noteInlines`** give a note's runs, by paragraph or joined by line
+  breaks. **`descriptionLines`** returns a description's lines, italic with emphasis turned
+  upright.
 
 ## The PDF
 
@@ -76,6 +79,16 @@ setting is ours, because a book needs what PDFKit's own text layout doesn't do.
   paragraph after a paragraph is indented; after anything else it starts flush.
 - **The first letter.** `#opening` sets the first paragraph round it, sized from the face's real
   capital height so it spans its lines exactly. A raised letter is just large text.
+- **Raised runs.** `#draw` lifts a run with `raise` by `RISE` (0.36 of the text's size), its
+  highlight, underline and strike with it.
+- **Footnotes** go at the foot of the page their number is on, in 8.6 on 11.6 under a 72 pt rule.
+  Each `Line` lists the notes whose numbers are in it, and `#place` only puts a line on a page if
+  its notes fit under it too (`#footFor`). What they take is `#reserved`, which moves the foot up
+  (`#room` tests against `FOOT - reserved`). A note longer than 3 lines may split after 2
+  (`NOTE_FIRST_LINES`) and run on to the next page's foot (`#runOn`), and nothing else with a
+  note goes on the page it split on. `addPage` draws the page's notes first (`#footnotes`), and a
+  section's last notes are drawn when it ends (`#lastNotes`), on pages of their own if they must.
+  Numbers start again in each chapter, as in reading mode.
 - **Pages of the book.** `part()` starts a right-hand page (`toRecto`). `story()` starts a new
   page. A page that opens with a section's heading has no running head. Every other page has
   one: the section's title on a right-hand page, the book's on a left-hand one.
@@ -121,6 +134,10 @@ Book Text or Heading 2 in Word changes the whole book.
 - **Lists.** Each numbered list gets its own instance so it counts from its own start, and every
   start number used needs its own definition (`blocks.starts`).
 - **The first letter** is a Word frame (a drop cap). A raised one is a large run.
+- **Footnotes** are Word's own (`FootnoteReferenceRun`), in its Footnote Text style at 9.5 pt, a
+  paragraph for each of the note's. Word numbers and places them. The file is one section, so
+  Word numbers them straight through the book, not by chapter. `docx` sets the number first in
+  the note with nothing after it, so `footnote()` adds the space Word's own notes have.
 - **The contents' page numbers** come from `estimatePageNumbersWith`, which takes about 8 seconds
   per 100,000 words. Over 250,000 words it's skipped, and Word offers to fill the numbers in when
   the file opens.
@@ -138,8 +155,8 @@ Start with "Adding a kind of node or mark" in the `bb-rich-text` skill. For the 
 4. **Check both files** (below). Neither writer complains about a node it doesn't know, so only
    looking at the result shows whether it arrived.
 
-Not there yet, and needed by ideas on the roadmap: a `Run` can't be raised off the line
-(superscripts, footnote numbers), and nothing draws a picture.
+Not there yet, and needed by ideas on the roadmap: nothing draws a picture, and a `Run` can be
+raised (footnotes) but not lowered (subscript).
 
 ## The function and its limits
 
@@ -163,4 +180,5 @@ should have stayed out, and after a change to server packages run the built func
 ## Left out so far
 
 EPUB, a cover in the Word file, and scripts beyond Latin, Greek, Cyrillic and Vietnamese in the
-PDF. They're on idea 2's row in the `bb-roadmap` skill.
+PDF. They're on idea 2's row in the `bb-roadmap` skill. Endnotes, and footnotes numbered by
+chapter in Word, are on idea 23's.

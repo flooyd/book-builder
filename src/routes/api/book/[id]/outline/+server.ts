@@ -6,8 +6,7 @@ import { chapter, part } from '$lib/server/db/schema';
 import { castsOf } from '$lib/server/bible';
 import { descriptionField, findOwnedBook, textField } from '$lib/server/ownership';
 import { storyTexts } from '$lib/server/outline';
-import { countWords } from '$lib/reading';
-import { plainText } from '$lib/rich';
+import { storyWords } from '$lib/reading';
 
 async function ownedBook(event: RequestEvent) {
 	const user = requireUser(event);
@@ -30,7 +29,7 @@ export const GET = async (event: RequestEvent) => {
 
 	const words: Record<string, number> = {};
 	for (const [key, content] of Object.entries(await storyTexts(partIds, chapterIds))) {
-		words[key] = countWords(plainText(content));
+		words[key] = storyWords(content);
 	}
 
 	return json({ words, cast: await castsOf(partIds, chapterIds) });

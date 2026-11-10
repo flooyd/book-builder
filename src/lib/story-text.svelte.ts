@@ -1,6 +1,5 @@
 import { beforeNavigate } from '$app/navigation';
-import { countWords } from '$lib/reading';
-import { plainText } from '$lib/rich';
+import { storyWords } from '$lib/reading';
 import { recordMentions, recordWriting, touchLibrary } from '$lib/library';
 
 type Status = 'loading' | 'load-error' | 'ready' | 'saving' | 'saved' | 'error';
@@ -23,9 +22,9 @@ export class StoryTextDoc {
 	readonly dirty = $derived(
 		this.status !== 'loading' && this.status !== 'load-error' && this.content !== this.saved
 	);
-	readonly words = $derived(countWords(plainText(this.content)));
+	readonly words = $derived(storyWords(this.content));
 	/** Words in the last saved version, so the unsaved part is `words - savedWords`. */
-	readonly savedWords = $derived(countWords(plainText(this.saved)));
+	readonly savedWords = $derived(storyWords(this.saved));
 	/** Set by the editor: hands over typing it hasn't reported yet. */
 	flush: (() => void) | null = null;
 

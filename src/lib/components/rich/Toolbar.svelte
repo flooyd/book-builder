@@ -457,6 +457,16 @@
 				onclick={startMention}><Icon name="at-sign" size={17} /></button
 			>
 		{/if}
+		{#if story}
+			<button
+				type="button"
+				class="tool"
+				aria-label="Add a footnote"
+				title="Add a footnote (Ctrl+Alt+F)"
+				onpointerdown={keep}
+				onclick={() => editor.commands.insertFootnote()}><Icon name="footnote" size={17} /></button
+			>
+		{/if}
 		<button
 			type="button"
 			class="tool"

@@ -16,7 +16,9 @@ mode, both views of reading mode, share links, version history, the PDF and the 
 picture that only the editor can show isn't finished.
 
 Adding it follows "Adding a kind of node or mark" in the `bb-rich-text` skill, and the two export
-writers are covered in `bb-export`. What's below is what's particular to pictures.
+writers are covered in `bb-export`. Footnotes (23) went down that list first: read "Things that
+tripped it up" in `23-footnotes.md`, since most of them (an editor inside the editor, what counts
+as text, the PDF's foot) will meet a picture too. What's below is what's particular to pictures.
 
 ## The node
 

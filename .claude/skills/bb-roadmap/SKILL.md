@@ -22,10 +22,10 @@ start from its row, and read its notes file in `ideas/` before anything else.
   rewrite the file as the record of what was built and how it works.
 - **The public shelf is separate.** `src/lib/components/marketing/soon.ts` is what visitors see.
   Only add to it when the user asks, and take an entry off when it ships (see the `bb-homepage`
-  skill). An idea here isn't a promise there. The shelf holds 3 at the moment, all added at the
-  user's request: Find and replace (7) on 2026-11-04, and Footnotes (23) and Art studio (25) on
-  2026-11-09. Connections map (19) came off when it shipped on 2026-11-06, and Your account (4)
-  when it shipped on 2026-11-07.
+  skill). An idea here isn't a promise there. The shelf holds 2 at the moment, both added at the
+  user's request: Find and replace (7) on 2026-11-04, and Art studio (25) on 2026-11-09.
+  Connections map (19) came off when it shipped on 2026-11-06, Your account (4) when it shipped on
+  2026-11-07, and Footnotes (23), added on 2026-11-09, when it shipped the same day.
 - **Check before trusting it.** Copilot also commits to this repo, so read `git log` and glance at
   the code before calling something unbuilt.
 
@@ -57,7 +57,7 @@ Asked the open questions, the user decided, also on 2026-11-09:
 | --- | ------------------ | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | Version history    | Shipped     | Every chapter's and story-text part's earlier text, kept as it's saved: compare a version with the text now, word by word, keep one for good with a name, and bring one back with an undo. Left out: history in focus mode, comparing two old versions with each other, versions of descriptions and notes, and a way back for a deleted chapter (its versions go with it). |
 | 2   | Export             | Shipped     | PDF and Word of a book or one part, from the book page and the part page, for the owner. Left out: EPUB, the drawn cover in Word, and other scripts in the PDF (it covers Latin, Greek, Cyrillic and Vietnamese; the rest become `?` with a note, and Word keeps them). How it works is the `bb-export` skill.                                                              |
-| 3   | Manuscript import  | Not started | Upload a Word document and split it into parts and chapters. "Import from text" only takes outlines, so an existing novel has to be pasted in chapter by chapter.                                                                                                                                                                                                           |
+| 3   | Manuscript import  | Not started | Upload a Word document and split it into parts and chapters. "Import from text" only takes outlines, so an existing novel has to be pasted in chapter by chapter. Word's footnotes should become footnotes (23).                                                                                                                                                            |
 | 4   | Accounts and email | Shipped     | Confirming a new account's email, password reset and account deletion, with email through Resend. Left out: changing the email address, a "your account was deleted" email, sign-in with Google and the like, and a way back for a deleted account. Needs a domain verified in Resend (`EMAIL_FROM`) before anyone but the Resend account's owner gets mail.                |
 | 5   | Offline writing    | Not started | Keep drafts on the device and sync them when back online, which also helps on phones. There's no service worker and nothing is stored locally.                                                                                                                                                                                                                              |
 
@@ -66,7 +66,7 @@ Asked the open questions, the user decided, also on 2026-11-09:
 | #   | Idea                           | Status      | What it is                                                                                                                                                                                                                                                                                                                |
 | --- | ------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 6   | Mentions and story bible       | In progress | Links from story text to the bible, typed with `@` or found by name, and a real page for every character, place and system. Left: portraits and maps (which wait on 18), mentions in descriptions and notes, and spotting names that aren't in the bible yet.                                                             |
-| 7   | Find and replace across a book | Not started | Rename a character everywhere, with a preview of each match. Mentions follow a rename, but a name written out doesn't, and since names link themselves by spelling, an old name left in the text stops linking, counting and filling casts. This closes that gap.                                                         |
+| 7   | Find and replace across a book | Not started | Rename a character everywhere, with a preview of each match. Mentions follow a rename, but a name written out doesn't, and since names link themselves by spelling, an old name left in the text stops linking, counting and filling casts. This closes that gap. It must look inside footnotes' notes too (23).          |
 | 8   | Series                         | Shipped     | Books grouped in a reading order, with a story bible worked out from their entries, an owner's page and a public page on the author profile, plus links between books in reading mode. Left out: an omnibus export, "Book 2 of…" on exported title pages, and series-wide goals, outlines and timelines.                  |
 | 9   | Plot threads                   | Not started | A grid of subplots against chapters, showing where a thread goes quiet.                                                                                                                                                                                                                                                   |
 | 10  | Scenes                         | Not started | Smaller units inside chapters, each with its own point of view, location and status. A big change to both the data and the editor.                                                                                                                                                                                        |
@@ -75,13 +75,14 @@ Asked the open questions, the user decided, also on 2026-11-09:
 
 ### The page and its art
 
-What the user asked for on 2026-11-09. None of it is built, and each has a plan in `ideas/`.
+What the user asked for on 2026-11-09. Footnotes (23) shipped that day, and its file is now the
+record. The rest isn't built, and each has a plan in `ideas/`.
 
 | #   | Idea                 | Status      | What it is                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | --- | -------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 18  | Artwork              | Not started | Uploading: a place for a writer's pictures to live, an art shelf that shows what's there and how much room is left, and its first uses, which are a cover of the writer's own, portraits for characters and maps for places. It was called Images until 2026-11-09. Files go in Vercel Blob (the user's choice); the key isn't in `.env` yet, and the per-writer cap is still to decide.                                                                 |
 | 22  | Pictures in the page | Not started | A picture set in story text, with a caption: as wide as the text, smaller, or with a page to itself. It has to reach the editor, both views of reading mode, share links, the PDF and the Word file. Needs 18.                                                                                                                                                                                                                                           |
-| 23  | Footnotes            | Not started | A note tied to a place in the text: a number in the line, and the note at the foot of the page in print or a tap away on a screen. Needs nothing first, and costs nothing to run.                                                                                                                                                                                                                                                                        |
+| 23  | Footnotes            | Shipped     | A note tied to a place in the text: a number in the line, the note in a box by it in the editor, a tap away in reading mode and listed after the chapter, at the foot of the page in the PDF, and real footnotes in Word. Left out: endnotes, symbols for numbers, footnotes pasted from Word (they arrive as text), and numbering by chapter in Word (Word counts through the book).                                                                    |
 | 24  | More kinds of text   | Not started | The smaller pieces of a fuller editor, each able to ship alone and asked for by letter: (a) an Insert menu, (b) small capitals, superscript and subscript, (c) kinds of quote (epigraph, verse, letter), (d) links, (e) page breaks, (f) tables.                                                                                                                                                                                                         |
 | 25  | The art studio       | Not started | Creating: a painting and vector drawing program in the browser, with the tools a designer expects. (a) The artboard and vector tools: shapes, the pen and point editing, fill and stroke, layers, undo, saving to the art shelf. (b) Paint: pressure-sensitive brushes, eraser, fill, blend modes. (c) Finishing: text, gradients, path operations, snapping, mirror drawing. (d) Working from pictures, and SVG out. Saving needs 18. No generated art. |
 | 26  | Book design          | Not started | How a book looks: (a) a cover designer (layout, colours, typeface, the title set over art from the shelf or the studio), and (b) ornaments for scene breaks and headings, chosen for the book. A cover without a picture is a design, not a file, so it needs no storage.                                                                                                                                                                                |
@@ -121,7 +122,7 @@ Read an idea's file before starting on it or changing how it works.
 | 18  | `ideas/18-artwork.md`                  | Plan: Vercel Blob and its limits, setting up the store, the cap, how uploads and deletes should work.  |
 | 19  | `ideas/19-connections-map.md`          | Record: kinds of connection, the layout, the arrangement.                                              |
 | 22  | `ideas/22-pictures-in-the-page.md`     | Plan: the node, and nine traps in today's code, among them that a picture-only chapter is thrown away. |
-| 23  | `ideas/23-footnotes.md`                | Plan: the node, where the note goes on each surface, and why the PDF is the hard part.                 |
+| 23  | `ideas/23-footnotes.md`                | Record: the node, what counts its words, where the note goes on each surface, what tripped it up.      |
 | 24  | `ideas/24-more-kinds-of-text.md`       | Plan: the six pieces, a to f.                                                                          |
 | 25  | `ideas/25-art-studio.md`               | Plan: the tools, a to d, drafts and saving, the drawing format, pen input, memory, libraries.          |
 | 26  | `ideas/26-book-design.md`              | Plan: the cover designer and ornaments, and why a cover is a design rather than a file.                |
@@ -130,25 +131,24 @@ Read an idea's file before starting on it or changing how it works.
 
 For the direction the user set on 2026-11-09:
 
-1. **Footnotes (23).** It can start today: no storage, no running cost and nothing to decide
-   first. It's also the first new kind of thing in story text since mentions, so it finds
-   whatever is awkward about adding one (the cleaner, both reading views, both exports) before
-   pictures raise the stakes.
+1. ~~**Footnotes (23).**~~ Shipped 2026-11-09. Adding it showed what a new kind of thing in story
+   text costs: see "Things that tripped it up" in its file before starting 22.
 2. **Artwork (18).** Storage is decided. Build it on the stand-in that keeps files in a scratch
    folder; it can ship once the key is in Vercel, and the per-writer cap has an answer.
 3. **The art studio (25)**, piece a first, then b, c and d. It saves to 18's shelf, so it comes
    after, though its tools can be started alongside.
-4. **Pictures in the page (22)**, and the Insert menu (24a) with whichever of 22 and 23 comes
-   second.
+4. **Pictures in the page (22)**, with the Insert menu (24a), which gathers the footnote button
+   and the new picture button in one place.
 5. **Book design (26)** and the rest of 24, as the user asks for them.
 
-Footnotes (23) and the art studio (25) are on the public shelf now, so they're promises. So is
-Find and replace (7), which matters more now that names link themselves (see 7). It needs nothing
-else, so it can come at any point. Email (4) is in, which opens up 12, 13 and 14.
+The art studio (25) is on the public shelf now, so it's a promise. So is Find and replace (7),
+which matters more now that names link themselves (see 7). It needs nothing else, so it can come
+at any point. Email (4) is in, which opens up 12, 13 and 14.
 
 So far the user has chosen 6 first (2026-11-01), then Export (2) the same day, Series (8),
 Insights (15) and Word maps (17), names that link themselves (part of 6), Version history (1)
-on 2026-11-04, Connections map (19) on 2026-11-06, and Accounts and email (4) on 2026-11-07.
+on 2026-11-04, Connections map (19) on 2026-11-06, Accounts and email (4) on 2026-11-07, and
+Footnotes (23) on 2026-11-09.
 
 ## What depends on what
 
@@ -158,8 +158,8 @@ on 2026-11-04, Connections map (19) on 2026-11-06, and Accounts and email (4) on
   Blob, and its Hobby limits (2,000 uploads a month across the site) shape 25's saving too.
 - **The art studio (25):** what it makes are pictures on 18's shelf. Book design (26) sets a
   cover's title over the studio's art, and can use an ornament drawn in it.
-- **Footnotes (23):** gives the PDF a way to raise a character off the line, which superscript and
-  subscript in 24b reuse.
+- **Footnotes (23):** gave the PDF a way to raise a character off the line (`raise` on a `Run`),
+  which superscript and subscript in 24b can reuse, and gave the PDF's page a foot that moves.
 - **A new kind of thing in story text (22, 23, most of 24):** each has to be read by everything
   that reads a document. That's exports (2) today, and find and replace (7), import (3), notes to
   self (20) and scenes (10) when they're built. Whichever is built later has to learn about the

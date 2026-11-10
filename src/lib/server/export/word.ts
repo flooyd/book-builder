@@ -3,6 +3,7 @@ import {
 	Document,
 	DropCapType,
 	Footer,
+	FootnoteReferenceRun,
 	FrameAnchorType,
 	FrameWrap,
 	Header,
@@ -23,6 +24,7 @@ import type { RichNode } from '$lib/rich';
 import {
 	contentsOf,
 	descriptionLines,
+	noteParagraphs,
 	runsOf,
 	storyOf,
 	wordsOf,
@@ -51,6 +53,8 @@ const FONTS: Record<Family, string> = { read: SERIF, display: SERIF, ui: SANS, m
 /** Half-points, as Word counts type sizes, and twips (1/20 pt) for everything else. */
 const BODY = 23;
 const LINE = 320;
+/** A footnote's text. */
+const NOTE_SIZE = 19;
 const INDENT = 432;
 const INCH = 1440;
 
@@ -76,7 +80,10 @@ function textRun(run: Run, size: number, brokenBefore: boolean) {
 		...(run.underline && { underline: {} }),
 		...(run.strike && { strike: true }),
 		...(run.family !== 'read' && run.family !== 'display' && { font: FONTS[run.family] }),
-		...(run.scale !== 1 && { size: Math.round(size * run.scale) }),
+		// Word makes a superscript smaller itself.
+		...(run.raise
+			? { superScript: true }
+			: run.scale !== 1 && { size: Math.round(size * run.scale) }),
 		...(run.color && { color: hex(run.color) }),
 		...(run.highlight && {
 			shading: {
@@ -88,7 +95,27 @@ function textRun(run: Run, size: number, brokenBefore: boolean) {
 	});
 }
 
-function childrenOf(inlines: Inline[], size = BODY) {
+/**
+ * A footnote as Word keeps one: its note goes with the number, and Word numbers them and sets
+ * each at the foot of the page its number is on. A note of several paragraphs keeps them.
+ */
+function footnote(note: string) {
+	const paragraphs = noteParagraphs(note);
+	// The cleaner drops empty notes, but Word needs a paragraph in a footnote whatever comes.
+	return new FootnoteReferenceRun({
+		children: (paragraphs.length ? paragraphs : [[]]).map(
+			(runs, index) =>
+				new Paragraph({
+					style: 'FootnoteText',
+					// docx puts the note's number first; a space after it, as Word's own notes have.
+					children: [...(index ? [] : [new TextRun(' ')]), ...childrenOf(runs, NOTE_SIZE)]
+				})
+		)
+	});
+}
+
+/** A block's runs as Word's. `notes` are its section's footnotes, note 1 first. */
+function childrenOf(inlines: Inline[], size = BODY, notes: string[] = []) {
 	const children: ParagraphChild[] = [];
 	let broken = false;
 	for (const inline of inlines) {
@@ -98,7 +125,11 @@ function childrenOf(inlines: Inline[], size = BODY) {
 			broken = true;
 			continue;
 		}
-		children.push(textRun(inline, size, broken));
+		const note = inline.note === null ? undefined : notes[inline.note - 1];
+		if (note !== undefined) {
+			if (broken) children.push(new TextRun({ break: 1 }));
+			children.push(footnote(note));
+		} else children.push(textRun(inline, size, broken));
 		broken = false;
 	}
 	if (broken) children.push(new TextRun({ break: 1 }));
@@ -171,6 +202,8 @@ class Blocks {
 	#lists = 0;
 	/** The numbers ordered lists start from, each needing its own definition in the document. */
 	starts: Record<number, true> = { 1: true };
+	/** The footnotes of the section being written, note 1 first. */
+	notes: string[] = [];
 
 	#paragraph(node: RichNode, context: Context, indented: boolean): IParagraphOptions {
 		const { quote, list } = context;
@@ -180,7 +213,7 @@ class Blocks {
 			alignment: alignmentOf(node),
 			...(quote > 1 && { indent: { left: INDENT * quote } }),
 			...(list && { numbering: list }),
-			children: childrenOf(runs)
+			children: childrenOf(runs, BODY, this.notes)
 		};
 	}
 
@@ -196,7 +229,11 @@ class Blocks {
 						: HeadingLevel.HEADING_5,
 			style,
 			alignment: alignmentOf(node),
-			children: childrenOf(runsOf(node.content), level === 1 ? 35 : level === 2 ? 30 : 19)
+			children: childrenOf(
+				runsOf(node.content),
+				level === 1 ? 35 : level === 2 ? 30 : 19,
+				this.notes
+			)
 		};
 	}
 
@@ -286,7 +323,8 @@ function sectionBlocks(section: Section, blocks: Blocks): IParagraphOptions[] {
 		: [];
 	if (section.kind === 'part') return heading;
 
-	const { blocks: story, cap } = storyOf(section.text);
+	const { blocks: story, cap, notes } = storyOf(section.text);
+	blocks.notes = notes;
 	const text = blocks.of(story, { quote: 0, cap });
 	// With no heading the text still starts its own page, as it does in reading mode's book view.
 	if (!opens && text[0]) text[0] = { ...text[0], pageBreakBefore: true };
@@ -368,6 +406,11 @@ function styles() {
 			heading4: {
 				run: { ...HEADING_BASE.run, size: 30 },
 				paragraph: { keepNext: true, spacing: { before: 300, after: 120 } }
+			},
+			// Word numbers the notes through the whole file, as a manuscript's are.
+			footnoteText: {
+				run: { size: NOTE_SIZE },
+				paragraph: { spacing: { after: 60, line: 240, lineRule: LineRuleType.AUTO } }
 			},
 			heading5: {
 				run: {

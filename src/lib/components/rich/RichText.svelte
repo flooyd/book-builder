@@ -7,16 +7,22 @@
 		value,
 		kind = 'description',
 		italic = false,
+		notes,
 		class: className = ''
 	}: {
 		value: string;
 		kind?: RichKind;
 		/** The text around is italic: emphasis inside it turns roman. */
 		italic?: boolean;
+		/**
+		 * Story text: an id for its footnotes that nothing else on the page has (the section's key),
+		 * so each number links to its note and back. Left out, the numbers are only numbers.
+		 */
+		notes?: string;
 		class?: string;
 	} = $props();
 
-	const html = $derived(toHTML(value, kind));
+	const html = $derived(toHTML(value, kind, notes));
 	const cap = $derived(kind === 'story' ? capPresentation(capOf(value)) : null);
 </script>
 

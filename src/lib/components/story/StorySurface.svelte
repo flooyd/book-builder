@@ -283,7 +283,8 @@
 		box-shadow: 0 1px 0 var(--surface-line);
 	}
 
-	.surface :global(.surface-editor .rich-area) {
+	/* The story's own text, not a footnote's note, whose editor sits inside this one. */
+	.surface :global(.surface-editor > .area > .rich-area) {
 		min-height: 520px;
 		color: var(--surface-text);
 		caret-color: var(--surface-caret);
@@ -376,7 +377,7 @@
 			border-radius: 18px;
 		}
 
-		.surface :global(.surface-editor .rich-area) {
+		.surface :global(.surface-editor > .area > .rich-area) {
 			min-height: 400px;
 			font-size: 18px;
 		}

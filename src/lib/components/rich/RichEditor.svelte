@@ -13,11 +13,13 @@
 	import Toolbar from './Toolbar.svelte';
 	import MentionMenu from './MentionMenu.svelte';
 	import MentionCard from './MentionCard.svelte';
+	import FootnoteBox from './FootnoteBox.svelte';
 
 	// The rich text editor (Tiptap): a toolbar over a WYSIWYG area set like reading mode. Changes
 	// reach `onchange` as a stored value (see $lib/rich), a moment after typing stops and at once
 	// on blur or flush(). Given a `bookId`, typing @ links the story bible (see ./mention.ts), and
-	// the bible's names link themselves wherever they're written (see ./auto-mention.ts).
+	// the bible's names link themselves wherever they're written (see ./auto-mention.ts). Story
+	// text can hold footnotes, whose notes open in FootnoteBox (see ./footnote.ts).
 	let {
 		value,
 		kind = 'story',
@@ -66,6 +68,7 @@
 	let version = $state(0);
 	let mentionMenu = $state<MentionMenu>();
 	let mentionCard = $state<MentionCard>();
+	let footnoteBox = $state<FootnoteBox>();
 	let pending = false;
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	// The value this editor last produced or was given: a different `value` is an outside change.
@@ -74,6 +77,8 @@
 
 	/** Hand over the latest text now (before saving, leaving, submitting). */
 	export function flush() {
+		// A note being written is part of the story: it goes in first.
+		footnoteBox?.flush();
 		clearTimeout(timer);
 		if (!pending || !editor) return;
 		pending = false;
@@ -117,7 +122,13 @@
 									open: (props) => mentionMenu?.open(props),
 									keydown: (event) => mentionMenu?.keydown(event) ?? false,
 									close: () => mentionMenu?.close()
+								},
+						story
+							? {
+									open: (at, edit) => footnoteBox?.open(at, edit),
+									leave: () => footnoteBox?.leave()
 								}
+							: undefined
 					),
 					content: parse(value, kind),
 					autofocus: autofocus ? 'end' : false,
@@ -139,6 +150,7 @@
 					onTransaction: ({ editor, transaction }) => {
 						// Can arrive in the middle of an update: taking away the focused editor blurs it.
 						untrack(() => version++);
+						footnoteBox?.track(transaction);
 						ontransaction?.(editor, transaction);
 					},
 					onUpdate: () => {
@@ -203,6 +215,7 @@
 	{/if}
 	{#if story}
 		<MentionCard bind:this={mentionCard} />
+		<FootnoteBox bind:this={footnoteBox} {editor} />
 	{/if}
 </div>
 

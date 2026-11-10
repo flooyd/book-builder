@@ -172,6 +172,20 @@ function mentionAttrs(attrs: unknown): Mention | null {
 const textNode = (text: string, marks?: RichMark[]): RichNode =>
 	marks ? { type: 'text', text, marks } : { type: 'text', text };
 
+/** Longer than any note: a request with one this long isn't a writer's. */
+const MAX_NOTE = 100_000;
+
+/**
+ * A footnote's note, cleaned as a description value: plain text, or inline formatting as JSON.
+ * Null when there's nothing in it, so a note the writer never wrote isn't kept.
+ */
+function noteOf(attrs: unknown): string | null {
+	const note = (attrs as Record<string, unknown> | undefined)?.note;
+	if (typeof note !== 'string' || note.length > MAX_NOTE) return null;
+	const clean = serialize(parse(note, 'description'), 'description');
+	return clean ? clean : null;
+}
+
 function cleanInline(nodes: unknown, kind: RichKind): RichNode[] {
 	if (!Array.isArray(nodes)) return [];
 	const clean: RichNode[] = [];
@@ -187,6 +201,11 @@ function cleanInline(nodes: unknown, kind: RichKind): RichNode[] {
 			// Descriptions have no mentions: keep the word and let the link go.
 			if (kind === 'description') clean.push(textNode(mention.label, marks));
 			else clean.push({ type: 'mention', attrs: mention, ...(marks && { marks }) });
+		} else if (node?.type === 'footnote' && kind === 'story') {
+			// Story text only. A description has nowhere to put a note, and a note is a description,
+			// so there are no notes inside notes. The number takes no marks: it has its own style.
+			const note = noteOf(node.attrs);
+			if (note) clean.push({ type: 'footnote', attrs: { note } });
 		}
 	}
 	return clean;
@@ -277,38 +296,46 @@ export function cleanValue(value: string, kind: RichKind): string {
 
 // ---- Plain text ------------------------------------------------------------------------------
 
-function textOf(node: RichNode, mention?: string): string {
+/** How a node that isn't words reads as text: a mention as something else, a footnote's number. */
+type Reading = { mention?: string; footnote?: (node: RichNode) => string };
+
+function textOf(node: RichNode, reading: Reading = {}): string {
 	if (node.type === 'text') return node.text ?? '';
-	if (node.type === 'mention') return mention ?? String(node.attrs?.label ?? '');
+	if (node.type === 'mention') return reading.mention ?? String(node.attrs?.label ?? '');
 	if (node.type === 'hardBreak') return '\n';
-	return (node.content ?? []).map((child) => textOf(child, mention)).join('');
+	// The number isn't a word, and the note isn't part of the sentence it hangs from.
+	if (node.type === 'footnote') return reading.footnote?.(node) ?? '';
+	return (node.content ?? []).map((child) => textOf(child, reading)).join('');
 }
 
 const BLOCK_TYPES = new Set(['paragraph', 'heading']);
 
-function blockLines(nodes: RichNode[], out: string[], mention?: string) {
+function blockLines(nodes: RichNode[], out: string[], reading: Reading = {}) {
 	for (const node of nodes) {
-		if (BLOCK_TYPES.has(node.type)) out.push(textOf(node, mention));
-		else if (node.content) blockLines(node.content, out, mention);
+		if (BLOCK_TYPES.has(node.type)) out.push(textOf(node, reading));
+		else if (node.content) blockLines(node.content, out, reading);
 	}
 	return out;
 }
 
 /**
- * The words alone, a line per paragraph (word counts, search, plain-text export). Given a
- * `mention`, each mention reads as that instead of its words: looking for names in what's left
- * mustn't find a mention a second time.
+ * The words of the story, a line per paragraph (Insights, word maps, names, search). Footnotes
+ * are left out: a note isn't narration, so nothing reads it as the paragraph it hangs from. Count
+ * words with `storyWords` in $lib/reading, which adds them back. Given a `mention`, each mention
+ * reads as that instead of its words: looking for names in what's left mustn't find a mention a
+ * second time.
  */
 export function plainText(value: string, kind: RichKind = 'story', mention?: string) {
 	return isRich(value)
-		? blockLines(parse(value, kind).content ?? [], [], mention).join('\n')
+		? blockLines(parse(value, kind).content ?? [], [], { mention }).join('\n')
 		: value;
 }
 
 function isEmpty(doc: RichDoc) {
 	return (
 		!(doc.content ?? []).some((node) => node.type === 'horizontalRule') &&
-		blockLines(doc.content ?? [], []).every((line) => !line.trim())
+		blockLines(doc.content ?? [], []).every((line) => !line.trim()) &&
+		footnoteNodes(doc.content ?? []).length === 0
 	);
 }
 
@@ -417,6 +444,54 @@ export function mapMentions(value: string, change: (mention: Mention) => Mention
 /** The value with every mention turned back into plain words, for anything readers receive. */
 export const withoutMentions = (value: string) => mapMentions(value, () => null);
 
+// ---- Footnotes -------------------------------------------------------------------------------
+//
+// A footnote is an inline atom in story text that carries its own note:
+// {"type":"footnote","attrs":{"note":"…"}}, where the note is a description value. Numbers are
+// never stored: a note's number is its place among the notes of its text (one chapter, or one
+// part), counted wherever it's drawn, so moving a paragraph renumbers them.
+
+/** Quick test before parsing: most story text has no footnotes. */
+const mayFootnote = (value: string) => isRich(value) && value.includes('"type":"footnote"');
+
+/** Every footnote node, in the order they're read. */
+function footnoteNodes(nodes: RichNode[], out: RichNode[] = []) {
+	for (const node of nodes) {
+		if (node.type === 'footnote') out.push(node);
+		else if (node.content) footnoteNodes(node.content, out);
+	}
+	return out;
+}
+
+/** The notes of a story value, in order: note 1 first. Each is a description value. */
+export function footnotesIn(value: string): string[] {
+	if (!mayFootnote(value)) return [];
+	return footnoteNodes(parse(value, 'story').content ?? []).map((node) =>
+		String(node.attrs?.note ?? '')
+	);
+}
+
+const SUPERSCRIPT = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+const superscript = (number: number) =>
+	[...String(number)].map((digit) => SUPERSCRIPT[Number(digit)]).join('');
+
+/**
+ * The words with the footnotes in them, for comparing versions: each number where it sits, and
+ * the notes after the story, a line each. An edit inside a note, or a note moved, shows. It's
+ * also how to ask whether a text holds anything to read, since `plainText` leaves notes out.
+ */
+export function textWithNotes(value: string) {
+	if (!mayFootnote(value)) return plainText(value);
+	const content = parse(value, 'story').content ?? [];
+	let count = 0;
+	const lines = blockLines(content, [], { footnote: () => superscript(++count) });
+	const notes = footnoteNodes(content).map(
+		(node, index) =>
+			`${superscript(index + 1)} ${plainText(String(node.attrs?.note ?? ''), 'description').replace(/\s*\n\s*/g, ' ')}`
+	);
+	return [...lines, ...notes].join('\n');
+}
+
 // ---- HTML ------------------------------------------------------------------------------------
 
 const escape = (text: string) =>
@@ -451,44 +526,63 @@ function textHTML(node: RichNode) {
 	return html;
 }
 
+/**
+ * What making a story's HTML keeps track of: the notes met so far, in order, and the id their
+ * links are made from, if they have links.
+ */
+type Page = { notes: string[]; id: string | null };
+
+/** A footnote's number in the line, a link to its note when the note has an id to link to. */
+function footnoteHTML(node: RichNode, page: Page) {
+	page.notes.push(String(node.attrs?.note ?? ''));
+	const number = page.notes.length;
+	if (!page.id) return `<sup class="bb-fn-ref" data-note="${number}">${number}</sup>`;
+	return (
+		`<sup class="bb-fn-ref" id="${page.id}-ref-${number}" data-note="${number}">` +
+		`<a href="#${page.id}-note-${number}" aria-label="Note ${number}">${number}</a></sup>`
+	);
+}
+
 /** Reading mode shows a mention as the plain words it is: only the writer sees it as a link. */
-function inlineNodeHTML(node: RichNode) {
+function inlineNodeHTML(node: RichNode, page?: Page) {
 	if (node.type === 'hardBreak') return '<br>';
 	if (node.type === 'mention') {
 		return textHTML({ type: 'text', text: String(node.attrs?.label ?? ''), marks: node.marks });
 	}
+	if (node.type === 'footnote') return page ? footnoteHTML(node, page) : '';
 	return textHTML(node);
 }
 
-function inlineHTML(nodes: RichNode[] = []) {
-	return nodes.map(inlineNodeHTML).join('');
+function inlineHTML(nodes: RichNode[] = [], page?: Page) {
+	return nodes.map((node) => inlineNodeHTML(node, page)).join('');
 }
 
 const alignAttr = (node: RichNode) =>
 	node.attrs?.textAlign ? ` style="text-align: ${node.attrs.textAlign}"` : '';
 
-function blockHTML(node: RichNode): string {
+function blockHTML(node: RichNode, page: Page): string {
+	const children = () => (node.content ?? []).map((child) => blockHTML(child, page)).join('');
 	switch (node.type) {
 		case 'paragraph': {
-			const inner = inlineHTML(node.content);
+			const inner = inlineHTML(node.content, page);
 			// An empty paragraph is a blank line the writer left on purpose.
 			return `<p${alignAttr(node)}>${inner || '<br>'}</p>`;
 		}
 		case 'heading': {
 			// Chapter titles are h2/h3 in reading mode, so headings in the text start at h4.
 			const tag = `h${Number(node.attrs?.level ?? 1) + 3}`;
-			return `<${tag}${alignAttr(node)}>${inlineHTML(node.content)}</${tag}>`;
+			return `<${tag}${alignAttr(node)}>${inlineHTML(node.content, page)}</${tag}>`;
 		}
 		case 'blockquote':
-			return `<blockquote>${(node.content ?? []).map(blockHTML).join('')}</blockquote>`;
+			return `<blockquote>${children()}</blockquote>`;
 		case 'bulletList':
-			return `<ul>${(node.content ?? []).map(blockHTML).join('')}</ul>`;
+			return `<ul>${children()}</ul>`;
 		case 'orderedList': {
 			const start = node.attrs?.start ? ` start="${Number(node.attrs.start)}"` : '';
-			return `<ol${start}>${(node.content ?? []).map(blockHTML).join('')}</ol>`;
+			return `<ol${start}>${children()}</ol>`;
 		}
 		case 'listItem':
-			return `<li>${(node.content ?? []).map(blockHTML).join('')}</li>`;
+			return `<li>${children()}</li>`;
 		case 'horizontalRule':
 			return '<hr>';
 		default:
@@ -496,13 +590,40 @@ function blockHTML(node: RichNode): string {
 	}
 }
 
+/** The notes, after the story they belong to, each with a link back to its number. */
+function notesHTML(page: Page): string {
+	if (!page.notes.length) return '';
+	const items = page.notes.map((note, index): string => {
+		const number = index + 1;
+		const id = page.id ? ` id="${page.id}-note-${number}"` : '';
+		const back = page.id
+			? ` <a class="bb-note-back" href="#${page.id}-ref-${number}" aria-label="Back to note ${number} in the text">↩︎</a>`
+			: '';
+		return (
+			`<li${id} data-note="${number}"><span class="bb-note-number">${number}</span>` +
+			`<span class="bb-note-text">${toHTML(note, 'description')}</span>${back}</li>`
+		);
+	});
+	return `<aside class="bb-notes" aria-label="Notes"><ol>${items.join('')}</ol></aside>`;
+}
+
+/** An id can only be made from letters, digits and dashes ("chapter-12"). */
+const NOTES_ID = /^[a-z][\w-]{0,60}$/i;
+
 /**
- * Safe HTML for a value. Story text becomes blocks; a description becomes inline text, its
- * paragraphs joined by line breaks (it sits inside a <p> or <span>).
+ * Safe HTML for a value. Story text becomes blocks, with its footnotes listed after them; a
+ * description becomes inline text, its paragraphs joined by line breaks (it sits inside a <p> or
+ * <span>). Give story text `notes`, an id no other text on the page has (the section's key), and
+ * each footnote's number links to its note and back. Leave it out where the same text is drawn
+ * more than once, as the book view's pages are.
  */
-export function toHTML(value: string, kind: RichKind) {
+export function toHTML(value: string, kind: RichKind, notes?: string): string {
 	const doc = parse(value, kind);
-	if (kind === 'story') return (doc.content ?? []).map(blockHTML).join('');
+	if (kind === 'story') {
+		const page: Page = { notes: [], id: notes && NOTES_ID.test(notes) ? notes : null };
+		const blocks = (doc.content ?? []).map((node) => blockHTML(node, page)).join('');
+		return blocks + notesHTML(page);
+	}
 	const lines: string[] = [];
 	const collect = (nodes: RichNode[]) => {
 		for (const node of nodes) {

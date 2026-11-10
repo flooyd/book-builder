@@ -1,11 +1,23 @@
 // Reading mode: word counts, reading time, and the reader's text settings.
 
 import type { HeadingStyles } from '$lib/headings';
+import { footnotesIn, plainText } from '$lib/rich';
 import type { ReaderSeries } from '$lib/series';
 
 export function countWords(text: string) {
 	const trimmed = text.trim();
 	return trimmed ? trimmed.split(/\s+/).length : 0;
+}
+
+/**
+ * The words in a story value, its footnotes' included: the writer wrote those too. Every word
+ * count and writing goal counts this way.
+ */
+export function storyWords(value: string) {
+	return footnotesIn(value).reduce(
+		(words, note) => words + countWords(plainText(note, 'description')),
+		countWords(plainText(value))
+	);
 }
 
 const WORDS_PER_MINUTE = 230;

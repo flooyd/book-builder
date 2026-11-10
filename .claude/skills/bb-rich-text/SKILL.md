@@ -1,6 +1,6 @@
 ---
 name: bb-rich-text
-description: How formatted text works in Book Builder, covering the stored value format (plain text or Tiptap JSON), $lib/rich.ts (parse, clean, toHTML, plainText), the ink and highlight palettes, first-letter (drop cap) styles, @ mentions, prose.css, the RichEditor, RichText and RichInline components on Tiptap 3.32, and the full list of places that must change when story text gains a new kind of block, inline node or mark. Use this whenever a task touches story text, descriptions, the editor or its toolbar, formatting, paste, word counts, drop caps, rendering text in reading mode or focus mode, or seeding text, and before adding anything new to what the editor can hold (a picture, a footnote, a link, a table, a new style), even if the user only says "the editor" or "the text".
+description: How formatted text works in Book Builder, covering the stored value format (plain text or Tiptap JSON), $lib/rich.ts (parse, clean, toHTML, plainText), the ink and highlight palettes, first-letter (drop cap) styles, @ mentions, footnotes, prose.css, the RichEditor, RichText and RichInline components on Tiptap 3.32, and the full list of places that must change when story text gains a new kind of block, inline node or mark. Use this whenever a task touches story text, descriptions, the editor or its toolbar, formatting, paste, word counts, drop caps, rendering text in reading mode or focus mode, or seeding text, and before adding anything new to what the editor can hold (a picture, a footnote, a link, a table, a new style), even if the user only says "the editor" or "the text".
 ---
 
 # Book Builder: rich text
@@ -22,9 +22,14 @@ Both forms are valid forever. Every function in `$lib/rich.ts` accepts either.
 | `parse(value, kind)`                    | Gets a clean doc from either form.                                                                                                                          |
 | `cleanDoc` / `cleanValue(value, kind)`  | **Server-side on every save.** Drops unknown nodes, marks, colours and sizes and caps depth. Never trust client JSON.                                       |
 | `serialize(doc, kind)`                  | Turns a doc into the stored string: `''` when empty, and a description with no formatting is stored as plain lines. Everything else is compact JSON.        |
-| `toHTML(value, kind)`                   | Allow-listed, escaped HTML. Story text becomes blocks; a description becomes inline text joined with `<br>`. It's the only HTML that may go into `{@html}`. |
-| `plainText(value, kind)`                | The words alone, one line per paragraph. Use it for word counts, emptiness checks and exports.                                                              |
+| `toHTML(value, kind, notes?)`           | Allow-listed, escaped HTML. Story text becomes blocks; a description becomes inline text joined with `<br>`. It's the only HTML that may go into `{@html}`. |
+| `plainText(value, kind)`                | The words alone, one line per paragraph, without footnotes' notes. Use it for reading the story as narration and for exports.                               |
+| `textWithNotes(value)`                  | The words with footnotes in: numbers where they sit, notes after. Use it to ask whether a text holds anything, and to compare versions.                     |
+| `footnotesIn(value)`                    | A story's notes, note 1 first, each a description value.                                                                                                    |
 | `capOf(value)` / `capPresentation(cap)` | The first-letter settings, and the class and style that render them.                                                                                        |
+
+Word counts and goals count with `storyWords(value)` from `$lib/reading`: the narration's words
+plus the notes'.
 
 `kind` is `'story'` (block content plus drop cap) or `'description'` (inline formatting; also
 used for bios).
@@ -61,6 +66,29 @@ rather than the entry's own, and it may carry marks.
 - **They fill the cast.** A name written in a chapter for the first time puts its entry in that chapter's cast, like a first @ mention (`castNamed` in `lib/server/bible.ts`, called by the story-text save). "First" is against the text before the save, so someone taken out of a cast by hand stays out while their name stays on the page. When an entry joins a book, or its name or aliases change, `castByName` reads that book once and casts it wherever the story names it now and didn't before. Nothing is stored about names, so there's no table to keep in step. Text saved before this shipped keeps the casts it had: the user decided a one-off fill isn't needed, so don't offer one.
 - **Packages.** `@tiptap/extension-mention` and `@tiptap/suggestion` are pinned with the other Tiptap packages. `@tiptap/suggestion` needs `@floating-ui/dom` as a peer, and without it the editor fails to load.
 
+## Footnotes
+
+An inline atom in **story text only** that carries its own note:
+`{"type":"footnote","attrs":{"note":"…"}}`. The note is a description value. The record of how
+it was built, and what it left out, is `ideas/23-footnotes.md` in the `bb-roadmap` skill.
+
+- **Numbers are never stored.** A number is the note's place among its text's notes, counted
+  where it's drawn: a CSS counter in the editor (`.bb-footnote::after`), `toHTML` on the page,
+  `storyOf` in the export.
+- **The cleaner** keeps `note` only, cleans it as a description (`noteOf`), and drops a footnote
+  with a blank note, and every footnote in a description.
+- **Whose words.** `plainText` leaves the notes out, so Insights, word maps, names and casts read
+  narration only. `storyWords` counts them; `textWithNotes` shows them.
+- **On the page.** `toHTML(value, 'story', key)` gives each number a link to its note and back, with
+  ids from `key` (the chapter's anchor), and lists the notes in `aside.bb-notes` after the story.
+  Without a key there are no ids, for text drawn more than once (the book view). Story `RichText`
+  takes the key as `notes`. A tap on a number in reading mode opens `reader/NotePopover.svelte`.
+- **In the editor.** `rich/footnote.ts` is the node, its keys (Ctrl+Alt+F adds one) and a bridge
+  to `rich/FootnoteBox.svelte`, the note's box: a top-layer popover mounted inside `RichEditor`,
+  as the mention menu is, holding a `RichEditor kind="description"` of its own. That nested
+  editor is also a `.rich-area`, so a rule meant for the story's editor alone needs a child
+  selector (`.surface-editor > .area > .rich-area`).
+
 ## Drop caps (the "first letter")
 
 - **Settings.** `DropCap = { style: 'drop' | 'raised' | 'boxed' | 'none', lines: 2 | 3 | 4, font, color }`, defaulting to `{ drop, 2, display, accent }`. It's stored in `doc.attrs.dropCap`.
@@ -74,8 +102,8 @@ rather than the entry's own, and it may carry marks.
 Story text is read in many more places than the editor, and nearly all of them skip what they
 don't know without an error. So something new (a picture, a footnote, a link, a new mark) can
 look finished in the editor and be missing everywhere else, or be thrown away by the next save.
-Go down the whole list. Plans for pictures and footnotes are in the `bb-roadmap` skill (ideas 22
-and 23).
+Go down the whole list. Footnotes went down it first: their record (idea 23 in the `bb-roadmap`
+skill) says what tripped them up. The plan for pictures is idea 22.
 
 1. **The allow-list, in `rich.ts`.** `cleanBlocks` for a block, `cleanInline` for an inline node,
    `cleanMarks` for a mark. Keep only the attributes you name, with values you've checked.
@@ -83,15 +111,17 @@ and 23).
    `cleanInline` is given the `kind`.
 2. **Its words, in `rich.ts`.** `textOf` and `blockLines` decide what `plainText` returns. A new
    block that holds text directly must be in `BLOCK_TYPES`, or its words are gone from every
-   count. Decide on purpose whether its words count, because `plainText` is what all of these
-   read: word counts and writing goals, Insights, word maps and who's speaking, "Appears in" and
-   the casts that fill from names, the outline's text export, and the comparison in version
-   history. `plainText` takes a third argument that stands in for a mention; something similar
+   count. Decide on purpose whether its words count. `plainText` is what Insights, word maps and
+   who's speaking, "Appears in" and the casts that fill from names read. Word counts and writing
+   goals read `storyWords` (in `$lib/reading`), and the comparison in version history reads
+   `textWithNotes`: both add footnotes' notes to `plainText`, and a new node with words of its
+   own belongs in whichever of the three should see them. `plainText` takes a third argument
+   that stands in for a mention, and a `Reading` inside it handles footnotes; something similar
    may suit a node whose words shouldn't be read as the story.
-3. **Whether anything is there, in four places.** `isEmpty` in `rich.ts` counts words and scene
-   breaks and nothing else, so text holding only something new is stored as `''`. Reading mode
-   (`Reader.svelte` and `BookView.svelte`) and the export (`hasStoryText`) ask the same thing with
-   `plainText(text).trim()` and would leave the chapter out.
+3. **Whether anything is there, in four places.** `isEmpty` in `rich.ts` counts words, scene
+   breaks and footnotes and nothing else, so text holding only something new is stored as `''`.
+   Reading mode (`Reader.svelte` and `BookView.svelte`) and the export (`hasStoryText`) ask the
+   same thing with `textWithNotes(text).trim()` and would leave the chapter out.
 4. **The page, in `rich.ts`.** `blockHTML`, `inlineNodeHTML` or `textHTML`, which make `toHTML`:
    reading mode, share links, every `RichText`, and version history. Escape every string, and
    write attribute values only from the allow-list. Anything a reader's browser would load or
@@ -99,8 +129,9 @@ and 23).
    public.
 5. **The editor.** The extension in `extensions.ts` (a Tiptap package pinned to 3.32.0, or our own
    as `mention.ts` is), a control in `Toolbar.svelte`, and paste: `cleanPastedHTML` decides what
-   survives from another app. Whatever the editor can make, the cleaner must keep, and the
-   reverse.
+   survives from another app. It takes off classes and styles and keeps `data-` attributes, which
+   is how a footnote copied inside the editor keeps its note. Whatever the editor can make, the
+   cleaner must keep, and the reverse.
 6. **How it looks, in `prose.css`,** once, for the editor, both reading views, focus mode and the
    homepage samples. Check it at night and on paper.
 7. **The book view.** Each chapter is set in CSS columns one page wide and measured in a hidden
@@ -133,7 +164,7 @@ The `bb-export` skill has the rest.
 
 ## `prose.css`
 
-- **What it covers.** `.bb-prose` is the single definition of how story text looks: book paragraphs (indented, no gaps, flush after headings, quotes, lists and breaks), headings, quotes, lists, highlights, the scene-break ornament and drop caps.
+- **What it covers.** `.bb-prose` is the single definition of how story text looks: book paragraphs (indented, no gaps, flush after headings, quotes, lists and breaks), headings, quotes, lists, highlights, the scene-break ornament, drop caps, and footnotes' numbers (`.bb-footnote` in the editor, `.bb-fn-ref` on the page) and the list of notes (`.bb-notes`).
 - **Where it's used.** The editor, reading mode (scroll and book), focus mode and the homepage samples all use it. Change it there, not per page.
 - **Colours inside.** Its colours come from tokens, so in a `data-scheme="light"` subtree (the paper book) it renders dark ink automatically.
 
@@ -142,9 +173,10 @@ The `bb-export` skill has the rest.
 - **`RichEditor.svelte`**: the Tiptap editor.
   - Tiptap and `./extensions` are dynamically imported in `onMount`, which keeps them out of server rendering and the first bundle.
   - Props: `value`, `kind`, `onchange`, `label`, `id`, `placeholder`, `autofocus`, `delay`, `boxed`, `italic`, `toolbar`, `bookId` (turns on @ mentions), `ontransaction(editor, transaction)`, `onescape`, `onblur`.
-  - Exports `flush()` (emit pending changes now) and `focus()`.
-- **`Toolbar.svelte`, `Menu.svelte`**: formatting controls (bold, italic, underline, strike, colour, highlight, size, font, alignment, headings, lists, quote, scene break, first letter).
-- **`RichText.svelte`**: read-only rendering through `toHTML`. Story text gets `.bb-prose` plus the cap class; descriptions are inline (`italic` flips emphasis to roman inside italic text).
+  - Exports `flush()` (emit pending changes now, a footnote's note first) and `focus()`.
+  - A story editor mounts `FootnoteBox.svelte`, the box a footnote's note is written in (see Footnotes above).
+- **`Toolbar.svelte`, `Menu.svelte`**: formatting controls (bold, italic, underline, strike, colour, highlight, size, font, alignment, headings, lists, quote, scene break, first letter, mention, footnote).
+- **`RichText.svelte`**: read-only rendering through `toHTML`. Story text gets `.bb-prose` plus the cap class; descriptions are inline (`italic` flips emphasis to roman inside italic text). `notes` is the key that links footnotes to their notes.
 - **`RichInline.svelte`**: click-to-edit for short rich fields (descriptions).
   - It tracks whether focus is still `inside`, because unmounting the focused editor fires `focusout`. Without that flag it closes the moment it opens.
 - **`extensions.ts`**: the Tiptap extension set. Keep it in step with the allow-list in `rich.ts`. Anything the editor can make, the cleaner must keep, and the reverse.

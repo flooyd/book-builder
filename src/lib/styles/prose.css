@@ -101,6 +101,119 @@
 	background: var(--bb-sky-wash);
 }
 
+/* Footnotes. The number in the line: .bb-footnote in the editor, numbered by a counter so it follows
+   the notes' order as the text changes, and .bb-fn-ref on the page, numbered by toHTML. Line-height
+   0 keeps a raised number from opening up the line it's in. */
+.bb-prose {
+	counter-reset: bb-footnote;
+}
+
+.bb-prose :is(.bb-footnote, .bb-fn-ref) {
+	position: relative;
+	padding: 0 0.06em;
+	font-family: var(--font-ui);
+	font-size: 0.62em;
+	font-style: normal;
+	font-weight: 700;
+	font-variant-numeric: lining-nums;
+	line-height: 0;
+	vertical-align: super;
+	text-indent: 0;
+	color: var(--bb-sky);
+	cursor: pointer;
+}
+
+.bb-prose .bb-footnote::after {
+	counter-increment: bb-footnote;
+	content: counter(bb-footnote);
+}
+
+/* A number is small: for a reader, the space around it takes the tap too. (Not in the editor,
+   where a click beside it puts the caret there.) */
+.bb-prose .bb-fn-ref::before {
+	content: '';
+	position: absolute;
+	inset: -0.9em -0.55em;
+}
+
+.bb-prose .bb-fn-ref a {
+	color: inherit;
+	text-decoration: none;
+}
+
+/* Selected in the editor (its note is showing), or the one a reader came back to. */
+.bb-prose :is(.bb-footnote.ProseMirror-selectednode, .bb-fn-ref:target) {
+	border-radius: 0.25em;
+	background: var(--bb-sky-wash);
+	box-shadow: 0 0 0 0.15em var(--bb-sky-wash);
+}
+
+.bb-prose .bb-fn-ref a:focus-visible {
+	border-radius: 0.25em;
+	outline: 2px solid var(--bb-sky);
+	outline-offset: 1px;
+}
+
+/* The notes, after the text they belong to, under a short rule. */
+.bb-prose .bb-notes {
+	margin: 2.4em 0 0;
+	font-size: 0.84em;
+	line-height: 1.6;
+	text-indent: 0;
+	text-align: left;
+	color: var(--bb-text-desc);
+	-webkit-hyphens: manual;
+	hyphens: manual;
+}
+
+.bb-prose .bb-notes::before {
+	content: '';
+	display: block;
+	width: 4.5em;
+	margin-bottom: 0.9em;
+	border-top: 1px solid var(--bb-line-control);
+}
+
+.bb-prose .bb-notes ol {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.bb-prose .bb-notes li {
+	padding-left: 1.7em;
+	text-indent: -1.7em;
+	scroll-margin-top: 96px;
+}
+
+.bb-prose .bb-fn-ref {
+	scroll-margin-top: 96px;
+}
+
+.bb-prose .bb-notes li:target {
+	border-radius: 0.3em;
+	background: var(--bb-sky-wash);
+}
+
+.bb-prose .bb-note-number {
+	display: inline-block;
+	/* The li's 1.7em, in this smaller size. */
+	width: 2.125em;
+	text-indent: 0;
+	font-family: var(--font-ui);
+	font-size: 0.8em;
+	font-weight: 700;
+	font-variant-numeric: lining-nums tabular-nums;
+	color: var(--bb-sky);
+}
+
+.bb-prose .bb-note-back {
+	padding: 0.2em 0.3em;
+	color: var(--bb-sky);
+	font-family: var(--font-ui);
+	text-decoration: none;
+}
+
 .bb-prose mark {
 	padding: 0 0.12em;
 	border-radius: 0.18em;

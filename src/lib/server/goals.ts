@@ -3,8 +3,7 @@ import { and, eq, gte, inArray, isNotNull, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { book, chapter, part, writingDay, writingGoal } from '$lib/server/db/schema';
 import { storyTexts } from '$lib/server/outline';
-import { countWords } from '$lib/reading';
-import { plainText } from '$lib/rich';
+import { storyWords } from '$lib/reading';
 import {
 	TIME_ZONE_COOKIE,
 	addDays,
@@ -27,8 +26,8 @@ export function dayFor(event: RequestEvent, at = new Date()) {
 /** The writer's day right now. */
 export const todayFor = (event: RequestEvent) => dayFor(event);
 
-/** Words in a saved piece of story text, counted as the editor counts them. */
-export const wordsIn = (content: string) => countWords(plainText(content));
+/** Words in a saved piece of story text, counted as the editor counts them (notes too). */
+export const wordsIn = storyWords;
 
 /**
  * Add `delta` words (or take them away) from the writer's tally for `day`. Returns the day's

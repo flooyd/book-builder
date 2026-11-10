@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { StoryTextDoc } from '$lib/story-text.svelte';
-	import { plainText } from '$lib/rich';
+	import { textWithNotes } from '$lib/rich';
 	import { diffCounts, diffText, type Block } from '$lib/diff';
 	import { plural, putJSON, sendJSON } from '$lib/library';
 	import {
@@ -91,8 +91,9 @@
 
 	const selected = $derived(versions?.find((version) => version.id === selectedId) ?? null);
 	const selectedText = $derived(selectedId === null ? null : (texts[selectedId] ?? null));
-	const now = $derived(plainText(doc.content));
-	const blocks = $derived(selectedText ? diffText(plainText(selectedText.content), now) : []);
+	// Footnotes are in the comparison: an edit inside a note is an edit.
+	const now = $derived(textWithNotes(doc.content));
+	const blocks = $derived(selectedText ? diffText(textWithNotes(selectedText.content), now) : []);
 	const counts = $derived(diffCounts(blocks));
 	const unchanged = $derived(blocks.every((block) => block.kind === 'same'));
 

@@ -25,8 +25,9 @@ open the same list by typing `/` at the start of a line. `@tiptap/suggestion` is
 installed for `@`, and `MentionMenu.svelte` shows how a list like that is mounted so it works
 over focus mode.
 
-Worth doing as soon as there are two new things to insert, so with whichever of 22 and 23 comes
-second. Be careful with a bar that floats over selected text
+Worth doing as soon as there are two new things to insert. Footnotes (23) shipped first, with a
+button at the end of the toolbar's last group and Ctrl+Alt+F, so this comes with pictures (22),
+and the footnote button moves into it. Be careful with a bar that floats over selected text
 (`@tiptap/extension-bubble-menu`): the user doesn't like controls that come and go while typing
 (see "Things the user has reacted to" in the `bb-design` skill).
 
@@ -38,8 +39,8 @@ the first letter, so offer that with the first letter's settings as well as on a
 - **On the page:** `font-variant-caps`, `<sup>`, `<sub>`. Check that Newsreader, as Google serves
   it, has real small capitals; a browser fakes them otherwise.
 - **PDF:** the font files in `server/export/fonts` are cut-down pieces, so small capitals there are
-  probably capitals at a smaller `scale`, which a `Run` already has. Raising and lowering needs
-  the lift that footnotes add (idea 23, trap 1).
+  probably capitals at a smaller `scale`, which a `Run` already has. Footnotes added `raise` to a
+  `Run` (lifted by `RISE` in `pdf.ts`); subscript needs the same the other way.
 - **Word:** `docx` has small capitals, superscript and subscript on a run.
 - `@tiptap/extension-superscript` and `-subscript` exist at 3.32.0 (MIT).
 
