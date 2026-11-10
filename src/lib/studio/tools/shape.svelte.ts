@@ -109,7 +109,7 @@ export class ShapeTool implements Tool {
 		const size =
 			shape.kind === 'line'
 				? `${measure(Math.hypot(shape.x2, shape.y2))}`
-				: shape.kind !== 'group' && shape.kind !== 'path'
+				: shape.kind !== 'group' && shape.kind !== 'path' && shape.kind !== 'text'
 					? `${measure(shape.width)} × ${measure(shape.height)}`
 					: '';
 		this.label = { x: press.sx + 16, y: press.sy + 20, text: size };

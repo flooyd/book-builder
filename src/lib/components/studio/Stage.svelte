@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { flushSync, onMount } from 'svelte';
 	import { Renderer } from '$lib/studio/render';
 	import type { Studio, ToolId } from '$lib/studio/studio.svelte';
 	import type { Press, Tool } from '$lib/studio/tools/tool';
 	import Overlay from './Overlay.svelte';
+	import TextEditor from './TextEditor.svelte';
 
 	// The stage: the drawing on a canvas, the tool's marks over it, and the pointer. A press goes to
 	// the tool, except the middle button (pan), two fingers (pinch to zoom and pan) and the wheel
@@ -16,6 +17,7 @@
 	let box = $state<HTMLElement>();
 	let canvas = $state<HTMLCanvasElement>();
 	let probe = $state<HTMLElement>();
+	let editor = $state<ReturnType<typeof TextEditor>>();
 	let renderer: Renderer | null = null;
 	let rect = { left: 0, top: 0 };
 	let fitted = false;
@@ -143,16 +145,31 @@
 		return { distance: Math.hypot(b.x - a.x, b.y - a.y), x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 	}
 
+	/** Typing began with that press: the keyboard goes to it now, while the press is still on. */
+	function startTyping(before: unknown) {
+		if (!studio.typing || studio.typing === before) return;
+		flushSync();
+		editor?.focus();
+	}
+
 	function down(event: PointerEvent) {
 		if (!box) return;
 		const bounds = box.getBoundingClientRect();
 		rect = { left: bounds.left, top: bounds.top };
-		// Keyboard shortcuts belong to the drawing again once it's pressed.
+		const typing = studio.typing;
+		// Keyboard shortcuts belong to the drawing again once it's pressed. (Text being typed is
+		// finished as its box loses the keyboard.)
 		if (document.activeElement instanceof HTMLElement && document.activeElement !== box) {
 			document.activeElement.blur();
 		}
+		studio.endTyping();
 		box.focus({ preventScroll: true });
 		event.preventDefault();
+		// With the text tool, a press away from the text being typed only finishes it.
+		if (typing && studio.tool === 'text' && event.button === 0) {
+			studio.toolId = 'select';
+			return;
+		}
 
 		if (event.pointerType === 'touch') {
 			fingers[event.pointerId] = { x: event.clientX - rect.left, y: event.clientY - rect.top };
@@ -180,7 +197,9 @@
 		driving = tool;
 		const press = pressOf(event);
 		last = { press, pressed: true };
+		const before = studio.typing;
 		driving.down(press);
+		startTyping(before);
 	}
 
 	function move(event: PointerEvent) {
@@ -242,7 +261,9 @@
 
 	function double(event: MouseEvent) {
 		if (event.button !== 0) return;
+		const before = studio.typing;
 		tool.double?.(pressOf(event));
+		startTyping(before);
 	}
 
 	function wheel(event: WheelEvent) {
@@ -301,6 +322,7 @@
 >
 	<canvas bind:this={canvas}></canvas>
 	<Overlay chrome={tool.chrome} />
+	<TextEditor bind:this={editor} {studio} />
 	<span bind:this={probe} class="probe" aria-hidden="true"></span>
 </div>
 

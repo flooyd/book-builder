@@ -1,5 +1,6 @@
 // The art studio's geometry: transforms, Bézier curves, the outline of each kind of shape, and
-// bounds. No DOM, so it can be tested alone. Coordinates are a drawing's pixels, y downwards.
+// bounds. No DOM, so it can be tested alone (a text's box is then estimated: see text.ts).
+// Coordinates are a drawing's pixels, y downwards.
 
 import {
 	IDENTITY,
@@ -9,6 +10,7 @@ import {
 	type Shape,
 	type Subpath
 } from '$lib/drawing';
+import { layoutText } from './text';
 
 export type Point = { x: number; y: number };
 export type Bounds = { minX: number; minY: number; maxX: number; maxY: number };
@@ -434,6 +436,10 @@ export function outline(shape: Shape): Subpath[] {
 			return shape.paths;
 		case 'group':
 			return [];
+		case 'text': {
+			const layout = layoutText(shape);
+			return [rectOutline(layout.width, layout.height, 0)];
+		}
 	}
 }
 
@@ -488,6 +494,18 @@ export function normalize(shape: Shape): Shape {
 			transform: compose({ ...parts, scaleX: 1, scaleY: Math.sign(sy) || 1, shear: 0 })
 		};
 	}
+	if (shape.kind === 'text') {
+		// Letters aren't stretched: the size takes the scale that changed most (a side's handle
+		// changes one), and a mirror stays in the transform.
+		const across = Math.abs(sx);
+		const down = Math.abs(sy);
+		const scale = Math.abs(Math.log(across)) >= Math.abs(Math.log(down)) ? across : down;
+		return {
+			...shape,
+			size: Math.max(1, Math.min(5000, shape.size * scale)),
+			transform: compose({ ...parts, scaleX: 1, scaleY: Math.sign(sy) || 1, shear: 0 })
+		};
+	}
 	const turn = compose({ ...parts, scaleX: 1, scaleY: 1, shear: 0 });
 	const stretch = scaling(sx, sy);
 	switch (shape.kind) {
@@ -515,9 +533,12 @@ export function transformShape(shape: Shape, m: Matrix): Shape {
 	return normalize({ ...shape, transform: multiply(m, shape.transform) });
 }
 
-/** A shape's geometry as a path, for editing its points: it keeps its look, transform and paint. */
+/**
+ * A shape's geometry as a path, for editing its points: it keeps its look, transform and paint.
+ * A text stays a text: it has no points to edit.
+ */
 export function toPath(shape: Shape): Shape {
-	if (shape.kind === 'path' || shape.kind === 'group') return shape;
+	if (shape.kind === 'path' || shape.kind === 'group' || shape.kind === 'text') return shape;
 	const paths = outline(shape);
 	const base = {
 		id: shape.id,

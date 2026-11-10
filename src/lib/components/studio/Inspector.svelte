@@ -1,6 +1,16 @@
 <script lang="ts">
 	import Icon, { type IconName } from '$lib/components/ui/Icon.svelte';
-	import { kindLabel, type LineCap, type LineJoin, type Shape, type Stroke } from '$lib/drawing';
+	import {
+		TEXT_FONTS,
+		kindLabel,
+		type LineCap,
+		type LineJoin,
+		type Shape,
+		type Stroke,
+		type TextAlign,
+		type TextFont,
+		type TextShape
+	} from '$lib/drawing';
 	import {
 		apply,
 		decompose,
@@ -10,7 +20,7 @@
 		scaling,
 		translation
 	} from '$lib/studio/geometry';
-	import type { Studio } from '$lib/studio/studio.svelte';
+	import type { Studio, TextSettings } from '$lib/studio/studio.svelte';
 	import { pencilSettings } from '$lib/studio/tools/pencil.svelte';
 	import { shapeDefaults } from '$lib/studio/tools/shape.svelte';
 	import { selectionFrame } from '$lib/studio/tools/marks';
@@ -19,8 +29,8 @@
 
 	// The properties panel. With something selected: where it is and how big, its own settings
 	// (corners, sides, points, arrowheads), its fill, stroke and opacity, and what can be done to
-	// it. With nothing selected: the drawing's size and ground, and what new shapes are drawn with.
-	// The tool in hand adds its own options at the top.
+	// it, and a text's typeface and spacing. With nothing selected: the drawing's size and ground,
+	// and what new shapes are drawn with. The tool in hand adds its own options at the top.
 	let { studio, side = 'left' }: { studio: Studio; side?: 'left' | 'above' } = $props();
 
 	const shapes = $derived(studio.selected.map((item) => item.shape));
@@ -108,6 +118,34 @@
 		}));
 	}
 
+	// ---- Text ----
+	const texts = $derived(shapes.filter((shape): shape is TextShape => shape.kind === 'text'));
+	const ALIGNS: { value: TextAlign; label: string; icon: IconName }[] = [
+		{ value: 'left', label: 'Align left', icon: 'align-left' },
+		{ value: 'center', label: 'Centre', icon: 'align-center' },
+		{ value: 'right', label: 'Align right', icon: 'align-right' }
+	];
+	const nextText = $derived({ ...studio.textDefaults, size: studio.textSize() });
+	const wordRows = $derived(texts.length ? Math.min(6, texts[0].text.split('\n').length) : 1);
+
+	function changeText(change: Partial<TextSettings>, live: boolean, key: string) {
+		studio.changeText(change, mergeOf(key, live));
+	}
+
+	/** The next text's settings, while the text tool is in hand. */
+	function changeNextText(change: Partial<TextSettings>) {
+		Object.assign(studio.textDefaults, change);
+	}
+
+	function retype(text: string) {
+		// A text can't be emptied from here: it would be dropped, and the field would lose it.
+		if (!text.trim()) return;
+		studio.changeSelected(
+			(shape) => (shape.kind === 'text' ? { ...shape, text } : shape),
+			'inspector-words'
+		);
+	}
+
 	// ---- Tool options ----
 	const TIPS: Partial<Record<string, string>> = {
 		select:
@@ -116,6 +154,7 @@
 			'Drag points or their handles. Double-click a point to make it sharp or smooth; double-click a line to add one.',
 		pen: 'Click for a sharp point, drag for a curve. Click the first point to close; Enter or Esc to finish.',
 		pencil: 'Draw freely; the line becomes smooth curves. End where you began to close it.',
+		text: 'Click and type; Enter starts a new line. Click a text to type into it. Esc or a click away finishes. Drag a corner to change its size.',
 		rect: 'Shift keeps it square; Alt draws from the centre.',
 		ellipse: 'Shift keeps it round; Alt draws from the centre.',
 		polygon: 'Shift keeps it even; Alt draws from the centre.',
@@ -170,6 +209,102 @@
 </script>
 
 <div class="inspector">
+	{#snippet textControls(
+		value: TextSettings,
+		onchange: (change: Partial<TextSettings>, live: boolean, key: string) => void
+	)}
+		<div class="grid">
+			<label class="select wide">
+				<span class="sr-only">Typeface</span>
+				<select
+					value={value.font}
+					title="Typeface"
+					onchange={(event) =>
+						onchange({ font: event.currentTarget.value as TextFont }, false, 'font')}
+				>
+					{#each TEXT_FONTS as font (font.key)}
+						<option value={font.key}>{font.label}</option>
+					{/each}
+				</select>
+			</label>
+			<NumberField
+				label="Size"
+				icon="type"
+				value={value.size}
+				min={1}
+				max={5000}
+				places={1}
+				title="Size"
+				onchange={(size, live) => onchange({ size }, live, 'text-size')}
+			/>
+			<div class="styles">
+				<button
+					type="button"
+					class="icon-button"
+					aria-pressed={value.bold}
+					aria-label="Bold"
+					title="Bold"
+					onclick={() => onchange({ bold: !value.bold }, false, 'bold')}
+				>
+					<Icon name="bold" size={15} />
+				</button>
+				<button
+					type="button"
+					class="icon-button"
+					aria-pressed={value.italic}
+					aria-label="Italic"
+					title="Italic"
+					onclick={() => onchange({ italic: !value.italic }, false, 'italic')}
+				>
+					<Icon name="italic" size={15} />
+				</button>
+			</div>
+			<NumberField
+				label="Line height"
+				icon="line-height"
+				value={value.leading * 100}
+				min={50}
+				max={400}
+				places={0}
+				unit="%"
+				title="Line height"
+				onchange={(leading, live) => onchange({ leading: leading / 100 }, live, 'leading')}
+			/>
+			<NumberField
+				label="Letter spacing"
+				icon="letter-spacing"
+				value={value.tracking * 100}
+				min={-50}
+				max={200}
+				places={0}
+				unit="%"
+				title="Space between letters"
+				onchange={(tracking, live) => onchange({ tracking: tracking / 100 }, live, 'tracking')}
+			/>
+			<div class="aligns wide" role="group" aria-label="Alignment">
+				{#each ALIGNS as align (align.value)}
+					<button
+						type="button"
+						class="icon-button"
+						aria-pressed={value.align === align.value}
+						aria-label={align.label}
+						title={align.label}
+						onclick={() => onchange({ align: align.value }, false, 'align')}
+					>
+						<Icon name={align.icon} size={15} />
+					</button>
+				{/each}
+			</div>
+		</div>
+	{/snippet}
+
+	{#if studio.tool === 'text' && !texts.length}
+		<section aria-labelledby="tool-options">
+			<h3 id="tool-options">New text</h3>
+			{@render textControls(nextText, changeNextText)}
+		</section>
+	{/if}
+
 	{#if studio.tool === 'pencil' || studio.tool === 'polygon' || studio.tool === 'star' || studio.tool === 'rect'}
 		<section aria-labelledby="tool-options">
 			<h3 id="tool-options">{studio.tool === 'pencil' ? 'Pencil' : 'New shapes'}</h3>
@@ -399,6 +534,24 @@
 				</div>
 			{/if}
 		</section>
+
+		{#if texts.length}
+			<section aria-label="Text">
+				<!-- One text is named in the title above; with other shapes, this says which settings these are. -->
+				{#if !single}<h3>Text</h3>{/if}
+				{#if texts.length === 1}
+					<label class="words">
+						<span class="sr-only">Words</span>
+						<textarea
+							value={texts[0].text}
+							rows={wordRows}
+							spellcheck="false"
+							oninput={(event) => retype(event.currentTarget.value)}></textarea>
+					</label>
+				{/if}
+				{@render textControls(texts[0], changeText)}
+			</section>
+		{/if}
 
 		{#if painted.length}
 			<section aria-labelledby="paint-title">
@@ -684,6 +837,41 @@
 	.icon-button:hover {
 		background: var(--bb-hover);
 		color: var(--bb-text-strong);
+	}
+
+	.icon-button[aria-pressed='true'] {
+		background: color-mix(in srgb, var(--studio-accent) 16%, transparent);
+		color: var(--bb-text-strong);
+	}
+
+	.styles,
+	.aligns {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+	}
+
+	.words textarea {
+		box-sizing: border-box;
+		width: 100%;
+		min-height: 34px;
+		max-height: 140px;
+		padding: 7px 9px;
+		border: 1px solid transparent;
+		border-radius: 8px;
+		background: var(--studio-field);
+		color: var(--bb-text);
+		font: 500 13px/1.4 var(--font-ui);
+		resize: vertical;
+	}
+
+	.words textarea:hover {
+		border-color: var(--bb-line-soft);
+	}
+
+	.words textarea:focus {
+		border-color: var(--studio-accent);
+		outline: none;
 	}
 
 	.paint-row {

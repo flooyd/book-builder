@@ -14,9 +14,11 @@ import {
 	type LineShape,
 	type Matrix,
 	type Shape,
-	type Stroke
+	type Stroke,
+	type TextShape
 } from '$lib/drawing';
 import { multiply, outline, pathData } from './geometry';
+import { layoutText, lineStart, setFont } from './text';
 
 export type View = { x: number; y: number; zoom: number };
 
@@ -42,8 +44,12 @@ type Context = CanvasRenderingContext2D;
 
 const paths = new WeakMap<Shape, Path2D>();
 
-/** A shape's outline as a Path2D in its own coordinates, made once per shape. */
+/**
+ * A shape's outline as a Path2D in its own coordinates, made once per shape. A text's is its box,
+ * which changes when its typeface arrives, so it's made each time (it's four corners).
+ */
 export function pathOf(shape: Shape): Path2D {
+	if (shape.kind === 'text') return new Path2D(pathData(outline(shape)));
 	let path = paths.get(shape);
 	if (!path) {
 		path = new Path2D(pathData(outline(shape)));
@@ -112,6 +118,37 @@ function drawLine(ctx: Context, shape: LineShape) {
 	}
 }
 
+/**
+ * A text, line by line, each line placed by its measured width so alignment doesn't depend on the
+ * canvas's own. The outline goes under the letters, so they keep their shape however thick it is.
+ */
+function drawText(ctx: Context, shape: TextShape) {
+	const layout = layoutText(shape);
+	setFont(ctx, shape);
+	ctx.textAlign = 'left';
+	ctx.textBaseline = 'middle';
+	const place = (index: number) => ({
+		x: lineStart(shape, layout, layout.lines[index]),
+		y: (index + 0.5) * layout.lineHeight
+	});
+	if (shape.stroke) {
+		applyStroke(ctx, shape.stroke);
+		layout.lines.forEach((line, index) => {
+			const { x, y } = place(index);
+			if (line.text) ctx.strokeText(line.text, x, y);
+		});
+		ctx.setLineDash([]);
+	}
+	if (shape.fill) {
+		ctx.fillStyle = shape.fill.color;
+		layout.lines.forEach((line, index) => {
+			const { x, y } = place(index);
+			if (line.text) ctx.fillText(line.text, x, y);
+		});
+	}
+	if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+}
+
 /** Draws shapes through m (their parent's place on the canvas), each with its own transform. */
 export function drawShapes(ctx: Context, shapes: Shape[], m: Matrix, alpha = 1) {
 	for (const shape of shapes) {
@@ -127,6 +164,10 @@ export function drawShapes(ctx: Context, shapes: Shape[], m: Matrix, alpha = 1) 
 		ctx.globalAlpha = opacity;
 		if (shape.kind === 'line') {
 			drawLine(ctx, shape);
+			continue;
+		}
+		if (shape.kind === 'text') {
+			drawText(ctx, shape);
 			continue;
 		}
 		const path = pathOf(shape);
@@ -402,6 +443,8 @@ export function hitShape(
 		return ctx.isPointInStroke(path, x, y) ? shape : null;
 	}
 	const path = pathOf(shape);
+	// A text is picked anywhere in its box, not only on its letters.
+	if (shape.kind === 'text') return ctx.isPointInPath(path, x, y) ? shape : null;
 	if (
 		shape.fill &&
 		ctx.isPointInPath(path, x, y, shape.kind === 'path' ? shape.fillRule : 'nonzero')

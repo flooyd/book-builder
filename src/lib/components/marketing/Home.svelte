@@ -554,8 +554,8 @@
 			</h2>
 			<p class="studio-lede">
 				A drawing studio in your browser for covers, portraits, maps and ornaments. Shapes, a pen
-				for curves, a pencil that smooths your line, and layers that blend. Nothing to install, and
-				every change is kept as you go.
+				for curves, a pencil that smooths your line, words in eight typefaces, and layers that
+				blend. Nothing to install, and every change is kept as you go.
 			</p>
 		</div>
 

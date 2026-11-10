@@ -12,6 +12,7 @@
 		{ icon: 'pen-nib' },
 		{ icon: 'pencil' },
 		{ icon: 'star' },
+		{ icon: 'type' },
 		{ icon: 'hand' },
 		{ icon: 'search' }
 	];

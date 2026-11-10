@@ -129,8 +129,61 @@ export type PathShape = ShapeBase &
 	Painted & { kind: 'path'; paths: Subpath[]; fillRule: 'nonzero' | 'evenodd' };
 export type GroupShape = ShapeBase & { kind: 'group'; children: Shape[] };
 
+/**
+ * The typefaces text can be set in: the app's own three, and five more for covers. They load from
+ * Google Fonts on the studio's page (see `TEXT_FONT_SHEET`), and only when a text uses one.
+ */
+export const TEXT_FONTS = [
+	{ key: 'gloock', label: 'Gloock', family: '"Gloock", Georgia, serif' },
+	{ key: 'newsreader', label: 'Newsreader', family: '"Newsreader", Georgia, serif' },
+	{ key: 'playfair', label: 'Playfair Display', family: '"Playfair Display", Georgia, serif' },
+	{ key: 'cinzel', label: 'Cinzel', family: '"Cinzel", Georgia, serif' },
+	{ key: 'grotesk', label: 'Schibsted Grotesk', family: '"Schibsted Grotesk", Arial, sans-serif' },
+	{ key: 'bebas', label: 'Bebas Neue', family: '"Bebas Neue", Impact, sans-serif' },
+	{ key: 'orbitron', label: 'Orbitron', family: '"Orbitron", Arial, sans-serif' },
+	{ key: 'caveat', label: 'Caveat', family: '"Caveat", cursive' }
+] as const;
+export type TextFont = (typeof TEXT_FONTS)[number]['key'];
+const FONT_KEYS = TEXT_FONTS.map((font) => font.key);
+
+/** The five the app doesn't load already; the app's own three are in app.html. */
+export const TEXT_FONT_SHEET =
+	'https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Caveat:wght@400;700&family=Cinzel:wght@400;700&family=Orbitron:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap';
+
+export type TextAlign = 'left' | 'center' | 'right';
+export const MAX_TEXT = 2000;
+
+/**
+ * Lines of text, set from its top left. Its box is as wide as its longest line and as tall as its
+ * lines, measured where it's drawn (see `studio/text.ts`), so it isn't stored. Resizing it scales
+ * its size; it never wraps.
+ */
+export type TextShape = ShapeBase &
+	Painted & {
+		kind: 'text';
+		/** Lines are split at "\n". */
+		text: string;
+		font: TextFont;
+		/** In the drawing's pixels. */
+		size: number;
+		bold: boolean;
+		italic: boolean;
+		align: TextAlign;
+		/** The height of a line, in multiples of the size. */
+		leading: number;
+		/** Space added between letters, in multiples of the size. */
+		tracking: number;
+	};
+
 export type Shape =
-	RectShape | EllipseShape | PolygonShape | StarShape | LineShape | PathShape | GroupShape;
+	| RectShape
+	| EllipseShape
+	| PolygonShape
+	| StarShape
+	| LineShape
+	| PathShape
+	| GroupShape
+	| TextShape;
 export type ShapeKind = Shape['kind'];
 /** The shapes with a box (width and height) as their geometry. */
 export type BoxShape = RectShape | EllipseShape | PolygonShape | StarShape;
@@ -275,6 +328,19 @@ export function cleanName(value: unknown, fallback: string) {
 	if (typeof value !== 'string') return fallback;
 	const name = value.replace(CONTROL, ' ').replace(/\s+/g, ' ').trim();
 	return name ? name.slice(0, MAX_NAME) : fallback;
+}
+
+// eslint-disable-next-line no-control-regex -- control characters are what's being removed
+const TEXT_CONTROL = /[\u0000-\u0009\u000b-\u001f\u007f]/g;
+
+/** A text's words: line breaks kept as "\n", tabs as spaces, other control characters gone. */
+export function cleanText(value: unknown) {
+	if (typeof value !== 'string') return '';
+	return value
+		.replace(/\r\n?/g, '\n')
+		.replace(/\t/g, '  ')
+		.replace(TEXT_CONTROL, '')
+		.slice(0, MAX_TEXT);
 }
 
 /** An id the document hasn't used yet, or a new one. */
@@ -433,6 +499,23 @@ function cleanShape(value: unknown, budget: Budget, depth: number): Shape | null
 			const children = cleanShapes(value.children, budget, depth + 1);
 			return children.length ? { ...base, kind, children } : null;
 		}
+		case 'text': {
+			const text = cleanText(value.text);
+			if (!text.trim()) return null;
+			return {
+				...base,
+				...painted,
+				kind,
+				text,
+				font: pick(value.font, FONT_KEYS, 'gloock'),
+				size: number(value.size, 1, 5000, 48),
+				bold: value.bold === true,
+				italic: value.italic === true,
+				align: pick(value.align, ['left', 'center', 'right'], 'left'),
+				leading: number(value.leading, 0.5, 4, 1.2, 3),
+				tracking: number(value.tracking, -0.5, 2, 0, 3)
+			};
+		}
 		default:
 			budget.shapes++;
 			return null;
@@ -546,5 +629,17 @@ export function kindLabel(shape: Shape) {
 			return 'Path';
 		case 'group':
 			return 'Group';
+		case 'text':
+			return 'Text';
 	}
+}
+
+/** What a shape is called in the layers list: its name, a text's first words, or its kind. */
+export function shapeLabel(shape: Shape) {
+	if (shape.name) return shape.name;
+	if (shape.kind === 'text') {
+		const line = shape.text.trim().split('\n')[0].trim();
+		return line.length > 40 ? `${line.slice(0, 39)}…` : line || 'Text';
+	}
+	return kindLabel(shape);
 }

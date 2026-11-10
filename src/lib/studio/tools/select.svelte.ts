@@ -2,8 +2,8 @@
 // inside a group), drag to move (Shift keeps to a line, Alt moves a copy), drag a handle to
 // resize (Shift keeps the proportions, Alt resizes from the centre), drag just outside a corner to
 // turn (Shift in steps of 15°), drag on empty space to pick everything a box touches. A line has
-// a handle on each end instead. Double-click a group to pick inside it, or a shape to edit its
-// points.
+// a handle on each end instead. Double-click a group to pick inside it, a text to type into it,
+// or a shape to edit its points.
 
 import type { Drawing, LineShape } from '$lib/drawing';
 import { duplicateShapes, locate, outermost, transformShapes, mapShapes } from '../edit';
@@ -63,6 +63,8 @@ type Op =
 			selection: string[];
 			frame: Frame;
 			grab: Point;
+			/** Only text is picked. */
+			texts: boolean;
 	  }
 	| {
 			kind: 'rotate';
@@ -232,7 +234,8 @@ export class SelectTool implements Tool {
 				kind: 'resize',
 				handle: grip.handle,
 				frame,
-				grab: { x: local.x - handle.x, y: local.y - handle.y }
+				grab: { x: local.x - handle.x, y: local.y - handle.y },
+				texts: studio.selected.every((item) => item.shape.kind === 'text')
 			};
 			return;
 		}
@@ -363,7 +366,8 @@ export class SelectTool implements Tool {
 		let sy = reachY ? (local.y - fixedY) / reachY : 1;
 		if (!width) sx = 1;
 		if (!height) sy = 1;
-		if (press.shift) {
+		// Text isn't stretched (its size takes the scale), so its box keeps its proportions.
+		if (press.shift || op.texts) {
 			if (left || right) {
 				if (top || bottom) {
 					const size = Math.max(Math.abs(sx), Math.abs(sy));
@@ -466,6 +470,10 @@ export class SelectTool implements Tool {
 		const inGroup = outer && outer.id !== hit.id && studio.selection.includes(outer.id);
 		if (inGroup) {
 			studio.select([hit.id]);
+			return;
+		}
+		if (hit.kind === 'text') {
+			studio.editText(hit.id, 'all');
 			return;
 		}
 		if (hit.kind !== 'group' && studio.selection.includes(hit.id)) {

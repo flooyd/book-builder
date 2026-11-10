@@ -94,6 +94,28 @@ be picked apart and changed. Nothing is learned or fetched.
 Left out: rolling again in place after a reload (the studio only knows the pictures it made in
 this visit), a seed to share or type in, and a picture made to fit a book (its title, its mood).
 
+### Text, 2026-11-10
+
+The user asked for it after covers shipped: "I want the art studio to have a text feature so the
+user can insert text into the image". It's the first piece of (c).
+
+- **The text tool (T)**: click and type, Enter for a new line; click a text to type into it where
+  it was clicked. Esc, Ctrl+Enter or a click away finishes, and it's the select tool again with
+  the text picked. Double-click a text with the select tool, or press Enter on it, to retype it.
+- **Typed in place**: the letters show as they'll be saved, at any zoom and turned with the text,
+  with the browser's own caret, selecting and keyboards (a phone's, accents, other scripts). All
+  the typing is one undo step, and a text left empty goes.
+- **Eight typefaces**: the app's Gloock, Newsreader and Schibsted Grotesk, and Playfair Display,
+  Cinzel, Bebas Neue, Orbitron and Caveat for covers, loaded only when a text uses one. Size,
+  bold, italic, alignment, line height and letter spacing in the inspector, with the words in a
+  field there too. Fill colours the letters; a stroke outlines them, under the letters.
+- **Resizing scales the size**, from any handle, keeping the proportions, so letters never
+  stretch. A text is picked anywhere in its box, and is named in the layers list by its words.
+
+Left out: text that wraps in a box, text on a path, a different style for some of the words,
+other typefaces (the writer's own, or more of Google's), turning text into paths to edit its
+letters (it needs the font's outlines), and kerning or other OpenType features by hand.
+
 Left out of (a), for now:
 
 - ~~**Saving to the art shelf**~~ came with 18's covers on 2026-11-10: "Save to shelf" in the bar
@@ -147,9 +169,9 @@ version worth showing; it needs idea 18 to save.
 
 ### c. Finishing tools
 
-- **Text** in the app's own typefaces, for labels on a map or words in a sigil. A cover's title
-  isn't set here: idea 26 sets it over the art, so it stays sharp, and follows the book's title
-  when that changes.
+- ~~**Text**~~ shipped 2026-11-10 (see "Text" under Built), in eight typefaces: labels on a map,
+  words in a sigil, and now a cover's title lettered by hand. Idea 26's cover designer would still
+  set a title over the art that follows the book's title when it changes.
 - **Gradients**, linear and radial, as a fill or a stroke.
 - **Path operations:** unite, subtract, intersect and exclude.
 - **Align and distribute**, **snapping** (to a grid, to guides, to other shapes' edges and

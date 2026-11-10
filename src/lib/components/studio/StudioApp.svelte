@@ -3,9 +3,11 @@
 	import { beforeNavigate } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import Icon from '$lib/components/ui/Icon.svelte';
+	import { TEXT_FONT_SHEET } from '$lib/drawing';
 	import { readDraft, writeDraft, writePixels, type DraftInfo } from '$lib/studio/draft';
 	import { thumbnail } from '$lib/studio/render';
 	import { Studio, type ToolId } from '$lib/studio/studio.svelte';
+	import { onFontsLoaded } from '$lib/studio/text';
 	import { makeTools, toolForKey } from '$lib/studio/tools';
 	import type { Tool } from '$lib/studio/tools/tool';
 	import Inspector from './Inspector.svelte';
@@ -62,8 +64,11 @@
 			tools = makeTools(next);
 			phase = 'ready';
 		})();
+		// A typeface a text was waiting for has arrived: measure and draw it again.
+		const stop = onFontsLoaded(() => studio?.refreshText());
 		return () => {
 			gone = true;
+			stop();
 		};
 	});
 
@@ -166,6 +171,7 @@
 	function choose(id: ToolId) {
 		if (!studio || !tools) return;
 		if (id !== studio.toolId) tools[studio.toolId].leave?.();
+		studio.endTyping();
 		studio.toolId = id;
 		studio.hoverId = null;
 		if (narrow) sheet = null;
@@ -211,9 +217,14 @@
 					else if (studio.toolId !== 'select') choose('select');
 				}
 				break;
-			case 'Enter':
-				if (!tool.finish?.()) return;
+			case 'Enter': {
+				if (tool.finish?.()) break;
+				// Enter on a text types into it.
+				const only = studio.selected.length === 1 ? studio.selected[0].shape : null;
+				if (only?.kind !== 'text') return;
+				studio.editText(only.id, 'all');
 				break;
+			}
 			case 'Delete':
 			case 'Backspace':
 				studio.deleteSelection();
@@ -344,6 +355,8 @@
 
 <svelte:head>
 	<title>{title.trim() || 'Untitled drawing'} · Studio · Book Builder</title>
+	<!-- Text's typefaces beyond the app's own. Only those a text uses are downloaded. -->
+	<link rel="stylesheet" href={TEXT_FONT_SHEET} />
 </svelte:head>
 
 <div class="studio" class:narrow>

@@ -7,6 +7,7 @@ import { PencilTool } from './pencil.svelte';
 import { PenTool } from './pen.svelte';
 import { SelectTool } from './select.svelte';
 import { ShapeTool } from './shape.svelte';
+import { TextTool } from './text.svelte';
 import type { Tool } from './tool';
 import { HandTool, ZoomTool } from './view.svelte';
 
@@ -23,6 +24,7 @@ export const TOOL_INFO: Record<ToolId, ToolInfo> = {
 	star: { id: 'star', label: 'Star', key: '', icon: 'star' },
 	line: { id: 'line', label: 'Line', key: 'L', icon: 'slash' },
 	arrow: { id: 'arrow', label: 'Arrow', key: 'Shift+L', icon: 'arrow-up-right' },
+	text: { id: 'text', label: 'Text', key: 'T', icon: 'type' },
 	hand: { id: 'hand', label: 'Hand', key: 'H', icon: 'hand' },
 	zoom: { id: 'zoom', label: 'Zoom', key: 'Z', icon: 'search' }
 };
@@ -37,6 +39,7 @@ export const RAIL: (ToolId | 'shapes')[] = [
 	'pen',
 	'pencil',
 	'shapes',
+	'text',
 	'hand',
 	'zoom'
 ];
@@ -53,6 +56,7 @@ export function makeTools(studio: Studio): Record<ToolId, Tool> {
 		star: new ShapeTool(studio, 'star'),
 		line: new ShapeTool(studio, 'line'),
 		arrow: new ShapeTool(studio, 'arrow'),
+		text: new TextTool(studio),
 		hand: new HandTool(studio),
 		zoom: new ZoomTool(studio)
 	};

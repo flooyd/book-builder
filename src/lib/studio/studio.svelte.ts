@@ -14,6 +14,7 @@ import {
 	MAX_SIDE,
 	MIN_SIDE,
 	allShapes,
+	newId,
 	newLayer,
 	paintLayerLimit,
 	shapeCount,
@@ -25,6 +26,7 @@ import {
 	type Paint,
 	type Shape,
 	type Stroke,
+	type TextShape,
 	type VectorLayer
 } from '$lib/drawing';
 import {
@@ -68,6 +70,7 @@ export type ToolId =
 	| 'star'
 	| 'line'
 	| 'arrow'
+	| 'text'
 	| 'hand'
 	| 'zoom';
 
@@ -76,6 +79,24 @@ export type Style = {
 	fill: string | null;
 	stroke: string | null;
 	strokeWidth: number;
+};
+
+/** A text's settings, for the next text and the inspector. */
+export type TextSettings = Pick<
+	TextShape,
+	'font' | 'size' | 'bold' | 'italic' | 'align' | 'leading' | 'tracking'
+>;
+
+/** Text being typed into on the stage. */
+export type Typing = {
+	id: string;
+	/** The drawing and selection before it began: the whole of the typing is one undo step. */
+	origin: Drawing;
+	selection: string[];
+	/** Made for this typing, so it leaves nothing behind if nothing's typed. */
+	fresh: boolean;
+	/** Where the caret starts: a place in the words, or all of them picked. */
+	caret: number | 'all';
 };
 
 type Entry = {
@@ -112,6 +133,18 @@ export class Studio {
 	hoverId = $state<string | null>(null);
 	/** A shape being drawn, shown on the active layer before it's added. */
 	sketch = $state.raw<Shape | null>(null);
+	/** Text being typed into on the stage, if any. */
+	typing = $state.raw<Typing | null>(null);
+	/** What the next text is set in. A size of 0 is a twelfth of the drawing's shorter side. */
+	textDefaults = $state<TextSettings>({
+		font: 'gloock',
+		size: 0,
+		bold: false,
+		italic: false,
+		align: 'left',
+		leading: 1.2,
+		tracking: 0
+	});
 	/** A paint layer's pixels, by layer id. Kept for a deleted layer too, so undo can bring it back. */
 	readonly paint = new SvelteMap<string, HTMLCanvasElement>();
 	/** Counts changes to paint layers' pixels, so the stage knows to draw again. */
@@ -196,6 +229,8 @@ export class Studio {
 	}
 
 	undo() {
+		// Undo while typing takes back the typing (or, if nothing was typed, the empty text).
+		if (this.endTyping() === 'dropped') return;
 		const entry = this.#undo.at(-1);
 		if (!entry) return;
 		this.#undo = this.#undo.slice(0, -1);
@@ -207,6 +242,7 @@ export class Studio {
 	}
 
 	redo() {
+		this.endTyping();
 		const entry = this.#redo.at(-1);
 		if (!entry) return;
 		this.#redo = this.#redo.slice(0, -1);
@@ -321,6 +357,102 @@ export class Studio {
 		const { doc, layerId } = this.vectorLayerForDrawing();
 		this.activeLayerId = layerId;
 		this.apply(insertShapes(doc, layerId, [shape]), [shape.id]);
+	}
+
+	// ---- Text --------------------------------------------------------------------------------------------
+
+	/** The size a new text is set in. */
+	textSize() {
+		return (
+			this.textDefaults.size ||
+			Math.max(8, Math.round(Math.min(this.doc.width, this.doc.height) / 12))
+		);
+	}
+
+	/**
+	 * A new, empty text with the middle of its first line at (x, y), typed into at once. It's
+	 * coloured with the fill for new shapes (or the stroke's colour, with no fill), and no outline.
+	 */
+	addText(x: number, y: number) {
+		this.endTyping();
+		const origin = this.doc;
+		const selection = this.selection;
+		const settings = { ...this.textDefaults, size: this.textSize() };
+		const color = this.style.fill ?? this.style.stroke ?? '#1d2142ff';
+		const shape: TextShape = {
+			id: newId(),
+			name: '',
+			transform: translation(x, y - (settings.size * settings.leading) / 2),
+			opacity: 1,
+			hidden: false,
+			locked: false,
+			fill: solid(color),
+			stroke: null,
+			kind: 'text',
+			text: '',
+			...settings
+		};
+		const { doc, layerId } = this.vectorLayerForDrawing();
+		this.activeLayerId = layerId;
+		this.live(insertShapes(doc, layerId, [shape]), [shape.id]);
+		this.typing = { id: shape.id, origin, selection, fresh: true, caret: 0 };
+	}
+
+	/** Starts typing into a text that's there already. */
+	editText(id: string, caret: Typing['caret'] = 'all') {
+		const found = locate(this.doc, id);
+		if (found?.shape.kind !== 'text' || found.shape.locked || found.layer.locked) return;
+		if (this.typing?.id === id) return;
+		this.endTyping();
+		this.select([id]);
+		this.typing = { id, origin: this.doc, selection: this.selection, fresh: false, caret };
+	}
+
+	/** The words of the text being typed into, as they change. Kept as a draft, but not yet a step. */
+	type(text: string) {
+		const typing = this.typing;
+		if (!typing) return;
+		this.live(
+			mapShapes(this.doc, [typing.id], (shape) =>
+				shape.kind === 'text' ? { ...shape, text } : shape
+			)
+		);
+		this.revision++;
+	}
+
+	/**
+	 * Stops typing: what was typed becomes one undo step. A text left empty goes, and one made for
+	 * this typing then leaves no step at all ('dropped').
+	 */
+	endTyping(): 'kept' | 'dropped' | null {
+		const typing = this.typing;
+		if (!typing) return null;
+		this.typing = null;
+		const found = locate(this.doc, typing.id);
+		const empty = found?.shape.kind === 'text' && !found.shape.text.trim();
+		if (empty && typing.fresh) {
+			this.live(typing.origin, typing.selection);
+			this.select(typing.selection.filter((id) => locate(typing.origin, id)));
+			this.revision++;
+			return 'dropped';
+		}
+		if (empty) this.live(removeShapes(this.doc, [typing.id]), []);
+		this.settle(typing.origin, typing.selection);
+		return 'kept';
+	}
+
+	/** Changes the selected texts' settings, and the next text's. */
+	changeText(change: Partial<TextSettings>, merge?: string) {
+		Object.assign(this.textDefaults, change);
+		this.changeSelected(
+			(shape) => (shape.kind === 'text' ? { ...shape, ...change } : shape),
+			merge
+		);
+	}
+
+	/** A typeface arrived: texts are measured again, so their boxes and the picture follow. */
+	refreshText() {
+		this.doc = { ...this.doc };
 	}
 
 	/** The fill and stroke a new shape gets, from the style. */

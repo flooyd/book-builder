@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import Icon, { type IconName } from '$lib/components/ui/Icon.svelte';
-	import { BLENDS, kindLabel, type Layer, type Shape } from '$lib/drawing';
+	import { BLENDS, shapeLabel, type Layer, type Shape } from '$lib/drawing';
 	import type { Studio } from '$lib/studio/studio.svelte';
 	import NumberField from './NumberField.svelte';
 
@@ -31,7 +31,8 @@
 		star: 'star',
 		line: 'slash',
 		path: 'pen-nib',
-		group: 'group'
+		group: 'group',
+		text: 'type'
 	};
 
 	const BLEND_NAMES: Record<string, string> = {
@@ -167,9 +168,9 @@
 					class="name"
 					aria-pressed={picked}
 					onclick={(event) => pickShape(event, shape)}
-					ondblclick={() => startRename(shape.id, shape.name || kindLabel(shape))}
+					ondblclick={() => startRename(shape.id, shapeLabel(shape))}
 				>
-					{shape.name || kindLabel(shape)}
+					{shapeLabel(shape)}
 				</button>
 			{/if}
 			<button

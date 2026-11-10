@@ -13,15 +13,15 @@ time the studio reaches the server. What's built, what's left and why are in `bb
 
 ## Where the code is
 
-| Layer    | Files                                                                                                                                                                                                                                                    |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Format   | `lib/drawing.ts`: types, limits, `newDrawing`, `PRESETS`, `cleanDrawing` (the allow-list). Imports nothing.                                                                                                                                              |
-| Engine   | `lib/studio/`: `geometry.ts` (matrices, bounds, outlines, `normalize`), `fit.ts` (pencil curve fitting), `edit.ts` (immutable changes), `render.ts`, `color.ts`, `numbers.ts` (sums in fields), `draft.ts` (IndexedDB), `surprise.ts` (random pictures). |
-| State    | `lib/studio/studio.svelte.ts`: the `Studio` class (drawing, selection, view, tool, style, undo).                                                                                                                                                         |
-| Tools    | `lib/studio/tools/`: `tool.ts` (the interface, cursors), `marks.ts`, `path-edit.ts`, one file per tool, `index.ts` (names, keys, icons, `makeTools`).                                                                                                    |
-| Screen   | `lib/components/studio/`: `StudioApp` (root, keys, drafts), `Stage` (canvas and pointer), `Overlay` (the tool's marks), `ToolRail`, `StudioBar`, `Inspector`, `LayersPanel`, `ColorPicker`, `ColorWell`, `NumberField`.                                  |
-| Pages    | `routes/studio` (`Shelf`, `NewDrawing`) and `routes/studio/draft/[key]` (`StudioApp`). The root layout treats the drawing page like reading mode: no app header, no dock.                                                                                |
-| Homepage | `marketing/StudioShowcase.svelte`, section 04 (see `bb-homepage`).                                                                                                                                                                                       |
+| Layer    | Files                                                                                                                                                                                                                                                                              |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Format   | `lib/drawing.ts`: types, limits, `newDrawing`, `PRESETS`, `cleanDrawing` (the allow-list). Imports nothing.                                                                                                                                                                        |
+| Engine   | `lib/studio/`: `geometry.ts` (matrices, bounds, outlines, `normalize`), `fit.ts` (pencil curve fitting), `edit.ts` (immutable changes), `render.ts`, `text.ts` (setting text), `color.ts`, `numbers.ts` (sums in fields), `draft.ts` (IndexedDB), `surprise.ts` (random pictures). |
+| State    | `lib/studio/studio.svelte.ts`: the `Studio` class (drawing, selection, view, tool, style, undo).                                                                                                                                                                                   |
+| Tools    | `lib/studio/tools/`: `tool.ts` (the interface, cursors), `marks.ts`, `path-edit.ts`, one file per tool, `index.ts` (names, keys, icons, `makeTools`).                                                                                                                              |
+| Screen   | `lib/components/studio/`: `StudioApp` (root, keys, drafts), `Stage` (canvas and pointer), `Overlay` (the tool's marks), `TextEditor` (where text is typed), `ToolRail`, `StudioBar`, `Inspector`, `LayersPanel`, `ColorPicker`, `ColorWell`, `NumberField`.                        |
+| Pages    | `routes/studio` (`Shelf`, `NewDrawing`) and `routes/studio/draft/[key]` (`StudioApp`). The root layout treats the drawing page like reading mode: no app header, no dock.                                                                                                          |
+| Homepage | `marketing/StudioShowcase.svelte`, section 04 (see `bb-homepage`).                                                                                                                                                                                                                 |
 
 ## The drawing
 
@@ -29,7 +29,8 @@ time the studio reaches the server. What's built, what's left and why are in `bb
   layer is only its settings: its pixels live beside the document, by layer id (`Studio.paint`,
   and the `pixels` store in IndexedDB), so a drawing holds no addresses.
 - **Shapes**: rect, ellipse, polygon, star (each a box from 0,0 to width,height), line (two ends
-  and arrowheads), path (subpaths of anchors), group. Every shape has a `transform` matrix,
+  and arrowheads), path (subpaths of anchors), group, text (see "Text" below). Every shape has a
+  `transform` matrix,
   `opacity`, `hidden`, `locked`, `name`. Paths' anchors are tuples
   `[x, y, inX, inY, outX, outY, kind]`, kind 0 corner, 1 smooth, 2 symmetric.
 - **Colours** are `#rrggbbaa` strings, always eight digits, lower case.
@@ -114,6 +115,45 @@ time the studio reaches the server. What's built, what's left and why are in `bb
   turned with it, or the box round several. Resizing scales about the frame's top left in the
   frame's own space.
 
+## Text
+
+- **A text is lines, set from its top left** (`TextShape` in `drawing.ts`): the words (lines split
+  at `
+`), one of `TEXT_FONTS` (the app's Gloock, Newsreader and Schibsted Grotesk, and Playfair
+  Display, Cinzel, Bebas Neue, Orbitron and Caveat), a size in drawing pixels, bold, italic,
+  alignment, line height and letter spacing (both in multiples of the size). It never wraps.
+- **Its box isn't stored.** `layoutText` in `text.ts` measures each line on a canvas, cached per
+  shape like `pathOf`; the box is the longest line by the lines' height, and `outline` returns it,
+  so bounds, handles and hit-testing (anywhere in the box) work as for a rectangle. Without a canvas
+  (a test) widths are estimated.
+- **Typefaces load when a text first uses one**, through `document.fonts.load` (the five the app
+  doesn't load come from `TEXT_FONT_SHEET`, a stylesheet only the drawing page links). Until then
+  the browser measures a stand-in, so when one arrives every layout is dropped and
+  `studio.refreshText()` gives the drawing a new identity, which redraws it and moves its handles.
+  A text's `pathOf` is made fresh each time for the same reason.
+- **Drawing it** (`drawText` in `render.ts`): each line placed by its measured width (the canvas's
+  `letterSpacing` adds space after the last letter too, which the measure takes off), outline
+  first and letters over it, so a thick outline doesn't eat into them.
+- **Resizing scales the size**, never the letters: `normalize` gives a text's size the scale that
+  changed most (a side's handle changes one) and keeps a mirror in the transform; the select tool
+  keeps a text-only selection's proportions without Shift. The points tool leaves text alone.
+- **Typing** happens in `TextEditor`, a textarea over the text, turned with it, its letters clear
+  so the canvas shows the real ones, and sized in screen pixels (only the turn is in its
+  transform) so the caret stays a pixel wide at any zoom. It gives the caret, selecting, a phone's
+  keyboard and other scripts. `studio.typing` says what's being typed into; `type()` changes the
+  words with `live` (and bumps `revision`, so the draft is kept), and `endTyping()` makes it all
+  one undo step. A text left empty goes, and one made for that typing leaves no step at all. Undo,
+  picking a tool, Esc, Ctrl+Enter and any press on the stage end typing.
+- **Ways in**: the text tool (T) clicks a new text into place (the middle of its first line at the
+  click) or into an existing one with the caret where it was clicked (`caretAt`); the select tool
+  double-clicks one, and Enter types into the one selected, both with all its words picked. The
+  stage hands the keyboard over during the press itself (`flushSync`, then `focus()`), or a phone
+  won't show its keyboard.
+- **The inspector** has the words (a field, for keyboards and phones), typeface, size, bold, italic,
+  line height, letter spacing and alignment, for the selection and, with the text tool and nothing
+  picked, for the next text (`studio.textDefaults`; a size of 0 means a twelfth of the drawing's
+  shorter side). A new text takes the fill for new shapes and no outline.
+
 ## Surprise me
 
 - **`surprise.ts`** makes a random picture the size of a drawing: `surprise(width, height, options)`
@@ -166,7 +206,12 @@ Downloading at twice the size is offered only while that stays inside `MAX_PIXEL
   pen and the pencil; select, move, undo, typed sums, turning; the colour picker; a reload
   keeping everything; Alt-drag copies; a full-size PNG. Surprise me: every kind from the menu,
   rolling in place, undo and redo through rolls, rolling in place after the layer moved to the
-  bottom, a new layer once drawn on, Start with a surprise, the bar at 1024 and 390.
+  bottom, a new layer once drawn on, Start with a surprise, the bar at 1024 and 390. Text: typing
+  two lines with the tool's key, Esc, one undo step for the typing and redo, an empty text leaving
+  nothing, a typeface, bold and centring from the inspector, a corner resize scaling the size in
+  proportion, double-click to retype, a reload, Save to shelf with the text in the picture, 1440
+  and 390 in both themes; and the cleaner with hostile settings and words (`test-lib.mjs`, 10
+  tests).
 
 ## Things that tripped it up
 
