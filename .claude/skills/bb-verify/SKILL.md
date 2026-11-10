@@ -1,6 +1,6 @@
 ---
 name: bb-verify
-description: Run Book Builder locally against a throwaway Postgres (never the user's Neon database) and check changes in a real headless browser, covering sign-up of a test user, seeding a long sample book, screenshots at desktop and phone widths in both themes, console-error and sideways-overflow checks, and cleaning up afterwards. Use this whenever you need to run, start, preview, screenshot or test the app, confirm a UI or behaviour change actually works, test a migration, or reproduce a bug, and before telling the user a visible feature is done.
+description: Run Book Builder locally against a throwaway Postgres (never the user's Neon database) and check changes in a real headless browser, covering sign-up of a test user, seeding a long sample book, screenshots at desktop and phone widths in both themes, console-error and sideways-overflow checks, checking exported files, running tests on the app's own modules with no test runner in the repo, and cleaning up afterwards. Use this whenever you need to run, start, preview, screenshot or test the app, write or run a test, confirm a UI or behaviour change actually works, test a migration, or reproduce a bug, and before telling the user a visible feature is done.
 ---
 
 # Book Builder: run it and see it
@@ -19,6 +19,7 @@ Bundled scripts (in `scripts/` next to this file):
 | `word-check.ps1`      | Opens a `.docx` in real Word, read-only. Lists its contents and the page each heading really lands on, and can save Word's own PDF.                                                                                                                                     |
 | `serve-func.mjs`      | Runs one built Vercel function from a copy outside the repo, the closest thing to Vercel here.                                                                                                                                                                          |
 | `measure-ambient.mjs` | Renders every ambient sound offline in real Chrome and prints its loudness, peaks, stereo width, loudest jump and spectrum by octave, with a spectrogram sheet.                                                                                                         |
+| `test-lib.mjs`        | Runs test files against the app's own modules (`$lib/rich`, `$lib/bible`, `$lib/diff` and the like) with nothing but what's in `node_modules`. Run it where it is, from the repo root.                                                                                  |
 
 ## 1. A throwaway database
 
@@ -139,7 +140,42 @@ the build has run (see "Adding a package" in the `bb-stack` skill).
 
 Stop those ports when you're done.
 
-## 7. Before saying it's done
+## 7. Testing the rules, without a browser
+
+The repo has no test runner, and a good half of the app's rules live in modules that import only
+each other, on purpose, so they can be tested alone. Write the test as ordinary TypeScript with
+`node:test`, importing from `$lib` as the app does, and keep it in your scratch folder:
+
+```ts
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { cleanValue } from '$lib/rich';
+
+test('a node the allow-list does not know is dropped on save', () => {
+	const value = '{"type":"doc","content":[{"type":"figure","attrs":{"src":"https://x.example"}}]}';
+	assert.equal(cleanValue(value, 'story'), '');
+});
+```
+
+```bash
+node .claude/skills/bb-verify/scripts/test-lib.mjs "<scratch>/tests/rich.test.ts"   # from the repo root; takes several files
+```
+
+- **What it can load.** `rich`, `bible`, `diff`, `story-versions`, `insights`, `speakers`,
+  `word-map`, `word-cloud`, `connections`, `goals`, `headings`, `cover`, `confirm`, `status`,
+  `export`, `profile` and `outline-text`, and `countWords` from `reading` (checked 2026-11-09).
+- **What it can't.** Anything that reaches `$app/...`, `$env/...` or a `.svelte` file. That's
+  `library.ts`, `series.ts` and everything under `lib/server`, the export's `manuscript.ts`
+  included. The error is `Cannot find package '$app'` (or `'$env'`). Test those through the dev
+  server.
+- **When to bother.** Whenever a rule decides what's kept, counted or shown: the cleaner in
+  `rich.ts` above all, since it's what stands between a request and a public page. Try the
+  hostile cases, not only the happy one.
+- **The tests aren't kept.** They live in the scratch folder and go with it, so say in the
+  wrap-up what was tested and how many passed. If the user wants them kept in the repo, that's
+  theirs to decide.
+
+## 8. Before saying it's done
 
 - Run `yarn run check` and `yarn lint`, and make sure both pass.
 - Look at the screenshots, and say what you checked and anything you couldn't.

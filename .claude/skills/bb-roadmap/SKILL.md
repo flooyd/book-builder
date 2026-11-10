@@ -1,20 +1,25 @@
 ---
 name: bb-roadmap
-description: Book Builder's numbered list of major feature ideas, with the status of each, what depends on what, and the recommended order. Use this whenever the user asks what to build next, asks for ideas or a roadmap, refers to an idea by number ("start on 6", "build 2"), or when a feature on this list ships or changes so the list stays true. It's the working list; the homepage's Coming soon shelf is the public one.
+description: Book Builder's numbered list of major feature ideas, with the status of each, what depends on what, the recommended order, and a notes file for each idea holding its plan and open questions before it's built or how it works afterwards. Use this whenever the user asks what to build next, asks for ideas or a roadmap, refers to an idea by number ("start on 6", "build 23"), or asks for something that's on the list by name (footnotes, pictures in the text, uploading artwork or a cover, file storage or Vercel Blob, the art studio, drawing or painting, designing a cover, ornaments, find and replace, import, EPUB, comments, co-authors and so on), and whenever a feature on the list ships or changes so the list stays true. It's the working list; the homepage's Coming soon shelf is the public one.
 ---
 
 # Book Builder: the roadmap
 
 The user picks from this list by number ("4, 8, and 10", "begin on 6"), so a number means the
-idea with that number here. If they name a number, start from its entry.
+idea with that number here. If they name a number, or ask for something the list already holds,
+start from its row, and read its notes file in `ideas/` before anything else.
 
 ## Keeping this list true
 
 - **Numbers never change.** Don't renumber when something ships or is dropped. Mark it, and give
-  new ideas the next free number.
+  new ideas the next free number. The next free number is 27.
 - **Update it in the same commit as the work.** When a feature ships, set its status and write
   down what was left out, so the leftovers aren't lost.
 - **Adding ideas.** Add them when the user asks for ideas or agrees to one. Say which are new.
+- **Notes files.** An idea that needs more than its row has a file, `ideas/NN-short-name.md` (see
+  "Notes on each idea" below). Before it's built the file is a plan, and says so at the top: check
+  it against the code, and where it says a choice is the user's, ask them. When the idea ships,
+  rewrite the file as the record of what was built and how it works.
 - **The public shelf is separate.** `src/lib/components/marketing/soon.ts` is what visitors see.
   Only add to it when the user asks, and take an entry off when it ships (see the `bb-homepage`
   skill). An idea here isn't a promise there. The shelf holds 1 at the moment: Find and replace
@@ -25,30 +30,60 @@ idea with that number here. If they name a number, start from its entry.
 
 Statuses: **Not started**, **In progress**, **Shipped**, **Dropped**.
 
+## Where the user is heading
+
+On 2026-11-09 the user set the direction for what comes next:
+
+> I want the editor to be more sophisticated and allow images in page, footnotes, etc. I want the
+> user to be able to upload or create custom art for their book.
+
+That's the section "The page and its art" below: 18 (uploading), 22 (pictures in the text), 23
+(footnotes), 24 (the "etc."), 25 (creating) and 26 (how a book looks). 18 was already on the list
+as Images, and the others were added that day.
+
+Asked the open questions, the user decided, also on 2026-11-09:
+
+- **Files go in Vercel Blob.** The key will come later, in `.env` (see idea 18).
+- **No generated art**, "at this time". The art studio is to be "like a painter/svg/vector creator
+  and to have sophisticated tools so the user can make their own art" (see idea 25). So the
+  cover designer and ornaments that were part of 25 that morning moved to 26.
+
 ## The list
 
 ### Protect the writer's work
 
-| #   | Idea               | Status      | What it is                                                                                                                                                                                                                                                                                                                                                                                      |
-| --- | ------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Version history    | Shipped     | Every chapter's and story-text part's earlier text, kept as it's saved: compare a version with the text now, word by word, keep one for good with a name, and bring one back with an undo. See "Idea 1" below. Left out: history in focus mode, comparing two old versions with each other, versions of descriptions and notes, and a way back for a deleted chapter (its versions go with it). |
-| 2   | Export             | Shipped     | PDF and Word of a book or one part, from the book page and the part page, for the owner. Left out: EPUB, the drawn cover in Word, and other scripts in the PDF (it covers Latin, Greek, Cyrillic and Vietnamese; the rest become `?` with a note, and Word keeps them).                                                                                                                         |
-| 3   | Manuscript import  | Not started | Upload a Word document and split it into parts and chapters. "Import from text" only takes outlines, so an existing novel has to be pasted in chapter by chapter.                                                                                                                                                                                                                               |
-| 4   | Accounts and email | Shipped     | Confirming a new account's email, password reset and account deletion, with email through Resend. Left out: changing the email address, a "your account was deleted" email, sign-in with Google and the like, and a way back for a deleted account. Needs a domain verified in Resend (`EMAIL_FROM`) before anyone but the Resend account's owner gets mail.                                    |
-| 5   | Offline writing    | Not started | Keep drafts on the device and sync them when back online, which also helps on phones. There's no service worker and nothing is stored locally.                                                                                                                                                                                                                                                  |
+| #   | Idea               | Status      | What it is                                                                                                                                                                                                                                                                                                                                                                  |
+| --- | ------------------ | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Version history    | Shipped     | Every chapter's and story-text part's earlier text, kept as it's saved: compare a version with the text now, word by word, keep one for good with a name, and bring one back with an undo. Left out: history in focus mode, comparing two old versions with each other, versions of descriptions and notes, and a way back for a deleted chapter (its versions go with it). |
+| 2   | Export             | Shipped     | PDF and Word of a book or one part, from the book page and the part page, for the owner. Left out: EPUB, the drawn cover in Word, and other scripts in the PDF (it covers Latin, Greek, Cyrillic and Vietnamese; the rest become `?` with a note, and Word keeps them). How it works is the `bb-export` skill.                                                              |
+| 3   | Manuscript import  | Not started | Upload a Word document and split it into parts and chapters. "Import from text" only takes outlines, so an existing novel has to be pasted in chapter by chapter.                                                                                                                                                                                                           |
+| 4   | Accounts and email | Shipped     | Confirming a new account's email, password reset and account deletion, with email through Resend. Left out: changing the email address, a "your account was deleted" email, sign-in with Google and the like, and a way back for a deleted account. Needs a domain verified in Resend (`EMAIL_FROM`) before anyone but the Resend account's owner gets mail.                |
+| 5   | Offline writing    | Not started | Keep drafts on the device and sync them when back online, which also helps on phones. There's no service worker and nothing is stored locally.                                                                                                                                                                                                                              |
 
 ### Build the world
 
-| #   | Idea                           | Status      | What it is                                                                                                                                                                                                                                                                                                                                     |
-| --- | ------------------------------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 6   | Mentions and story bible       | In progress | Links from story text to the bible, typed with `@` or found by name, and a real page for every character, place and system. See "Idea 6" below for what's done and what's left.                                                                                                                                                                |
-| 7   | Find and replace across a book | Not started | Rename a character everywhere, with a preview of each match. Mentions follow a rename, but a name written out doesn't, and since names link themselves by spelling, an old name left in the text stops linking, counting and filling casts. This closes that gap.                                                                              |
-| 8   | Series                         | Shipped     | Books grouped in a reading order, with a story bible worked out from their entries, an owner's page and a public page on the author profile, plus links between books in reading mode. Left out: an omnibus export, "Book 2 of…" on exported title pages, and series-wide goals, outlines and timelines.                                       |
-| 9   | Plot threads                   | Not started | A grid of subplots against chapters, showing where a thread goes quiet.                                                                                                                                                                                                                                                                        |
-| 10  | Scenes                         | Not started | Smaller units inside chapters, each with its own point of view, location and status. A big change to both the data and the editor.                                                                                                                                                                                                             |
-| 11  | Timeline                       | Not started | Put events on an in-world calendar and warn when a character is in two places at once.                                                                                                                                                                                                                                                         |
-| 18  | Images                         | Not started | Portraits for characters, maps for places, and uploaded covers. Needs file storage (Vercel Blob or similar): the app's first running cost that grows with every writer, so it needs a size cap. The last big piece of 6.                                                                                                                       |
-| 19  | Connections map                | Shipped     | The bible's connections drawn as a web, for a book or a whole series, at `/book/[id]/bible/connections` and `/series/[id]/bible/connections`: see "Idea 19" below. Left out: saving the arrangement to the account (it's kept in the browser), editing a label in place, choosing a connection's kind by hand, and saving the map as an image. |
+| #   | Idea                           | Status      | What it is                                                                                                                                                                                                                                                                                                                |
+| --- | ------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 6   | Mentions and story bible       | In progress | Links from story text to the bible, typed with `@` or found by name, and a real page for every character, place and system. Left: portraits and maps (which wait on 18), mentions in descriptions and notes, and spotting names that aren't in the bible yet.                                                             |
+| 7   | Find and replace across a book | Not started | Rename a character everywhere, with a preview of each match. Mentions follow a rename, but a name written out doesn't, and since names link themselves by spelling, an old name left in the text stops linking, counting and filling casts. This closes that gap.                                                         |
+| 8   | Series                         | Shipped     | Books grouped in a reading order, with a story bible worked out from their entries, an owner's page and a public page on the author profile, plus links between books in reading mode. Left out: an omnibus export, "Book 2 of…" on exported title pages, and series-wide goals, outlines and timelines.                  |
+| 9   | Plot threads                   | Not started | A grid of subplots against chapters, showing where a thread goes quiet.                                                                                                                                                                                                                                                   |
+| 10  | Scenes                         | Not started | Smaller units inside chapters, each with its own point of view, location and status. A big change to both the data and the editor.                                                                                                                                                                                        |
+| 11  | Timeline                       | Not started | Put events on an in-world calendar and warn when a character is in two places at once.                                                                                                                                                                                                                                    |
+| 19  | Connections map                | Shipped     | The bible's connections drawn as a web, for a book or a whole series, at `/book/[id]/bible/connections` and `/series/[id]/bible/connections`. Left out: saving the arrangement to the account (it's kept in the browser), editing a label in place, choosing a connection's kind by hand, and saving the map as an image. |
+
+### The page and its art
+
+What the user asked for on 2026-11-09. None of it is built, and each has a plan in `ideas/`.
+
+| #   | Idea                 | Status      | What it is                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| --- | -------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 18  | Artwork              | Not started | Uploading: a place for a writer's pictures to live, an art shelf that shows what's there and how much room is left, and its first uses, which are a cover of the writer's own, portraits for characters and maps for places. It was called Images until 2026-11-09. Files go in Vercel Blob (the user's choice); the key isn't in `.env` yet, and the per-writer cap is still to decide.                                                                 |
+| 22  | Pictures in the page | Not started | A picture set in story text, with a caption: as wide as the text, smaller, or with a page to itself. It has to reach the editor, both views of reading mode, share links, the PDF and the Word file. Needs 18.                                                                                                                                                                                                                                           |
+| 23  | Footnotes            | Not started | A note tied to a place in the text: a number in the line, and the note at the foot of the page in print or a tap away on a screen. Needs nothing first, and costs nothing to run.                                                                                                                                                                                                                                                                        |
+| 24  | More kinds of text   | Not started | The smaller pieces of a fuller editor, each able to ship alone and asked for by letter: (a) an Insert menu, (b) small capitals, superscript and subscript, (c) kinds of quote (epigraph, verse, letter), (d) links, (e) page breaks, (f) tables.                                                                                                                                                                                                         |
+| 25  | The art studio       | Not started | Creating: a painting and vector drawing program in the browser, with the tools a designer expects. (a) The artboard and vector tools: shapes, the pen and point editing, fill and stroke, layers, undo, saving to the art shelf. (b) Paint: pressure-sensitive brushes, eraser, fill, blend modes. (c) Finishing: text, gradients, path operations, snapping, mirror drawing. (d) Working from pictures, and SVG out. Saving needs 18. No generated art. |
+| 26  | Book design          | Not started | How a book looks: (a) a cover designer (layout, colours, typeface, the title set over art from the shelf or the studio), and (b) ornaments for scene breaks and headings, chosen for the book. A cover without a picture is a design, not a file, so it needs no storage.                                                                                                                                                                                |
 
 ### Writing and revising
 
@@ -67,16 +102,48 @@ Statuses: **Not started**, **In progress**, **Shipped**, **Dropped**.
 
 ### Insight
 
-| #   | Idea                | Status      | What it is                                                                                                                                                                                                                                                                                                                                                                   |
-| --- | ------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 15  | Manuscript insights | Shipped     | A page for each book at `/book/[id]/insights`: chapter pacing, the words a writer leans on, who drifts off the page, and a "Worth a look" list, all with no AI. Left out: hiding a word from the lists, -ly adverbs, close repeats (echoes), names missing from the bible, insights across a series, and highlighting uses in the editor.                                    |
-| 16  | AI continuity check | Not started | Ask questions about a book and flag contradictions with the bible. Opt-in, and probably on the writer's own API key: the running cost matters on a free app, and many writers object to AI. Ask before starting.                                                                                                                                                             |
-| 17  | Word maps           | Shipped     | A word cloud of the whole book at `/book/[id]/word-map`, and one for each character from the lines they speak, all with no AI: see "Idea 17" below. Left out: a map for one chapter or part, comparing two characters side by side, hiding a word, adding a name to the bible from the page, linking a first-person narrator to their entry, and saving a cloud as an image. |
+| #   | Idea                | Status      | What it is                                                                                                                                                                                                                                                                                                                                              |
+| --- | ------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 15  | Manuscript insights | Shipped     | A page for each book at `/book/[id]/insights`: chapter pacing, the words a writer leans on, who drifts off the page, and a "Worth a look" list, all with no AI. Left out: hiding a word from the lists, -ly adverbs, close repeats (echoes), names missing from the bible, insights across a series, and highlighting uses in the editor.               |
+| 16  | AI continuity check | Not started | Ask questions about a book and flag contradictions with the bible. Opt-in, and probably on the writer's own API key: the running cost matters on a free app, and many writers object to AI. Ask before starting.                                                                                                                                        |
+| 17  | Word maps           | Shipped     | A word cloud of the whole book at `/book/[id]/word-map`, and one for each character from the lines they speak, all with no AI. Left out: a map for one chapter or part, comparing two characters side by side, hiding a word, adding a name to the bible from the page, linking a first-person narrator to their entry, and saving a cloud as an image. |
+
+## Notes on each idea
+
+Read an idea's file before starting on it or changing how it works.
+
+| #   | File                                   | What's in it                                                                                           |
+| --- | -------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 1   | `ideas/01-version-history.md`          | Record: when a version is kept, how old ones thin out, what it costs.                                  |
+| 6   | `ideas/06-mentions-and-story-bible.md` | What's done and what's left.                                                                           |
+| 17  | `ideas/17-word-maps.md`                | Record: how the app tells who's speaking, how that was measured, and its limits.                       |
+| 18  | `ideas/18-artwork.md`                  | Plan: Vercel Blob and its limits, setting up the store, the cap, how uploads and deletes should work.  |
+| 19  | `ideas/19-connections-map.md`          | Record: kinds of connection, the layout, the arrangement.                                              |
+| 22  | `ideas/22-pictures-in-the-page.md`     | Plan: the node, and nine traps in today's code, among them that a picture-only chapter is thrown away. |
+| 23  | `ideas/23-footnotes.md`                | Plan: the node, where the note goes on each surface, and why the PDF is the hard part.                 |
+| 24  | `ideas/24-more-kinds-of-text.md`       | Plan: the six pieces, a to f.                                                                          |
+| 25  | `ideas/25-art-studio.md`               | Plan: the tools, a to d, drafts and saving, the drawing format, pen input, memory, libraries.          |
+| 26  | `ideas/26-book-design.md`              | Plan: the cover designer and ornaments, and why a cover is a design rather than a file.                |
 
 ## Recommended order
 
-Find and replace (7): it's the last thing on the public shelf, and it matters more now that names
-link themselves (see 7). Email (4) is in now, which opens up 12, 13 and 14.
+For the direction the user set on 2026-11-09:
+
+1. **Footnotes (23).** It can start today: no storage, no running cost and nothing to decide
+   first. It's also the first new kind of thing in story text since mentions, so it finds
+   whatever is awkward about adding one (the cleaner, both reading views, both exports) before
+   pictures raise the stakes.
+2. **Artwork (18).** Storage is decided. Build it on the stand-in that keeps files in a scratch
+   folder; it can ship once the key is in Vercel, and the per-writer cap has an answer.
+3. **The art studio (25)**, piece a first, then b, c and d. It saves to 18's shelf, so it comes
+   after, though its tools can be started alongside.
+4. **Pictures in the page (22)**, and the Insert menu (24a) with whichever of 22 and 23 comes
+   second.
+5. **Book design (26)** and the rest of 24, as the user asks for them.
+
+Still owed apart from that: Find and replace (7) is the one thing on the public shelf, and it
+matters more now that names link themselves (see 7). It needs nothing else, so it can come at any
+point. Email (4) is in, which opens up 12, 13 and 14.
 
 So far the user has chosen 6 first (2026-11-01), then Export (2) the same day, Series (8),
 Insights (15) and Word maps (17), names that link themselves (part of 6), Version history (1)
@@ -85,126 +152,21 @@ on 2026-11-04, Connections map (19) on 2026-11-06, and Accounts and email (4) on
 ## What depends on what
 
 - **Email (4):** needed for 13 and 14, and for comment alerts in 12.
-- **Images (18):** needed for character portraits, uploaded covers and maps, and so for the rest
-  of 6.
+- **Artwork (18):** needed for 22, for saving anything made in the studio (25), for a picture on a
+  designed cover (26a), and for portraits and maps, which are the rest of 6. Files go in Vercel
+  Blob, and its Hobby limits (2,000 uploads a month across the site) shape 25's saving too.
+- **The art studio (25):** what it makes are pictures on 18's shelf. Book design (26) sets a
+  cover's title over the studio's art, and can use an ornament drawn in it.
+- **Footnotes (23):** gives the PDF a way to raise a character off the line, which superscript and
+  subscript in 24b reuse.
+- **A new kind of thing in story text (22, 23, most of 24):** each has to be read by everything
+  that reads a document. That's exports (2) today, and find and replace (7), import (3), notes to
+  self (20) and scenes (10) when they're built. Whichever is built later has to learn about the
+  other.
 - **Connections map (19):** draws the `entry_link` rows that each entry's page already makes.
 - **Mentions (6):** the character-tracking parts of 11 and 15 work best on top of it.
 - **Insights (15):** 17 reuses its counting, and 21 draws its beats on the pacing chart. The
   per-character map also leans on the names and aliases in the story bible (6).
-
-## Idea 6: what's done and what's left
-
-Done:
-
-- Places, as a third kind of entry beside characters and systems.
-- `@` mentions in story text, in the editor and in focus mode, with short names.
-- A story bible page per book, and a page for every entry with details, notes, connections and
-  "Appears in".
-- Hover cards while writing. Mentions are plain words in reading mode and on share links.
-- A cast for places and systems: chosen in the outline's details panel, joined by a first mention,
-  and filtered by in the outline.
-- Names that link themselves (2026-11-04). In the editor, a name, alias, first or last name from
-  the book's bible links as it's typed. The links are editor decorations, never saved, so reading
-  mode and share links can't see them. Written names count in "Appears in" and the bible's
-  counts, and a name written in a chapter for the first time adds its entry to the cast.
-  Chapters saved before then keep the casts they had. The user decided a one-off fill for them
-  isn't needed, so don't offer one.
-
-Left:
-
-- **Images:** portraits and maps, now idea 18.
-- **Mentions in descriptions and notes:** they only work in story text so far.
-- **Spotting names not in the bible yet:** a capitalised name that keeps turning up could be
-  offered as a new entry, in the editor or on the insights page (15 left this out too).
-
-## Idea 19: how the map is drawn
-
-The rules are in `lib/connections.ts` (type imports only, so it can be tested on its own), and
-the page is `lib/components/bible/ConnectionsPage.svelte` with `ConnectionsMap`,
-`ConnectionsPanel` and `ConnectionsList`.
-
-- **What the server does.** One query per page load (`connectionsIn` in `lib/server/bible.ts`):
-  every connection touching an entry in the book or series, found through the link tables and the
-  `entry_link` indexes. Everything else happens in the browser, as the user prefers.
-- **Kinds.** A line's colour comes from its label, by word lists in `relationKind`: family, then
-  rivals, then allies, first match wins, so "Estranged sister of" is family and "Sworn enemy of" a
-  rival. Anything else ("Captain of", "Owes") is other. The colours are the `--bb-tie-*` tokens.
-- **Layout.** A force layout with no randomness, so a web always comes out the same. Lines pull
-  towards a length that leaves room for their label, entries push apart (more sideways than up and
-  down, for their names), and entries keep off lines that aren't theirs. Webs up to 60 entries are
-  laid out from five starts and the one with the fewest crossings and hidden names wins. On random
-  test webs: 25 entries in about 15 ms, 250 in about 200 ms.
-- **Arrangement.** Entries the writer drags (or moves with the arrow keys) stay where they're put,
-  in `localStorage` under `bb-connections-book-<id>` or `-series-<id>`. New entries find a place
-  among them without moving anything. Tidy up lays the whole web out afresh, with an Undo.
-- **Visiting entries.** A connection to an entry outside the book or series brings that entry in
-  with a dashed outline, "From another book".
-- **Phones.** A chosen entry opens in a sheet over the page. The panel under the map stays in the
-  flow, so opening the sheet never changes the page's height or scrolls it.
-
-## Idea 1: how versions are kept
-
-The rules are in `lib/story-versions.ts` (no imports), the server side in
-`lib/server/story-versions.ts`, and the window in `lib/components/story/VersionHistory.svelte`.
-
-- **When.** A save keeps the text it replaces when the newest version is ten minutes old or more,
-  and always before a cut of 100 words or more, so a slip costs ten minutes of work at worst. A
-  restore always keeps the text it replaces, which is what its Undo puts back.
-- **Thinning.** Every version from the last two days, then the last of each day for a month, then
-  the last of each week, counted in UTC. One the writer keeps (a `label`, even an empty one) never
-  goes.
-- **What it costs.** One indexed read per save. A copy and the thinning happen only when a version
-  is kept. Each version is a whole copy of the text, which Postgres compresses. The comparison runs
-  in the browser (`lib/diff.ts`, Myers' algorithm, paragraphs then words), so the server only ever
-  sends the text.
-- **Goals.** A restore counts toward today's words only when the version was kept today: then it
-  undoes today's edits. An older one would count old words as new.
-
-## Idea 17: telling who's speaking
-
-The user asked for two maps: the whole book with no AI, and the whole book split by character.
-They expected the second to need AI, so that it wouldn't take a huge list of words to look for,
-"unless you think it's not necessary". Decided on 2026-11-02: it isn't, for a first version, and
-that version shipped the same day. The rules are in `lib/speakers.ts`.
-
-- **No list of speech verbs.** The names are already in the story bible. In
-  `"How are you doing?" Will inquired.`, a known name or alias next to the quotation marks says who
-  it is, whatever the verb is.
-- **In order of trust** (`How` in the code):
-  1. `named`: a name beside the words, with the article or title it comes with (`said the Hatter`,
-     `Captain Halley asked`), or `I said` for the narrator. A paragraph ending in a colon, comma or
-     dash goes by who its last sentence is about.
-  2. `nearby`: the subject of the sentence next to the line, or the one person the paragraph's
-     narration mentions, if they're also its subject. Across a paragraph break it needs a he or she
-     tag that fits. A pronoun that clashes overrules it, and nobody can address themselves.
-  3. `turns`: unbroken talk between exactly two people, followed from lines it's sure of, names
-     used in address and he or she. It only runs if the sure lines either side agree, and stops
-     for a third person within four paragraphs or a tag it can't place.
-- **Never guess.** Anything still uncertain goes under "Not sure who", where the writer can read
-  it. A character's map with a stranger's words in it is worse than a smaller map.
-- **He and she** aren't in the story bible, so `pronounsOf` reads them from the book: narration
-  about one person, counting he, she, himself, herself and titles. His and her were too noisy.
-- **Names beside lines that aren't in the bible** are collected and offered as ones to add. A tag
-  with an unknown name also stops the guessing around it.
-- **Names are not words.** The user's rule, from 2026-11-02: if a character is in the bible or
-  linked with an @, they should be on the cloud without anyone adding them. So people are tallied
-  by name, apart from ordinary words, and keep a place on the book's cloud however rarely they're
-  named. A character who never appears in the text isn't drawn: there's nothing to size them by.
-  A name that's an everyday word (Hope) also picks up that word where it opens a sentence, since a
-  capital proves nothing there. Questions are the one case told apart: "Will she come?", "May I?"
-- **Tried and dropped.** Giving an untagged line to the one person the paragraph before was about
-  scored 0 of 10 in the blind test, because that line is usually the other person answering.
-- **How it was measured.** Hiding the tags of known lines in four public-domain novels and seeing
-  if the rules put them back: `named` 55 of 55, `turns` 65 of 68. That's on lines where the answer
-  is known, so it's a good sign and not a promise. Share of spoken words placed: Alice in
-  Wonderland 70%, The Secret Adversary 41%, The Adventures of Sherlock Holmes 33%, Pride and
-  Prejudice 32%. The low ones are long stretches of untagged talk, and clients nobody has listed.
-- **Known limits.** Quoted thoughts count as speech. Scene breaks don't reach `plainText`, so an
-  exchange can run across one. Someone speaking two paragraphs in a row can flip the turns that
-  follow. A first-person narrator is "The narrator", not their entry.
-- **The tests** aren't in the repo, which has no test runner. They bundle these modules with
-  esbuild and were run from a scratch folder: 47 on the rules and 45 on the maps and cloud.
-- **AI, if ever.** Only for what's left, opt-in, on the writer's own key, for the same reasons as 16. Don't promise it, or its absence, on the public shelf.
 
 ## Earlier ideas that shipped
 

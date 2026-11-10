@@ -6,8 +6,9 @@ description: Book Builder's tech stack, project layout and code conventions (Sve
 # Book Builder: stack and conventions
 
 Book Builder is a free, open-source workshop for long-form stories: books hold parts, parts
-hold chapters (or their own story text), and characters and systems (magic, politics, trade)
-can belong to several books. It's deployed on Vercel from `main`.
+hold chapters (or their own story text), books can be grouped into series, and the story bible's
+characters, places and systems (magic, politics, trade) can belong to several books. It's
+deployed on Vercel from `main`.
 
 ## The stack
 
@@ -18,7 +19,8 @@ can belong to several books. It's deployed on Vercel from `main`.
 | Auth            | Better Auth with the SvelteKit cookies plugin                                  | `src/lib/server/auth.ts`; `hooks.server.ts` puts `locals.user` / `locals.session`. |
 | Rich text       | Tiptap **3.32.0, pinned exactly** (every `@tiptap/*` package the same version) | See the `bb-rich-text` skill.                                                      |
 | Email           | Resend's REST API through `fetch`, no package                                  | `src/lib/server/email.ts`; `RESEND_API_KEY`, `EMAIL_FROM` (a verified domain).     |
-| Export          | PDFKit, fontkit and hyphen (PDF), docx (Word)                                  | See "Adding a package" below: PDFKit's `@noble` versions clash with Better Auth's. |
+| Export          | PDFKit, fontkit and hyphen (PDF), docx (Word)                                  | See the `bb-export` skill, and "Adding a package" below for the `@noble` clash.    |
+| Tests           | None in the repo                                                               | `test-lib.mjs` in the `bb-verify` skill runs scratch tests on `$lib` modules.      |
 | Motion          | `motion-components` custom elements                                            | Registered in `$lib/motion.ts` after hydration.                                    |
 | Deploy          | `@sveltejs/adapter-vercel` 6.x, runtime `nodejs24.x`                           | Stay on adapter 6.x: 7.x needs SvelteKit 3.                                        |
 | Package manager | **Yarn 1** (`yarn.lock`)                                                       | Don't add a `package-lock.json`.                                                   |
@@ -54,9 +56,9 @@ src/
   routes/                  thin route files; pages hand off to components in $lib/components
     api/...                JSON endpoints (+server.ts) used by the client
   lib/
-    components/<area>/     book, chapter, part, library, outline, reader, rich, story,
-                           profile, marketing, ui
-    server/                db/, auth, ownership checks, per-feature server helpers
+    components/<area>/     auth, bible, book, chapter, goals, insights, library, marketing,
+                           outline, part, profile, reader, rich, series, story, ui
+    server/                db/, auth, ownership checks, per-feature server helpers, export/
     styles/                tokens.css (design tokens), global.css, prose.css (story text)
     *.ts / *.svelte.ts     shared client logic; .svelte.ts when it uses runes
 drizzle/manual/            hand-written SQL migrations, 0001_... upwards
@@ -99,7 +101,8 @@ client, `sendJSON` / `putJSON` in `$lib/library.ts` throw an `Error` carrying th
 
 ### Client state
 
-- **Library stores.** `$lib/stores` holds books, parts, chapters, characters and systems. `loadLibrary()` fills them, and after a save the client updates the stores rather than refetching everything (e.g. `touchLibrary`).
+- **Library stores.** `$lib/stores` holds books, series, parts, chapters, characters, places, systems and the writing goals. `loadLibrary()` fills them, and after a save the client updates the stores rather than refetching everything (e.g. `touchLibrary`).
+- **Rules live in modules that import only each other.** `rich`, `bible`, `diff`, `insights`, `speakers`, `connections`, `goals`, `headings`, `story-versions` and others import nothing from SvelteKit, so the browser and the server share them and they can be tested alone (see the `bb-verify` skill). Keep them that way: no `$app`, `$env` or store imports in a module that holds rules.
 - **Per-request state.** Theme and app header state are classes with `$state` fields (`ThemeState`, `AppHeaderState`), provided through Svelte context so each server request gets its own.
 - **Header crumbs.** Pages set the signed-in header's crumbs with `useAppHeader` from `$lib/app-header.svelte.ts`.
 
@@ -113,7 +116,7 @@ The code reads like a careful book: plain words, comments that explain _why_. Ma
 - **Props.** Write `let { a, b = 1 }: { a: string; b?: number } = $props();` with an inline type, documenting a prop with `/** */` where it needs it.
 - **Derived values.** Use `$derived` and `$derived.by`. Only use `$effect` for real side effects, and use `untrack` inside one when it should only react to a few inputs.
 - **Exported functions.** A component can export functions (`export function step() {}`), and the parent reaches them through `bind:this` typed as `ReturnType<typeof Component>`.
-- **Domain words.** User-facing copy and comments use the app's words: book, part, chapter, story text, description, outline, cast, character, system.
+- **Domain words.** User-facing copy and comments use the app's words: book, series, part, chapter, story text, description, outline, cast, story bible, character, place, system. In code, a character, place or system is an entry.
 
 ## Lint rules that bite
 

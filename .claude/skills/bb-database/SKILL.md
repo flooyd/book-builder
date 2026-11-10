@@ -111,9 +111,10 @@ in the Neon database so visitors can see a finished book without signing up:
   Tamsin, and the system Starsinging, all from the sample universe in the `bb-homepage` skill.
 - **Login.** The password was generated once and saved as `DEMO_AUTHOR_EMAIL` / `DEMO_AUTHOR_PASSWORD`
   in `.env` (gitignored). Never print it. Sign-up is open, so don't rely on the email being unguessable.
-- **Rebuilding it.** `scripts/seed-demo-author.mjs` copies _The Long Light_ from a throwaway database
-  (build one with the `bb-verify` skill and its `seed-long-book.py`) into `DATABASE_URL`, replacing
-  the demo user and everything it owns, and sets a new password. Run it from the repo root with
+- **Rebuilding it.** `scripts/seed-demo-author.mjs`, in this skill's folder, copies _The Long Light_
+  from a throwaway database (build one with the `bb-verify` skill and its `seed-long-book.py`) into
+  `DATABASE_URL`, replacing the demo user and everything it owns, and sets a new password. Run it
+  from the repo root as `node .claude/skills/bb-database/scripts/seed-demo-author.mjs`, with
   `SOURCE_DATABASE_URL`, `DATABASE_URL` and optionally `ENV_FILE` set. Try it on a throwaway target
   first, then run it on Neon only when the user asks. It only ever deletes the one demo user.
 - **Don't** use the demo account for experiments. Make a test user on the throwaway database instead.

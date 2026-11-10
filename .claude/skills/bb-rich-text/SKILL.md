@@ -1,6 +1,6 @@
 ---
 name: bb-rich-text
-description: How formatted text works in Book Builder, covering the stored value format (plain text or Tiptap JSON), $lib/rich.ts (parse, clean, toHTML, plainText), the ink and highlight palettes, first-letter (drop cap) styles, @ mentions, prose.css, and the RichEditor, RichText and RichInline components on Tiptap 3.32. Use this whenever a task touches story text, descriptions, the editor or its toolbar, formatting, paste, word counts, drop caps, rendering text in reading mode or focus mode, or seeding text, even if the user only says "the editor" or "the text".
+description: How formatted text works in Book Builder, covering the stored value format (plain text or Tiptap JSON), $lib/rich.ts (parse, clean, toHTML, plainText), the ink and highlight palettes, first-letter (drop cap) styles, @ mentions, prose.css, the RichEditor, RichText and RichInline components on Tiptap 3.32, and the full list of places that must change when story text gains a new kind of block, inline node or mark. Use this whenever a task touches story text, descriptions, the editor or its toolbar, formatting, paste, word counts, drop caps, rendering text in reading mode or focus mode, or seeding text, and before adding anything new to what the editor can hold (a picture, a footnote, a link, a table, a new style), even if the user only says "the editor" or "the text".
 ---
 
 # Book Builder: rich text
@@ -32,7 +32,8 @@ used for bios).
 ### Palettes, not arbitrary colours
 
 - **Colours.** Text colours (`INKS`) and highlights (`HIGHLIGHTS`) are named palette entries stored as `var(--ink-*)` / `var(--mark-*)`, so they adapt to light and dark. Paste keeps only palette colours, never `rgb(...)` or hex from other apps. Sizes (`SIZES`) and fonts (`FONTS`) are fixed lists too.
-- **New styles.** To add a colour or size, extend the list in `rich.ts`, the cleaning rules and the tokens (`--ink-*` in `tokens.css`) together.
+- **"Any colour".** The colour, highlight and first-letter menus also have a colour picker, and what it stores is `#rrggbb`, which the cleaner accepts. Such a colour is the same in both themes, so it may be hard to read in one of them. That's the writer's choice. Don't build anything that assumes every stored colour is a palette variable.
+- **New styles.** To add a colour or size, extend the list in `rich.ts`, the cleaning rules and the tokens (`--ink-*` in `tokens.css`) together, and the export's tables (see the `bb-export` skill).
 
 ### Blocks and headings
 
@@ -68,11 +69,67 @@ rather than the entry's own, and it may carry marks.
   - boxed: `(lines - 1) * 1.4em + 1em`
 - **Line-height.** If you change `.bb-prose` line-height, re-measure in a browser that the letter spans exactly 2, 3 and 4 lines. Don't guess.
 
+## Adding a kind of node or mark
+
+Story text is read in many more places than the editor, and nearly all of them skip what they
+don't know without an error. So something new (a picture, a footnote, a link, a new mark) can
+look finished in the editor and be missing everywhere else, or be thrown away by the next save.
+Go down the whole list. Plans for pictures and footnotes are in the `bb-roadmap` skill (ideas 22
+and 23).
+
+1. **The allow-list, in `rich.ts`.** `cleanBlocks` for a block, `cleanInline` for an inline node,
+   `cleanMarks` for a mark. Keep only the attributes you name, with values you've checked.
+   Whatever isn't there is dropped on every save. Decide what a description does with it too:
+   `cleanInline` is given the `kind`.
+2. **Its words, in `rich.ts`.** `textOf` and `blockLines` decide what `plainText` returns. A new
+   block that holds text directly must be in `BLOCK_TYPES`, or its words are gone from every
+   count. Decide on purpose whether its words count, because `plainText` is what all of these
+   read: word counts and writing goals, Insights, word maps and who's speaking, "Appears in" and
+   the casts that fill from names, the outline's text export, and the comparison in version
+   history. `plainText` takes a third argument that stands in for a mention; something similar
+   may suit a node whose words shouldn't be read as the story.
+3. **Whether anything is there, in four places.** `isEmpty` in `rich.ts` counts words and scene
+   breaks and nothing else, so text holding only something new is stored as `''`. Reading mode
+   (`Reader.svelte` and `BookView.svelte`) and the export (`hasStoryText`) ask the same thing with
+   `plainText(text).trim()` and would leave the chapter out.
+4. **The page, in `rich.ts`.** `blockHTML`, `inlineNodeHTML` or `textHTML`, which make `toHTML`:
+   reading mode, share links, every `RichText`, and version history. Escape every string, and
+   write attribute values only from the allow-list. Anything a reader's browser would load or
+   follow (an address, a link) must be one the cleaner has checked, since shared books are
+   public.
+5. **The editor.** The extension in `extensions.ts` (a Tiptap package pinned to 3.32.0, or our own
+   as `mention.ts` is), a control in `Toolbar.svelte`, and paste: `cleanPastedHTML` decides what
+   survives from another app. Whatever the editor can make, the cleaner must keep, and the
+   reverse.
+6. **How it looks, in `prose.css`,** once, for the editor, both reading views, focus mode and the
+   homepage samples. Check it at night and on paper.
+7. **The book view.** Each chapter is set in CSS columns one page wide and measured in a hidden
+   copy to count its pages (`reader/book-layout.ts`). Something that changes size after that, or
+   can't break across a column, moves every page after it. Give it its size up front and say how
+   it breaks.
+8. **Both exported files.** They read the document themselves, not through `toHTML`:
+   `manuscript.ts`, `pdf.ts` and `word.ts`. See the `bb-export` skill.
+9. **Saving, on the server.** If it points at something a writer owns, check that on save, as
+   `ownedMentions` does for mentions. If readers shouldn't get it, take it out in `readableBook`,
+   as `withoutMentions` does.
+10. **Old text.** Both stored forms are valid forever. Text is cleaned whenever it's shown as well
+    as when it's saved, and a restored version is cleaned again. So taking a kind of node off
+    the allow-list later hides it everywhere at once, and deletes it the next time that text is
+    saved.
+11. **Samples and seeds.** `seed-long-book.py` in the `bb-verify` skill, and the homepage's editor
+    picture if the user wants it shown.
+
+Test the cleaner before trusting it: `test-lib.mjs` in the `bb-verify` skill runs a test file
+against `$lib/rich` in a second or two. The cases that matter are the hostile ones: an attribute
+that isn't on the list, a value of the wrong type, the node inside a description, the node as
+the only thing in the text.
+
 ## Exports
 
 `lib/server/export/manuscript.ts` reads the document itself rather than going through `toHTML`, so
 a new node, mark, colour, size or font has to be added there and in `pdf.ts` and `word.ts`. Its
 colour tables hold the light values of `--ink-*` and `--mark-*`, because a page is always paper.
+The `bb-export` skill has the rest.
 
 ## `prose.css`
 

@@ -22,8 +22,9 @@ book).
   - Lines: `--bb-line-faint`, `--bb-line-soft`, `--bb-line-mid`, `--bb-line`, `--bb-line-control`, `--bb-line-dashed`.
   - Blues: `--bb-royal` (primary buttons, white text passes AA), `--bb-sky` (accents, links, focus).
   - Text: `--bb-text-strong`, `--bb-text`, `--bb-text-label`, `--bb-text-read`, `--bb-text-desc`, `--bb-text-2`, `--bb-text-3`, `--bb-text-4`.
-  - Status: `--bb-coral*`, `--bb-amber`.
+  - Status: `--bb-coral*`, `--bb-amber`, `--bb-amber-wash`.
   - Formatted-text palettes: `--ink-*`, `--mark-*`.
+  - Kinds of connection on the connections map: `--bb-tie-family`, `-allies`, `-rivals`, `-other`.
   - Shadows: `--bb-drop`, `--shadow-card`, `--shadow-modal`, `--focus-ring`.
 - **Paper.** `--bb-paper`, `--bb-paper-line`, `--bb-paper-ink`, `--bb-paper-muted` are the same in both themes.
 
@@ -45,8 +46,9 @@ custom property is declared**, not where it is used. Consequences:
 | Titles, numbers, drop caps              | `--font-display` | Gloock                              |
 | Story text, descriptions, italic blurbs | `--font-read`    | Newsreader (optical sizes, italics) |
 | UI                                      | `--font-ui`      | Schibsted Grotesk                   |
+| "Typewriter" text in the editor         | `--font-mono`    | The device's own monospace          |
 
-- **Font loading.** Fonts load from Google Fonts in `src/app.html`. A new weight or family has to be added to that URL.
+- **Font loading.** Fonts load from Google Fonts in `src/app.html`. A new weight or family has to be added to that URL, and to the exports, which carry their own copies (see the `bb-export` skill).
 - **Overlines.** Small uppercase labels ("PART ONE", "CHAPTER 2") use `--font-ui`, weight 700, size around 0.62–0.7em, letter-spacing 0.18–0.3em, colour `--bb-sky` or `--bb-text-3`.
 - **Radii.** `--r-chip` 8, `--r-control` 12 (buttons, inputs), `--r-row` 14, `--r-card` 20, `--r-modal` 24, `--r-pill`.
 - **Story text.** It's styled once in `prose.css` (`.bb-prose`) and shared by the editor, reading mode and focus mode. Don't restyle paragraphs locally. See the `bb-rich-text` skill.
@@ -67,6 +69,10 @@ custom property is declared**, not where it is used. Consequences:
   - `Pill`, `Kbd`, `Wordmark`, `ThemeToggle`.
   - `AppHeader`: crumbs come from `useAppHeader`.
   - `CommandDock`, `CreateModal`.
+- **Shared, but kept in a feature's folder**:
+  - `Segmented` (in `components/insights`): a row of choices where one is always picked, with optional counts. Takes `options`, `label` and a bound `value`. The insights pages, the connections map and version history all use it.
+  - `Menu` (in `components/rich`): a small panel in the top layer under its button, which the parent supplies as `<button popovertarget={id}>`. The toolbar's colour and first-letter menus and focus mode's menus use it. Being in the top layer, it shows over focus mode.
+  - `AuthShell` (in `components/auth`): the brand panel and form styles of the log-in pages.
 
 Reach for these before writing new ones, and match their look when you must write new ones.
 
@@ -92,7 +98,7 @@ Reach for these before writing new ones, and match their look when you must writ
 ## UI copy
 
 - **Voice.** Plain, warm and short, in sentence case. Say what happens ("Saved", "Turn the page", "Back to the book"), not system words ("Success", "Submit", "Execute").
-- **Nouns.** Use the app's nouns: book, part, chapter, story text, description, outline, cast, character, system.
+- **Nouns.** Use the app's nouns: book, series, part, chapter, story text, description, outline, cast, story bible, character, place, system.
 - **Empty states** say what's missing and offer the next step ("No story text yet. Write it").
 - **Errors** are sentences a writer would understand.
 - **Spelling.** Comments and sample prose lean British ("colour", "centre", "kilometres"). Match the file you're in.
