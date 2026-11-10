@@ -1,7 +1,8 @@
 # Idea 25: the art studio
 
-**A plan, written 2026-11-09. Nothing here is built.** It's on the public Coming soon shelf, so
-it's a promise. Check this against the code before leaning on it.
+**Piece (a) shipped on 2026-11-10; (b), (c) and (d) are still a plan,** written 2026-11-09.
+"Built" below is the record of what's there; the rest of the file is the plan it came from. How the
+code works is the `bb-studio` skill. Check both against the code before leaning on them.
 
 ## What the user asked for
 
@@ -21,9 +22,64 @@ portrait, a map, a picture in the page (idea 22) or an ornament (idea 26).
 - **No generated art** (2026-11-09, "at this time"). Nothing that makes a picture from a
   description. If it ever comes back it's its own idea, with the cautions of idea 16 (cost on a
   free app, and how writers feel about it).
+- **The layout is a hybrid** (2026-11-10, asked with sketches): docked panels on a wide screen
+  (tools on the left, properties and layers on the right, a slim bar above), turning into a
+  floating tool strip and pull-up sheets on tablets and phones.
+- **Tuned first for a mouse on a computer** (2026-11-10): that's what the user will try it with.
+  So strokes must look good with no pressure at all (tapering from speed), and every tool must
+  work without a pen. Pens and touch still have to work.
+- **Each writer's storage cap is decided at launch** (2026-11-10): build it as one setting with a
+  room-left meter on the shelf, and ask for the number when the Blob store is set up.
 - **Say nothing about AI on the site, either way.** On 2026-11-03 the user took "with no AI
   involved" out of the app's own pages. So the shelf card and any homepage copy describe what the
   studio does, and neither promise generated art nor make a point of its absence.
+
+- **The libraries: none.** (Decided 2026-11-10, against the table under "Choosing libraries".) The
+  studio draws with its own small Canvas 2D engine: shapes become `Path2D` from SVG path data,
+  hit-testing is `isPointInPath` and `isPointInStroke`, and blend modes are
+  `globalCompositeOperation`. Paper.js would have brought its own document model to keep in step
+  with ours, and Fabric and Konva their own object models; none of them did the point editing or
+  the handles the way the plan wanted, so those were ours either way. perfect-freehand is still
+  the likely choice for pressure strokes in (b), and path operations in (c) still need a decision.
+
+## Built
+
+### (a), 2026-11-10
+
+- **Pages.** `/studio` lists the drawings kept in this browser (newest first, with a picture of
+  each) and starts a new one from a preset (cover, portrait, map, picture for the page,
+  ornament) or a size of the writer's own, on a paper, white, night or clear ground.
+  `/studio/draft/[key]` is a drawing, and has the whole window. A Studio link sits in the
+  signed-in header, and the homepage has a section of its own (04).
+- **Tools.** Select (move, resize from any handle, turn from outside a corner, line ends, a box to
+  pick several, Alt to copy, Shift to keep proportions or angles, double-click into a group),
+  points (drag points and handles, add and remove points, sharp and smooth), pen, pencil (fitted
+  to smooth curves, with a smoothing setting), rectangle, ellipse, polygon, star, line and arrow,
+  hand and zoom.
+- **Panels.** Properties: position, size (with a ratio lock), turn, corner radius, sides, points,
+  arrowheads, fill, stroke colour, width, dashes, ends and corners, opacity; with nothing
+  selected, the drawing's size and ground and the style of new shapes. Fields take sums and can
+  be scrubbed. Layers: show, hide, lock, rename, drag to reorder (or Alt+arrows), shapes listed
+  under each layer and picked from there, a layer's opacity and blend mode (sixteen).
+- **Colours.** Our own picker: saturation and brightness square, hue and opacity sliders, hex,
+  the browser's eyedropper where there is one, recent colours and a palette.
+- **Keys.** V A P N R O L Shift+L H Z, Space to pan, Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y, Ctrl+D,
+  Ctrl+G and Ctrl+Shift+G, Ctrl+C X V, Ctrl+A, Delete, arrows (Shift for 10), Ctrl+[ and ] (with
+  Shift to the back or front), Ctrl+0 fit, Ctrl+1 100%, Ctrl+2 fit the selection, Ctrl+= and -,
+  Shift+H and Shift+V to flip, X to swap fill and stroke, D for the default colours, Esc, Enter.
+- **Drafts.** Every change is kept in IndexedDB 0.7 s after it's made, with a small picture for
+  the shelf, and flushed when the tab is hidden or the page is left. Drafts belong to the account
+  that made them, in that browser only.
+- **Download** as PNG at full size, twice the size (when that stays under 4096² pixels) or half.
+
+Left out of (a), for now:
+
+- **Saving to the art shelf** (with a description for screen readers), which needs 18. Until
+  then a drawing lives only in the browser it was made in, which the shelf page says.
+- **Ways in from where art is wanted** ("Make a cover", "Draw a portrait"), which want 18 too.
+- **A finger only pans once a pen is seen** (palm rejection). One finger draws; two pinch.
+- **Paint layers** work in the engine, the renderer and the drafts, but the button to add one is
+  hidden until (b) gives them brushes.
 
 ## What it has
 

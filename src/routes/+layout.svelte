@@ -29,9 +29,12 @@
 	const user = $derived(data.user);
 	const userId = $derived(data.user?.id);
 
-	// Reading mode (the owner's and the public link) draws its own bar, signed in or not.
+	// Reading mode (the owner's and the public link) draws its own bar, signed in or not, and so
+	// does the art studio's drawing window, which fills the screen.
 	const reading = $derived(
-		page.route.id === '/book/[id]/read' || page.route.id === '/read/[shareId]'
+		page.route.id === '/book/[id]/read' ||
+			page.route.id === '/read/[shareId]' ||
+			page.route.id === '/studio/draft/[key]'
 	);
 	// Signed-out pages that draw their own header and footer: the home page and the account pages.
 	const ACCOUNT_PAGES = ['/login', '/verify', '/forgot-password', '/reset-password'];

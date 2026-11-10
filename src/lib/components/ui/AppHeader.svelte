@@ -48,6 +48,10 @@
 			{#if header.actions}
 				{@render header.actions()}
 			{:else}
+				<a class="studio" href={resolve('/studio')} aria-label="Studio" title="The art studio">
+					<Icon name="palette" size={17} />
+					<span class="studio-text">Studio</span>
+				</a>
 				<button
 					type="button"
 					class="create-hint"
@@ -183,6 +187,24 @@
 		display: none;
 	}
 
+	.studio {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		min-height: 44px;
+		padding: 0 12px;
+		border-radius: 10px;
+		color: var(--bb-text-label);
+		text-decoration: none;
+		font-weight: 600;
+		font-size: 14.5px;
+	}
+
+	.studio:hover {
+		background: var(--bb-line-faint);
+		color: var(--bb-text-label);
+	}
+
 	.logout {
 		display: inline-flex;
 		align-items: center;
@@ -242,6 +264,17 @@
 			padding: 0 8px;
 			font-weight: 600;
 			color: var(--bb-text-label);
+		}
+
+		/* Just the palette on phones. */
+		.studio {
+			width: 44px;
+			padding: 0;
+			justify-content: center;
+		}
+
+		.studio-text {
+			display: none;
 		}
 	}
 </style>

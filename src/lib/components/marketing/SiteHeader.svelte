@@ -11,6 +11,7 @@
 		{ id: 'features', label: 'Features' },
 		{ id: 'example', label: 'Editor' },
 		{ id: 'outline', label: 'Outline' },
+		{ id: 'studio', label: 'Studio' },
 		...(SOON.length > 0 ? [{ id: 'soon', label: 'Coming soon' }] : [])
 	];
 </script>

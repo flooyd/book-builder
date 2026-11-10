@@ -4,6 +4,7 @@
 	import Icon, { type IconName } from '$lib/components/ui/Icon.svelte';
 	import BookCover from '$lib/components/ui/BookCover.svelte';
 	import AnimatedBook from './AnimatedBook.svelte';
+	import StudioShowcase from './StudioShowcase.svelte';
 	import SiteHeader from './SiteHeader.svelte';
 	import SiteFooter from './SiteFooter.svelte';
 	import { SOON } from './soon';
@@ -116,6 +117,30 @@
 			.map((word) => word[0])
 			.join('')
 			.slice(0, 2);
+
+	// Under the studio picture in "04 — The art studio".
+	const studioPoints: { title: string; icon: IconName; body: string }[] = [
+		{
+			title: 'The pen and its points',
+			icon: 'pen-nib',
+			body: 'Click for corners, drag for curves, then reshape any point or handle.'
+		},
+		{
+			title: 'Layers that blend',
+			icon: 'layers',
+			body: 'Show, hide, lock and reorder them, each with its own opacity and blend mode.'
+		},
+		{
+			title: 'Exact when you need it',
+			icon: 'sliders',
+			body: 'Type a size or a sum, turn by degrees, and nudge with the arrow keys.'
+		},
+		{
+			title: 'Yours to keep',
+			icon: 'download',
+			body: 'Download your drawing as a PNG at full size, twice the size or half.'
+		}
+	];
 
 	const features: { title: string; icon: IconName; body: string }[] = [
 		{
@@ -521,8 +546,40 @@
 		</div>
 	</section>
 
+	<section id="studio" class="section studio-section">
+		<div class="studio-head">
+			<p class="overline">04 — The art studio</p>
+			<h2 class="section-title studio-title">
+				<motion-headline by="words">Draw the world you wrote.</motion-headline>
+			</h2>
+			<p class="studio-lede">
+				A drawing studio in your browser for covers, portraits, maps and ornaments. Shapes, a pen
+				for curves, a pencil that smooths your line, and layers that blend. Nothing to install, and
+				every change is kept as you go.
+			</p>
+		</div>
+
+		<motion-reveal class="studio-reveal" y={40} delay={0.1} duration={0.9}>
+			<StudioShowcase />
+		</motion-reveal>
+
+		<div class="studio-points">
+			<motion-stagger interval={0.1}>
+				{#each studioPoints as point (point.title)}
+					<div class="studio-point">
+						<span class="studio-point-icon"
+							><Icon name={point.icon} size={20} strokeWidth={1.8} /></span
+						>
+						<h3>{point.title}</h3>
+						<p>{point.body}</p>
+					</div>
+				{/each}
+			</motion-stagger>
+		</div>
+	</section>
+
 	<section id="focus" class="section">
-		<p class="overline">04 — Focus, goals, insights and share</p>
+		<p class="overline">05 — Focus, goals, insights and share</p>
 		<h2 class="section-title duo-title">
 			<motion-headline by="words">Close the door, then open the book.</motion-headline>
 		</h2>
@@ -640,7 +697,7 @@
 
 	{#if SOON.length > 0}
 		<section id="soon" class="section">
-			<p class="overline">05 — On the shelf next</p>
+			<p class="overline">06 — On the shelf next</p>
 			<h2 class="section-title soon-title">
 				<motion-headline by="words">Coming soon.</motion-headline>
 			</h2>
@@ -1585,7 +1642,106 @@
 		min-width: 0;
 	}
 
-	/* 04: focus mode, writing goals and the author page, side by side. */
+	/* 04: the art studio. Centred, wider than the rest, with a glow under the window. */
+	.studio-section {
+		position: relative;
+		max-width: 1320px;
+	}
+
+	.studio-head {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		max-width: 760px;
+		margin: 0 auto 48px;
+		text-align: center;
+	}
+
+	.studio-title {
+		margin: 0;
+		font-size: clamp(42px, 5.2vw, 72px);
+	}
+
+	.studio-lede {
+		max-width: 620px;
+		margin: 22px 0 0;
+		font-size: 18px;
+		line-height: 1.65;
+		color: var(--bb-text-2);
+	}
+
+	.studio-reveal {
+		position: relative;
+		display: block;
+	}
+
+	.studio-reveal::before {
+		content: '';
+		position: absolute;
+		inset: 10% 6% -6%;
+		z-index: -1;
+		border-radius: 50%;
+		background: radial-gradient(
+			closest-side,
+			light-dark(rgba(43, 99, 245, 0.16), rgba(43, 99, 245, 0.32)),
+			transparent
+		);
+		filter: blur(30px);
+	}
+
+	.studio-points {
+		margin-top: 40px;
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 28px;
+	}
+
+	.studio-point h3 {
+		margin: 14px 0 6px;
+		font-family: var(--font-display);
+		font-weight: 400;
+		font-size: 21px;
+		color: var(--bb-text-strong);
+	}
+
+	.studio-point p {
+		margin: 0;
+		font-size: 15px;
+		line-height: 1.6;
+		color: var(--bb-text-2);
+	}
+
+	.studio-point-icon {
+		display: grid;
+		place-items: center;
+		width: 42px;
+		height: 42px;
+		border-radius: 12px;
+		background: var(--bb-sky-wash);
+		color: var(--bb-sky);
+	}
+
+	@media (max-width: 900px) {
+		.studio-points {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@media (max-width: 600px) {
+		.studio-head {
+			margin-bottom: 32px;
+		}
+
+		.studio-lede {
+			font-size: 16.5px;
+		}
+
+		.studio-points {
+			gap: 22px 16px;
+		}
+	}
+
+	/* 05: focus mode, writing goals and the author page, side by side. */
 	.duo-title {
 		margin: 0 0 40px;
 		font-size: clamp(38px, 4.2vw, 56px);

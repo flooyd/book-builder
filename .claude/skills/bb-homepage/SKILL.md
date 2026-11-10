@@ -12,14 +12,23 @@ description: Book Builder's signed-out homepage and marketing content, covering 
    - `#features` **01 — How it's organized**: books, parts, chapters, the story bible and mentions, with a sample tree card. Under them, a Connections map card (`.web-card`) draws a corner of the Glass Armada's web (`webEntries` and `webLines` in the script) with the real map's `curve` from `$lib/connections`, so the lines bend and point the way the real ones do. If you move an entry in it, keep each line's label clear of the names under the shapes.
    - `#example` **02 — The editor**: a sample page of story text with formatting and a first letter. Under the editor picture (the user wants the editor first), a Version history card (`.history-card`) draws the real version list (this morning's versions, one kept as "Before the rewrite") and the changes since the picked one, on the editor's own last line. The picture sits beside the words, and stacks above them on phones.
    - `#outline` **03 — The outline**: a corkboard picture from the `board` array, with statuses in the outline's colours.
-   - `#focus` **04 — Focus, goals, insights and share**: four cards, two by two: focus mode, the author page (the "Oriel Vance" picture, with a "See the demo author" link to the real Demo Author page) writing goals (a picture of today's progress, a streak and two weeks of bars) and manuscript insights (a small pacing chart, drawn like the real one, and one finding).
-   - `#soon` **05 — On the shelf next**: the Coming soon shelf, rendered from `SOON`, and hidden (with its header link) when the list is empty.
+   - `#studio` **04 — The art studio**: the one section the user asked for outright to make a
+     feature stand out (2026-11-10, approving it over "keep it lean"). Centred, wider than the
+     others, with a glow under a picture of the real studio window (`StudioShowcase.svelte`): the
+     bar, the tools, the properties and layers panels, and a Glass Armada cover on the artboard
+     (the Meridian under a crescent moon, the far fleet, a beacon under the ice) with its big sail
+     selected. The art uses only what the studio can really draw: solid fills, strokes, opacity,
+     ellipses, stars and pen paths (the crescent is a sky-coloured disc over a pale one). Under it,
+     four points: the pen, layers, exact numbers, and downloading. The header's nav has a Studio
+     link to it.
+   - `#focus` **05 — Focus, goals, insights and share**: four cards, two by two: focus mode, the author page (the "Oriel Vance" picture, with a "See the demo author" link to the real Demo Author page) writing goals (a picture of today's progress, a streak and two weeks of bars) and manuscript insights (a small pacing chart, drawn like the real one, and one finding).
+   - `#soon` **06 — On the shelf next**: the Coming soon shelf, rendered from `SOON`, and hidden (with its header link) when the list is empty.
 3. **Closing** call to action, then the footer.
 
 ### How the user wants it
 
 - **Lean.** "Keep it lean like it is now". When a feature ships, the user usually wants it showcased. Prefer adding a card or a line to an existing section over a new section. Add a section only for something big, and renumber the labels if you do.
-- **Coming soon.** `SOON` in `marketing/soon.ts` holds the user's planned features (currently Find and replace and Art studio, in that order; Footnotes came off when it shipped on 2026-11-09). Remove an entry when it ships. A card says only what the plan in the `bb-roadmap` skill will really deliver: the Art studio card says nothing about AI either way. The full working list is in the `bb-roadmap` skill. Only add entries the user asks for: it's their roadmap. While it's empty, the section and its nav link disappear on their own.
+- **Coming soon.** `SOON` in `marketing/soon.ts` holds the user's planned features (currently Find and replace; Footnotes came off when it shipped on 2026-11-09, and Art studio when its first piece shipped on 2026-11-10). Remove an entry when it ships. A card says only what the plan in the `bb-roadmap` skill will really deliver, and nothing on the site says anything about AI either way (see idea 25). The full working list is in the `bb-roadmap` skill. Only add entries the user asks for: it's their roadmap. While it's empty, the section and its nav link disappear on their own.
 - **Real product.** Showcases depict the real product, so mirror the real UI's look (paper surface, statuses, covers) rather than inventing features that don't exist.
 - **Breakpoints.** Check it at 1440 and 390 in both themes (see the `bb-verify` skill). The hero book scales down on phones (`scale(0.56)`, then `0.5` under 420px).
 
