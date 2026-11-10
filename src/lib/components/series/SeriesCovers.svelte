@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { coverFrom, type CoverArt } from '$lib/art';
 	import BookCover from '$lib/components/ui/BookCover.svelte';
+	import { artStore } from '$lib/stores';
 
 	// A series on the shelf: its first three covers fanned out, or a dashed gap while it's empty.
 	// Decorative, as the title beside it says what it is.
@@ -8,7 +10,8 @@
 		author = '',
 		size = 'md'
 	}: {
-		books: { id: number; title: string }[];
+		/** A public page sends each book's `cover`; the owner's pages find it on their own shelf. */
+		books: { id: number; title: string; cover?: CoverArt | null; coverArtId?: number | null }[];
 		author?: string;
 		size?: 'md' | 'lg';
 	} = $props();
@@ -19,7 +22,13 @@
 <span class={['fan', size]} style:--count={Math.max(shown.length, 1)} aria-hidden="true">
 	{#each shown as book, index (book.id)}
 		<span class="leaf" style:--index={index}>
-			<BookCover id={book.id} title={book.title} {author} {size} />
+			<BookCover
+				id={book.id}
+				title={book.title}
+				{author}
+				{size}
+				art={book.cover !== undefined ? book.cover : coverFrom($artStore, book.coverArtId ?? null)}
+			/>
 		</span>
 	{:else}
 		<span class="leaf gap"></span>

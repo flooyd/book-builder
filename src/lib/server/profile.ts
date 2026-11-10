@@ -1,5 +1,6 @@
 import { and, desc, eq, isNotNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
+import { coversFor } from '$lib/server/art';
 import { book, profile, user } from '$lib/server/db/schema';
 import { seriesOf } from '$lib/server/series';
 import { booksInSeries } from '$lib/series';
@@ -40,6 +41,7 @@ export async function publicAuthor(handle: string) {
 			shareId: book.shareId,
 			seriesId: book.seriesId,
 			seriesPosition: book.seriesPosition,
+			coverArtId: book.coverArtId,
 			createdAt: book.createdAt,
 			updatedAt: book.updatedAt
 		})
@@ -47,11 +49,13 @@ export async function publicAuthor(handle: string) {
 		.where(and(eq(book.userId, row.userId), isNotNull(book.shareId)))
 		.orderBy(desc(book.updatedAt));
 
+	const covers = await coversFor(shared.map((b) => b.coverArtId));
 	const card = (b: (typeof shared)[number]) => ({
 		id: b.id,
 		title: b.title,
 		description: b.description,
-		shareId: b.shareId!
+		shareId: b.shareId!,
+		cover: b.coverArtId === null ? null : (covers[b.coverArtId] ?? null)
 	});
 
 	// A series only shows once a book in it is shared, and only with the books that are.

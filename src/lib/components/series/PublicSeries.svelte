@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { CoverArt } from '$lib/art';
 	import { resolve } from '$app/paths';
 	import { plural } from '$lib/library';
 	import { plainText } from '$lib/rich';
@@ -23,6 +24,7 @@
 				description: string;
 				shareId: string;
 				number: number;
+				cover: CoverArt | null;
 			}[];
 		};
 		handle: string;
@@ -58,7 +60,13 @@
 			<motion-stagger interval={0.08}>
 				{#each series.books as book (book.id)}
 					<a class="book" href={resolve('/read/[shareId]', { shareId: book.shareId })}>
-						<BookCover id={book.id} title={book.title} author={series.author} tilt />
+						<BookCover
+							id={book.id}
+							title={book.title}
+							author={series.author}
+							tilt
+							art={book.cover}
+						/>
 						<span class="book-text">
 							<span class="number">Book {book.number}</span>
 							<span class="book-title">{book.title}</span>

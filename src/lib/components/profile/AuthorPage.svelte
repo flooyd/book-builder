@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { CoverArt } from '$lib/art';
 	import { resolve } from '$app/paths';
 	import { initials, plural } from '$lib/library';
 	import { plainText } from '$lib/rich';
@@ -8,7 +9,13 @@
 	import RichText from '$lib/components/rich/RichText.svelte';
 	import SeriesCovers from '$lib/components/series/SeriesCovers.svelte';
 
-	type SharedBook = { id: number; title: string; description: string; shareId: string };
+	type SharedBook = {
+		id: number;
+		title: string;
+		description: string;
+		shareId: string;
+		cover: CoverArt | null;
+	};
 
 	// An author's public page: who they are, their series and the books they share by link. A book
 	// in a series is found through the series, so the Books shelf holds the ones on their own.
@@ -91,7 +98,13 @@
 					<motion-stagger interval={0.08}>
 						{#each author.books as book (book.id)}
 							<a class="book" href={resolve('/read/[shareId]', { shareId: book.shareId })}>
-								<BookCover id={book.id} title={book.title} author={author.name} tilt />
+								<BookCover
+									id={book.id}
+									title={book.title}
+									author={author.name}
+									tilt
+									art={book.cover}
+								/>
 								<span class="book-text">
 									<span class="book-title">{book.title}</span>
 									{#if book.description}

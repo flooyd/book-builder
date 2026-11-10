@@ -28,8 +28,8 @@ portrait, a map, a picture in the page (idea 22) or an ornament (idea 26).
 - **Tuned first for a mouse on a computer** (2026-11-10): that's what the user will try it with.
   So strokes must look good with no pressure at all (tapering from speed), and every tool must
   work without a pen. Pens and touch still have to work.
-- **Each writer's storage cap is decided at launch** (2026-11-10): build it as one setting with a
-  room-left meter on the shelf, and ask for the number when the Blob store is set up.
+- **Each writer's storage cap was decided at launch** (2026-11-10): one setting with a room-left
+  meter on the shelf, 50 MB (see idea 18).
 - **Say nothing about AI on the site, either way.** On 2026-11-03 the user took "with no AI
   involved" out of the app's own pages. So the shelf card and any homepage copy describe what the
   studio does, and neither promise generated art nor make a point of its absence.
@@ -96,9 +96,12 @@ this visit), a seed to share or type in, and a picture made to fit a book (its t
 
 Left out of (a), for now:
 
-- **Saving to the art shelf** (with a description for screen readers), which needs 18. Until
-  then a drawing lives only in the browser it was made in, which the shelf page says.
-- **Ways in from where art is wanted** ("Make a cover", "Draw a portrait"), which want 18 too.
+- ~~**Saving to the art shelf**~~ came with 18's covers on 2026-11-10: "Save to shelf" in the bar
+  sends the picture, and saving again replaces it, so its covers follow. A description for screen
+  readers is given on the shelf. The drawing itself (its layers) still lives only in the browser
+  it was made in.
+- **Ways in from where art is wanted**: the cover picker's "Make one in the studio" is the first.
+  "Draw a portrait" waits on portraits (18).
 - **A finger only pans once a pen is seen** (palm rejection). One finger draws; two pinch.
 - **Paint layers** work in the engine, the renderer and the drafts, but the button to add one is
   hidden until (b) gives them brushes.

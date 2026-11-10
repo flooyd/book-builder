@@ -2,7 +2,9 @@
 	import { tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { coverFrom } from '$lib/art';
 	import {
+		artStore,
 		booksRefresh,
 		booksStore,
 		chaptersStore,
@@ -18,6 +20,7 @@
 	import { bookOutline, latestChapterId, plural, relativeDay } from '$lib/library';
 	import { partHeading } from '$lib/headings';
 	import { placeInSeries, seriesSiblings } from '$lib/series';
+	import CoverPicker from '$lib/components/art/CoverPicker.svelte';
 	import BookCover from '$lib/components/ui/BookCover.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import ConfirmDelete from '$lib/components/ui/ConfirmDelete.svelte';
@@ -92,6 +95,7 @@
 
 	// ---- Delete ------------------------------------------------------------------------------
 	let confirmingDelete = $state(false);
+	let choosingCover = $state(false);
 	let deleting = $state(false);
 	let deleteError = $state('');
 
@@ -126,7 +130,21 @@
 {#if book}
 	<div class="band">
 		<div class="band-inner">
-			<BookCover id={book.id} title={book.title} author={$userStore?.name} size="lg" tilt />
+			<div class="cover-wrap">
+				<BookCover
+					id={book.id}
+					title={book.title}
+					author={$userStore?.name}
+					size="lg"
+					tilt
+					art={coverFrom($artStore, book.coverArtId)}
+				/>
+				{#if isOwner}
+					<button type="button" class="cover-change" onclick={() => (choosingCover = true)}>
+						<Icon name="image" size={15} />Change the cover
+					</button>
+				{/if}
+			</div>
 
 			<div class="band-text">
 				<nav aria-label="Breadcrumb" class="crumbs">
@@ -294,6 +312,10 @@
 		<BookAside bookId={book.id} />
 	</main>
 
+	{#if choosingCover}
+		<CoverPicker {book} author={$userStore?.name} onclose={() => (choosingCover = false)} />
+	{/if}
+
 	{#if confirmingDelete}
 		<ConfirmDelete
 			noun="book"
@@ -342,6 +364,35 @@
 		flex-wrap: wrap;
 		align-items: flex-end;
 		gap: 32px 44px;
+	}
+
+	.cover-wrap {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 14px;
+	}
+
+	.cover-change {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		min-height: 36px;
+		padding: 0 12px;
+		border: 1px solid transparent;
+		border-radius: var(--r-control);
+		background: transparent;
+		color: var(--bb-text-2);
+		font: 600 13px var(--font-ui);
+		cursor: pointer;
+		transition:
+			color 0.15s,
+			border-color 0.15s;
+	}
+
+	.cover-change:hover {
+		border-color: var(--bb-line-soft);
+		color: var(--bb-text-strong);
 	}
 
 	.cover-skeleton {

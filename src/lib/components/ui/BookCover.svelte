@@ -1,13 +1,16 @@
 <script lang="ts">
+	import type { CoverArt } from '$lib/art';
 	import { coverTitleScale, coverVariant } from '$lib/cover';
 
-	// Pure-CSS cover generated from the title (see $lib/cover). Decorative: aria-hidden.
+	// A book's cover: the writer's own picture from the art shelf, or one drawn in CSS from the
+	// title (see $lib/cover). Decorative (aria-hidden): the title is always written beside it.
 	let {
 		id,
 		title,
 		author = '',
 		size = 'md',
-		tilt = false
+		tilt = false,
+		art = null
 	}: {
 		id: number;
 		title: string;
@@ -15,7 +18,12 @@
 		size?: 'sm' | 'md' | 'lg';
 		/** Tilt toward the pointer with a moving gloss, like a real book in the hand. */
 		tilt?: boolean;
+		/** A picture for the cover. If it can't be loaded, the drawn cover stands in. */
+		art?: CoverArt | null;
 	} = $props();
+
+	let broken = $state<string | null>(null);
+	const picture = $derived(art && broken !== art.smallUrl ? art.smallUrl : null);
 
 	const variant = $derived(coverVariant(id));
 
@@ -40,8 +48,20 @@
 {/if}
 
 {#snippet cover()}
-	<div class={['cover', size, variant]} aria-hidden="true" style:--title-scale={scale}>
-		{#if size === 'sm'}
+	<div
+		class={['cover', size, picture ? 'pictured' : variant]}
+		aria-hidden="true"
+		style:--title-scale={scale}
+	>
+		{#if picture}
+			<img
+				src={picture}
+				alt=""
+				loading="lazy"
+				decoding="async"
+				onerror={() => (broken = picture)}
+			/>
+		{:else if size === 'sm'}
 			<span class="mono">{initials}</span>
 		{:else if variant === 'navy'}
 			<span class="frame"></span>
@@ -120,6 +140,53 @@
 
 	svg {
 		flex: none;
+	}
+
+	/* The writer's own picture, cut to the cover's shape, with the spine's shadow over it. */
+	.pictured {
+		overflow: hidden;
+		background: #1d3184;
+	}
+
+	.pictured img {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.pictured::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		box-shadow:
+			inset 8px 0 0 rgba(0, 0, 0, 0.22),
+			inset 9px 0 0 rgba(255, 255, 255, 0.08),
+			inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+		pointer-events: none;
+	}
+
+	.pictured.sm::after {
+		box-shadow:
+			inset 5px 0 0 rgba(0, 0, 0, 0.22),
+			inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+	}
+
+	.pictured.md {
+		box-shadow: 0 24px 40px -24px var(--bb-drop);
+	}
+
+	.pictured.lg {
+		box-shadow: 0 40px 60px -30px var(--bb-drop);
+	}
+
+	.pictured.lg::after {
+		box-shadow:
+			inset 10px 0 0 rgba(0, 0, 0, 0.22),
+			inset 11px 0 0 rgba(255, 255, 255, 0.08),
+			inset 0 0 0 1px rgba(0, 0, 0, 0.12);
 	}
 
 	/* Sizes */

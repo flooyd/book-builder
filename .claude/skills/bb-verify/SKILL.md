@@ -38,9 +38,10 @@ bash .claude/skills/bb-verify/scripts/scratch-db.sh start "<scratch>/pgdata"   #
 
 ```bash
 DATABASE_URL="postgres://bb@localhost:54329/bookbuilder" ORIGIN="http://localhost:5199" \
-  RESEND_API_KEY="" npx vite dev --port 5199 --strictPort > "<scratch>/dev.log" 2>&1
+  RESEND_API_KEY="" BLOB_READ_WRITE_TOKEN="" ART_STORE_DIR="<scratch>/art-store" \n  npx vite dev --port 5199 --strictPort > "<scratch>/dev.log" 2>&1
 ```
 
+- **Pictures.** The empty `BLOB_READ_WRITE_TOKEN` keeps test pictures out of the real Vercel Blob store (`.env` has the key): the art shelf keeps them in `ART_STORE_DIR` instead (see the `bb-art` skill). The throwaway database runs on America/Chicago time, which shows up any code that compares a `timestamp` column with JavaScript's clock.
 - **Email.** The empty `RESEND_API_KEY` keeps test emails away from Resend: the dev server prints each one to its log instead, link and all (`[email] To …`), so a test can read the link and follow it. Sends are limited to one a minute per address, so between runs that send to the same address, clear them with `delete from verification where identifier like 'bb-email:%'`.
 
 - **Start it.** Start it as a background task. Wait for it with `until curl -s -o /dev/null http://localhost:5199/; do sleep 1; done`. The other variables (`BETTER_AUTH_SECRET`) come from `.env`, and the variables given on the command line win.

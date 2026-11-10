@@ -1,6 +1,8 @@
 import hyphen from 'hyphen/en-gb';
 import PDFDocument from 'pdfkit';
+import { looksLike } from '$lib/art';
 import { coverTitleScale, coverVariant } from '$lib/cover';
+import { readPicture } from '$lib/server/art-store';
 import type { RichNode } from '$lib/rich';
 import { FacePicker, faces, type Style } from './fonts';
 import {
@@ -1033,14 +1035,38 @@ class Book {
 
 	// ---- Front matter --------------------------------------------------------------------------
 
-	/** The book's generated cover, the same design as BookCover at full size. */
-	cover(manuscript: Manuscript) {
+	/**
+	 * The book's cover: the writer's own picture filling the page, cut to it like a printed cover,
+	 * or the generated one, the same design as BookCover at full size.
+	 */
+	cover(manuscript: Manuscript, picture: Buffer | null) {
+		const { doc } = this;
+		if (picture) {
+			this.addPage();
+			this.#fill = '';
+			try {
+				doc.fillColor('#1d3184').rect(0, 0, WIDTH, HEIGHT).fill();
+				doc.image(picture, 0, 0, {
+					cover: [WIDTH, HEIGHT],
+					align: 'center',
+					valign: 'center'
+				});
+				return;
+			} catch {
+				// Not a picture PDFKit can read after all: draw the cover over the page instead.
+			}
+		} else {
+			this.addPage();
+		}
+		this.#fill = '';
+		this.#drawnCover(manuscript);
+	}
+
+	#drawnCover(manuscript: Manuscript) {
 		const { doc } = this;
 		const variant = coverVariant(manuscript.id);
 		const colours = COVER[variant];
 		const scale = WIDTH / 196;
-		this.addPage();
-		this.#fill = '';
 		doc.fillColor(colours.ground).rect(0, 0, WIDTH, HEIGHT).fill();
 		doc
 			.fillColor(variant === 'navy' ? '#000000' : '#3c280a', variant === 'navy' ? 0.25 : 0.14)
@@ -1322,6 +1348,15 @@ class Book {
 }
 
 /** The manuscript as a PDF, and how many characters no typeface could draw. */
+/** The cover picture's bytes, if it has one that's still there and is a JPEG or PNG. */
+async function coverPicture(manuscript: Manuscript) {
+	if (!manuscript.cover) return null;
+	const bytes = await readPicture(manuscript.cover.url);
+	if (!bytes) return null;
+	const type = looksLike('image/png', bytes) ? 'image/png' : 'image/jpeg';
+	return looksLike(type, bytes) ? Buffer.from(bytes) : null;
+}
+
 export async function pdfOf(manuscript: Manuscript) {
 	const loaded = await faces();
 	const name = manuscript.part ? `${manuscript.part.name} · ${manuscript.title}` : manuscript.title;
@@ -1348,7 +1383,7 @@ export async function pdfOf(manuscript: Manuscript) {
 	const book = new Book(doc, new FacePicker(loaded), manuscript.part?.name ?? manuscript.title);
 
 	if (!manuscript.part) {
-		book.cover(manuscript);
+		book.cover(manuscript, await coverPicture(manuscript));
 		book.addPage();
 	}
 	book.titlePage(manuscript);

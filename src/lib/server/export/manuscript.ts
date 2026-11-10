@@ -1,3 +1,4 @@
+import type { CoverArt } from '$lib/art';
 import { chapterHeading, partHeading, type Heading } from '$lib/headings';
 import { bookOutline, type OutlinePart } from '$lib/library';
 import { storyWords } from '$lib/reading';
@@ -34,6 +35,8 @@ export type Manuscript = {
 	author: string;
 	/** The book's description, for the title page. */
 	blurb: string;
+	/** The writer's picture for the cover, if the book has one. */
+	cover: CoverArt | null;
 	/** Set when one part is exported rather than the book, whose title page it then opens. */
 	part: (Heading & { description: string; name: string }) | null;
 	sections: Section[];
@@ -71,7 +74,8 @@ const front = (data: ReadableBook) => ({
 	id: data.book.id,
 	title: data.book.title,
 	author: data.author,
-	blurb: data.book.description
+	blurb: data.book.description,
+	cover: data.book.cover
 });
 
 const outlineOf = (data: ReadableBook) => bookOutline(data.book.id, data.parts, data.chapters);

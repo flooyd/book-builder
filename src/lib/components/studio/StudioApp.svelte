@@ -349,7 +349,15 @@
 <div class="studio" class:narrow>
 	{#if phase === 'ready' && studio && tools}
 		<div class="bar-area">
-			<StudioBar {studio} bind:title {status} {narrow} {sheet} onsheet={(next) => (sheet = next)} />
+			<StudioBar
+				{studio}
+				{draftKey}
+				bind:title
+				{status}
+				{narrow}
+				{sheet}
+				onsheet={(next) => (sheet = next)}
+			/>
 		</div>
 		{#if !narrow}
 			<aside class="rail-area" aria-label="Tools">

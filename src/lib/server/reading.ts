@@ -1,5 +1,6 @@
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '$lib/server/db';
+import { coverFor } from '$lib/server/art';
 import { book, chapter, part, user } from '$lib/server/db/schema';
 import { storyTexts } from '$lib/server/outline';
 import { publicHandleOf } from '$lib/server/profile';
@@ -35,6 +36,7 @@ export async function readableBook(found: typeof book.$inferSelect) {
 		.from(user)
 		.where(eq(user.id, found.userId))
 		.limit(1);
+	const cover = await coverFor(found.coverArtId);
 
 	return {
 		book: {
@@ -42,7 +44,9 @@ export async function readableBook(found: typeof book.$inferSelect) {
 			title: found.title,
 			description: found.description,
 			partLabels: found.partLabels,
-			chapterLabels: found.chapterLabels
+			chapterLabels: found.chapterLabels,
+			/** The writer's picture for the cover, if there is one. */
+			cover
 		},
 		// ISO timestamps, as in the client stores, so bookOutline orders them the same way.
 		parts: parts.map((p) => ({

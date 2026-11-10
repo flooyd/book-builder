@@ -472,7 +472,14 @@
 			style:--read-size="{TEXT_SIZES[prefs.size]}px"
 		>
 			<section id="top" class="title-page" aria-labelledby="book-title">
-				<BookCover id={data.book.id} title={data.book.title} author={data.author} size="lg" tilt />
+				<BookCover
+					id={data.book.id}
+					title={data.book.title}
+					author={data.author}
+					size="lg"
+					tilt
+					art={data.book.cover}
+				/>
 				{#key data.book.title}
 					<h1 id="book-title">
 						<motion-headline by="words" interval={0.07}>{data.book.title}</motion-headline>

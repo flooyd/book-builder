@@ -101,6 +101,9 @@ setting is ours, because a book needs what PDFKit's own text layout doesn't do.
 - **The cover** is drawn here a second time, to match `ui/BookCover.svelte`: the variant from
   `coverVariant(id)`, colours in `COVER`. Change one and change the other. The book view in
   reading mode draws a third (`.cover-face` in `reader/BookView.svelte`).
+- **A cover picture** from the art shelf (`manuscript.cover`, see the `bb-art` skill) takes the
+  place of the drawn one: `coverPicture` reads it with `readPicture`, checks its first bytes, and
+  `cover()` fills the page with it. If PDFKit can't read it, the drawn cover is used.
 
 ### Typefaces, and characters they can't draw
 

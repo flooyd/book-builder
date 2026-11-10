@@ -1,5 +1,7 @@
 import { get } from 'svelte/store';
 import {
+	artStore,
+	artUploadsOpen,
 	booksStore,
 	partsStore,
 	chaptersStore,
@@ -19,6 +21,7 @@ import {
 	type Series,
 	type System
 } from '$lib/stores';
+import type { ArtPicture } from '$lib/art';
 import { TIME_ZONE_COOKIE, type GoalsData } from '$lib/goals';
 import { ENTRY_COPY, type EntryType } from '$lib/bible';
 import { numberWords, type Noun } from '$lib/headings';
@@ -61,7 +64,8 @@ export async function loadLibrary() {
 		getJSON<Place[]>('/api/places'),
 		getJSON<System[]>('/api/systems'),
 		getJSON<GoalsData>('/api/goals'),
-		getJSON<Series[]>('/api/series')
+		getJSON<Series[]>('/api/series'),
+		getJSON<{ pictures: ArtPicture[]; uploads: boolean }>('/api/art')
 	]);
 	try {
 		const [books, parts, chapters] = await Promise.all([
@@ -69,7 +73,7 @@ export async function loadLibrary() {
 			getJSON<Part[]>('/api/parts'),
 			getJSON<Chapter[]>('/api/chapters')
 		]);
-		const [characters, places, systems, goals, series] = await extras;
+		const [characters, places, systems, goals, series, art] = await extras;
 		if (run !== generation) return; // superseded by a newer load or a sign-out
 		booksStore.set(books);
 		partsStore.set(parts);
@@ -79,6 +83,10 @@ export async function loadLibrary() {
 		if (systems.status === 'fulfilled') systemsStore.set(systems.value);
 		if (goals.status === 'fulfilled') goalsStore.set(goals.value);
 		if (series.status === 'fulfilled') seriesStore.set(series.value);
+		if (art.status === 'fulfilled') {
+			artStore.set(art.value.pictures);
+			artUploadsOpen.set(art.value.uploads);
+		}
 		libraryStatus.set('ready');
 	} catch {
 		if (run !== generation) return;
@@ -105,6 +113,7 @@ export function touchLibrary(target: 'part' | 'chapter', id: number, at: string)
 export function clearLibrary() {
 	generation++;
 	booksStore.set([]);
+	artStore.set([]);
 	seriesStore.set([]);
 	partsStore.set([]);
 	chaptersStore.set([]);

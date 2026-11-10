@@ -82,12 +82,16 @@
 			<h1>Make your own art</h1>
 			<p class="lede">
 				Draw covers, portraits, maps and ornaments with shapes, the pen and the pencil, in layers.
-				Drawings are kept in this browser as you work.
+				Drawings are kept in this browser as you work; save one to your art shelf to put it on a
+				book’s cover.
 			</p>
 		</div>
-		<Button variant="primary" size="lg" glow onclick={() => (starting = true)}>
-			<Icon name="plus" size={18} /> New drawing
-		</Button>
+		<div class="top-actions">
+			<Button size="lg" href={resolve('/art')}><Icon name="image" size={18} /> Art shelf</Button>
+			<Button variant="primary" size="lg" glow onclick={() => (starting = true)}>
+				<Icon name="plus" size={18} /> New drawing
+			</Button>
+		</div>
 	</header>
 
 	{#if drafts === null}
@@ -172,6 +176,12 @@
 		justify-content: space-between;
 		gap: 20px 32px;
 		margin-bottom: 36px;
+	}
+
+	.top-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
 	}
 
 	.overline {

@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
+import { coversFor } from '$lib/server/art';
 import { book, profile, series, user } from '$lib/server/db/schema';
 import { booksInSeries, type ReaderSeries } from '$lib/series';
 
@@ -63,6 +64,7 @@ async function orderedBooks(seriesId: number) {
 			shareId: book.shareId,
 			seriesId: book.seriesId,
 			seriesPosition: book.seriesPosition,
+			coverArtId: book.coverArtId,
 			createdAt: book.createdAt
 		})
 		.from(book)
@@ -118,7 +120,9 @@ export async function publicSeries(handle: string, id: number) {
 		.limit(1);
 	if (!row) return null;
 
-	const books = (await orderedBooks(id)).flatMap((item, index) =>
+	const ordered = await orderedBooks(id);
+	const covers = await coversFor(ordered.map((item) => (item.shareId ? item.coverArtId : null)));
+	const books = ordered.flatMap((item, index) =>
 		item.shareId
 			? [
 					{
@@ -126,7 +130,8 @@ export async function publicSeries(handle: string, id: number) {
 						title: item.title,
 						description: item.description,
 						shareId: item.shareId,
-						number: index + 1
+						number: index + 1,
+						cover: item.coverArtId === null ? null : (covers[item.coverArtId] ?? null)
 					}
 				]
 			: []

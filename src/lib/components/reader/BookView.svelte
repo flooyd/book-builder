@@ -114,6 +114,12 @@
 	);
 
 	// ---- Layout --------------------------------------------------------------------------------
+	// The writer's picture for the cover, if any; a file that's gone leaves the drawn cover.
+	let brokenCover = $state<string | null>(null);
+	const coverPicture = $derived(
+		data.book.cover && data.book.cover.url !== brokenCover ? data.book.cover.url : null
+	);
+
 	let area = $state<HTMLElement>();
 	let measureBox = $state<HTMLElement>();
 	let geo = $state<Geometry | null>(null);
@@ -582,7 +588,17 @@
 
 <!-- One face of a sheet. `side` is where it lies when the book is open flat. -->
 {#snippet face(ref: Ref, side: 'left' | 'right')}
-	{#if ref === 'cover'}
+	{#if ref === 'cover' && coverPicture}
+		<!-- The writer's own cover: the whole picture, since a page has room for it. -->
+		<div class="cover-face pictured">
+			<img
+				src={coverPicture}
+				alt=""
+				decoding="async"
+				onerror={() => (brokenCover = coverPicture)}
+			/>
+		</div>
+	{:else if ref === 'cover'}
 		<div class="cover-face">
 			<span class="cover-frame"></span>
 			<span class="cover-over">{data.author}</span>
@@ -1437,6 +1453,31 @@
 		box-shadow: inset 12px 0 0 rgba(0, 0, 0, 0.25);
 		text-align: center;
 		font-size: var(--font);
+	}
+
+	.cover-face.pictured {
+		padding: 0;
+		background: #1d3184;
+	}
+
+	/* No overflow on the face: it turns in 3D, so the picture takes the rounded corners itself. */
+	.cover-face.pictured img {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		border-radius: inherit;
+		object-fit: cover;
+	}
+
+	.cover-face.pictured::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		box-shadow:
+			inset 12px 0 0 rgba(0, 0, 0, 0.22),
+			inset 13px 0 0 rgba(255, 255, 255, 0.08);
 	}
 
 	.cover-frame {

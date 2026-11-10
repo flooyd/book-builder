@@ -1,16 +1,23 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
+	import type { ArtPicture } from '$lib/art';
+	import { savedFrom, savePrepared } from '$lib/art-shelf';
+	import { prepare } from '$lib/art-upload';
+	import UseAsCover from '$lib/components/art/UseAsCover.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
 	import { flatten } from '$lib/studio/render';
 	import type { Studio } from '$lib/studio/studio.svelte';
 	import { SURPRISES, type SurpriseKind } from '$lib/studio/surprise';
+	import { artStore, artUploadsOpen } from '$lib/stores';
 
 	// The studio's top bar: back to the shelf, the drawing's name, whether it's kept, "Surprise me",
-	// undo and redo, the zoom, and downloading a picture. On small screens it also opens the panels.
+	// undo and redo, the zoom, downloading a picture and saving one to the art shelf. On small
+	// screens it also opens the panels.
 	let {
 		studio,
+		draftKey,
 		title = $bindable(),
 		status,
 		narrow = false,
@@ -18,6 +25,8 @@
 		onsheet
 	}: {
 		studio: Studio;
+		/** The drawing's key in this browser: saving it again replaces its copy on the shelf. */
+		draftKey: string;
 		title: string;
 		status: 'kept' | 'keeping' | 'failed';
 		narrow?: boolean;
@@ -91,6 +100,46 @@
 			document.getElementById(downloadId)?.hidePopover();
 		}
 	}
+
+	// Saving to the art shelf: the picture as it looks now, made in this browser and sent straight
+	// to storage. A drawing saved before replaces its copy, which keeps every cover it's on.
+	const savedId = 'studio-saved';
+	let saving = $state(false);
+	let saved = $state<ArtPicture | null>(null);
+	let covering = $state<ArtPicture | null>(null);
+	const onShelf = $derived($artStore.find((picture) => picture.draftKey === draftKey) ?? null);
+
+	async function save() {
+		if (saving) return;
+		saving = true;
+		document.getElementById(savedId)?.hidePopover();
+		try {
+			const canvas = flatten({ doc: studio.doc, paint: studio.paint });
+			const prepared = await prepare(canvas, canvas.width, canvas.height, true);
+			const replaces = savedFrom(draftKey);
+			saved = await savePrepared(prepared, {
+				source: 'studio',
+				draftKey,
+				title: title.trim() || 'Untitled drawing',
+				replaces: replaces?.id ?? null
+			});
+			savedNote = replaces ? 'Updated on your art shelf' : 'Saved to your art shelf';
+		} catch (problem) {
+			saved = null;
+			savedNote = problem instanceof Error ? problem.message : 'Couldn’t save the picture.';
+		} finally {
+			saving = false;
+		}
+		const panel = document.getElementById(savedId);
+		const trigger = document.querySelector('.save');
+		if (!panel || !trigger) return;
+		panel.showPopover();
+		const box = trigger.getBoundingClientRect();
+		panel.style.top = `${box.bottom + 6}px`;
+		const width = panel.offsetWidth || 260;
+		panel.style.left = `${Math.max(8, Math.min(box.right - width, innerWidth - width - 8))}px`;
+	}
+	let savedNote = $state('');
 
 	function zoomItem(run: () => void) {
 		run();
@@ -280,13 +329,13 @@
 
 		<button
 			type="button"
-			class="download"
+			class="icon"
 			popovertarget={downloadId}
 			onmousedown={keep}
 			aria-label="Download a picture"
+			title="Download a picture"
 		>
-			<Icon name="download" size={16} />
-			<span class="download-text">Download</span>
+			<Icon name="download" size={17} />
 		</button>
 		<div
 			id={downloadId}
@@ -312,6 +361,41 @@
 				>
 			</button>
 		</div>
+
+		{#if $artUploadsOpen}
+			<button
+				type="button"
+				class="save"
+				disabled={saving}
+				aria-busy={saving}
+				onmousedown={keep}
+				onclick={save}
+				title={onShelf
+					? 'Save it again in place of its copy on your art shelf, and every cover it’s on'
+					: 'Save the picture to your art shelf, to put it on a book’s cover'}
+			>
+				<Icon name="image" size={16} />
+				<span class="save-text">{saving ? 'Saving…' : 'Save to shelf'}</span>
+			</button>
+			<div id={savedId} class="menu saved" popover="auto" role="dialog" aria-label="Saved">
+				<p class={['saved-note', { failed: !saved }]}>
+					<Icon name={saved ? 'check-circle' : 'alert-circle'} size={16} />{savedNote}
+				</p>
+				{#if saved}
+					{@const picture = saved}
+					<button
+						type="button"
+						onclick={() => {
+							document.getElementById(savedId)?.hidePopover();
+							covering = picture;
+						}}
+					>
+						Use it as a book’s cover…
+					</button>
+					<a href={resolve('/art')}>See your art shelf</a>
+				{/if}
+			</div>
+		{/if}
 
 		{#if narrow}
 			<button
@@ -340,6 +424,10 @@
 		<span class="theme"><ThemeToggle /></span>
 	</div>
 </header>
+
+{#if covering}
+	<UseAsCover picture={covering} onclose={() => (covering = null)} />
+{/if}
 
 <style>
 	.bar {
@@ -525,7 +613,7 @@
 		background: var(--bb-hover);
 	}
 
-	.download {
+	.save {
 		display: inline-flex;
 		align-items: center;
 		gap: 7px;
@@ -539,8 +627,53 @@
 		font: 600 13.5px var(--font-ui);
 	}
 
-	.download:hover {
+	.save:hover:not(:disabled) {
 		filter: brightness(1.08);
+	}
+
+	.save:disabled {
+		opacity: 0.7;
+	}
+
+	.saved {
+		min-width: 260px;
+		max-width: min(320px, calc(100vw - 16px));
+	}
+
+	.saved-note {
+		display: flex;
+		align-items: flex-start;
+		gap: 8px;
+		margin: 0;
+		padding: 8px 10px 10px;
+		color: var(--bb-text-strong);
+		font-size: 13.5px;
+		font-weight: 600;
+		line-height: 1.4;
+	}
+
+	.saved-note :global(svg) {
+		flex: none;
+		color: var(--bb-sky);
+	}
+
+	.saved-note.failed :global(svg) {
+		color: var(--bb-coral);
+	}
+
+	.saved a {
+		display: flex;
+		align-items: center;
+		min-height: 36px;
+		padding: 0 10px;
+		border-radius: 8px;
+		color: var(--bb-text);
+		font-size: 13.5px;
+		text-decoration: none;
+	}
+
+	.saved a:hover {
+		background: var(--bb-hover);
 	}
 
 	.menu {
@@ -619,11 +752,11 @@
 
 	@media (max-width: 600px) {
 		.bar {
-			gap: 4px;
-			padding: 0 6px 0 4px;
+			gap: 2px;
+			padding: 0 4px;
 		}
 
-		.download-text,
+		.save-text,
 		.theme,
 		.status,
 		.zoom :global(svg) {
@@ -635,15 +768,16 @@
 			width: 34px;
 		}
 
-		.download {
-			width: 38px;
+		.save {
+			width: 34px;
+			margin-left: 2px;
 			padding: 0;
 			justify-content: center;
 		}
 
 		.zoom {
 			min-width: 0;
-			padding: 0 6px;
+			padding: 0 4px;
 		}
 
 		/* Tighter, so the drawing's name keeps room beside one more button. */

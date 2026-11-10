@@ -4,6 +4,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { eq } from 'drizzle-orm';
 import { getRequestEvent } from '$app/server';
+import { removeAllArt } from '$lib/server/art';
 import { db } from '$lib/server/db';
 import { user as userTable } from '$lib/server/db/schema';
 import { sendEmail } from '$lib/server/email';
@@ -46,8 +47,10 @@ export const auth = betterAuth({
 		sendVerificationEmail: ({ user, url }) => sendEmail(verifyEmail(user, url))
 	},
 	user: {
-		// Everything a writer has hangs off their user row and cascades with it (see the schema).
-		deleteUser: { enabled: true }
+		// Everything a writer has hangs off their user row and cascades with it (see the schema),
+		// except their pictures' files, which are in storage. Those go first, once the password has
+		// been checked; if they can't be deleted, nor is the account, so none are left behind.
+		deleteUser: { enabled: true, beforeDelete: (account) => removeAllArt(account.id) }
 	},
 	plugins: [
 		sveltekitCookies(getRequestEvent) // make sure this is the last plugin in the array

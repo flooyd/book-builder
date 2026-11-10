@@ -64,7 +64,7 @@ custom property is declared**, not where it is used. Consequences:
 - **`ConfirmDelete`**: the dialog before a book, part or chapter is deleted, which the user asked to need the title typed. Its Delete button waits until `typedTitle` in `$lib/confirm.ts` matches. Capitals, accents, curly quotes, dashes and spacing don't have to match, and an item with no title asks for "delete". Takes `noun`, `title`, `busy`, `error`, `onconfirm`, `onclose`, and the explanation as children. The one way round it is the outline's Backspace in an empty title, which removes an item that has nothing in it.
 - **`Icon`**: 24×24 stroke icons in the `ICONS` map (a string is a path, a tuple is a circle). To add an icon, add its paths to the map. `IconName` types the names.
 - **Others**:
-  - `BookCover`: a generated cover from the title (navy or paper variant by id hash; `sm`, `md`, `lg`; optional `tilt`).
+  - `BookCover`: a generated cover from the title (navy or paper variant by id hash; `sm`, `md`, `lg`; optional `tilt`), or the writer's own picture when given `art` (see the `bb-art` skill).
   - `Monogram` (in `components/bible`): a round stand-in for a portrait, an entry's initials in one of three tones.
   - `Pill`, `Kbd`, `Wordmark`, `ThemeToggle`.
   - `AppHeader`: crumbs come from `useAppHeader`.

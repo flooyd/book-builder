@@ -1,5 +1,6 @@
 import { writable, type Writable } from 'svelte/store';
 import type { User } from 'better-auth';
+import type { ArtPicture } from '$lib/art';
 import type { GoalsData } from '$lib/goals';
 import type { EntryFields, EntryType } from '$lib/bible';
 import type { LabelStyle } from '$lib/headings';
@@ -38,6 +39,8 @@ export type Book = {
 	chapterLabels: LabelStyle;
 	/** Off, every chapter goes by its label alone in reading mode. */
 	chapterTitles: boolean;
+	/** A picture from the art shelf for its cover (see artStore); null draws one from the title. */
+	coverArtId: number | null;
 	createdAt: string;
 	updatedAt: string;
 };
@@ -128,6 +131,10 @@ export const entryStores: Record<EntryType, Writable<Entry[]>> = {
 };
 /** The writer's daily target, recent days and book progress; null until loaded (see $lib/goals). */
 export const goalsStore = writable<GoalsData | null>(null);
+/** The pictures on the writer's art shelf, newest first (see $lib/art); covers come from here. */
+export const artStore = writable<ArtPicture[]>([]);
+/** False on a site with no storage set up yet, where pictures can't be uploaded. */
+export const artUploadsOpen = writable(true);
 /** 'loading' until the first load finishes; stays 'ready' during background refreshes. */
 export const libraryStatus = writable<'loading' | 'ready' | 'error'>('loading');
 

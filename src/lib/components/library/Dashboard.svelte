@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
+	import { coverFrom } from '$lib/art';
 	import {
+		artStore,
 		booksRefresh,
 		booksStore,
 		chaptersStore,
@@ -177,7 +179,13 @@
 				<motion-stagger interval={0.08} y={20}>
 					{#each library as { book, outline, chapterCount } (book.id)}
 						<a class="book-card" href={bookHref(book)}>
-							<BookCover id={book.id} title={book.title} author={userName} tilt />
+							<BookCover
+								id={book.id}
+								title={book.title}
+								author={userName}
+								tilt
+								art={coverFrom($artStore, book.coverArtId)}
+							/>
 							<span class="book-text">
 								{#if seriesLine(book)}
 									<span class="book-series">{seriesLine(book)}</span>

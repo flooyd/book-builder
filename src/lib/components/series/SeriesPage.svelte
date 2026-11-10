@@ -5,7 +5,9 @@
 	import { resolve } from '$app/paths';
 	import { plural, putJSON, sendJSON, setSeriesBooks } from '$lib/library';
 	import { booksInSeries } from '$lib/series';
+	import { coverFrom } from '$lib/art';
 	import {
+		artStore,
 		booksRefresh,
 		booksStore,
 		libraryStatus,
@@ -308,7 +310,12 @@
 							</button>
 							<span class="number">{index + 1}</span>
 							<a class="book" href={resolve('/book/[id]', { id: String(book.id) })}>
-								<BookCover id={book.id} title={book.title} size="sm" />
+								<BookCover
+									id={book.id}
+									title={book.title}
+									size="sm"
+									art={coverFrom($artStore, book.coverArtId)}
+								/>
 								<span class="book-text">
 									<span class="book-title">{book.title}</span>
 									<span class="book-meta">

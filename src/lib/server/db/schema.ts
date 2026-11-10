@@ -10,9 +10,59 @@ import {
 	primaryKey,
 	index
 } from 'drizzle-orm/pg-core';
+import type { ArtSource } from '$lib/art';
 import type { EntryDetail } from '$lib/bible';
 import type { LabelStyle } from '$lib/headings';
 import { user } from './auth.schema';
+
+//a picture on a writer's art shelf, uploaded or saved from the studio. The files are in storage
+//(see $lib/server/art-store) and this row is the index, so the store is never listed
+export const art = pgTable(
+	'art',
+	{
+		id: serial('id').primaryKey(),
+		userId: text('user_id')
+			.references(() => user.id, { onDelete: 'cascade' })
+			.notNull(),
+		//the picture, a JPEG or PNG, and a small copy of it for cards and lists
+		url: text('url').notNull(),
+		smallUrl: text('small_url').notNull(),
+		width: integer('width').notNull(),
+		height: integer('height').notNull(),
+		//both files together, which is what counts against the writer's room
+		bytes: integer('bytes').notNull(),
+		source: text('source').$type<ArtSource>().notNull().default('upload'),
+		//the studio drawing it was saved from, kept in that browser, so saving again replaces it
+		draftKey: text('draft_key'),
+		title: text('title').notNull().default(''),
+		//what it shows, for screen readers
+		description: text('description').notNull().default(''),
+		createdAt: timestamp('created_at').notNull().defaultNow(),
+		updatedAt: timestamp('updated_at')
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date())
+	},
+	(table) => [index('art_user_id_idx').on(table.userId)]
+);
+
+//an upload under way: the places in storage handed to the browser, and the bytes it said it
+//would send, held against the writer's room until the server has checked what arrived
+export const artUpload = pgTable(
+	'art_upload',
+	{
+		id: text('id').primaryKey(),
+		userId: text('user_id')
+			.references(() => user.id, { onDelete: 'cascade' })
+			.notNull(),
+		paths: jsonb('paths').$type<string[]>().notNull(),
+		bytes: integer('bytes').notNull(),
+		//the picture it replaces, when a studio drawing is saved again
+		replaces: integer('replaces'),
+		createdAt: timestamp('created_at').notNull().defaultNow()
+	},
+	(table) => [index('art_upload_user_id_idx').on(table.userId)]
+);
 
 //books that belong together. Its story bible is every entry linked to one of its books
 export const series = pgTable('series', {
@@ -51,6 +101,8 @@ export const book = pgTable(
 		chapterLabels: text('chapter_labels').$type<LabelStyle>().notNull().default('numeral'),
 		//off, every chapter goes by its label alone in reading mode
 		chapterTitles: boolean('chapter_titles').notNull().default(true),
+		//a picture from the writer's art shelf for its cover; null draws one from the title
+		coverArtId: integer('cover_art_id').references(() => art.id, { onDelete: 'set null' }),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at')
 			.notNull()

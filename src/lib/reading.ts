@@ -1,5 +1,6 @@
 // Reading mode: word counts, reading time, and the reader's text settings.
 
+import type { CoverArt } from '$lib/art';
 import type { HeadingStyles } from '$lib/headings';
 import { footnotesIn, plainText } from '$lib/rich';
 import type { ReaderSeries } from '$lib/series';
@@ -76,7 +77,7 @@ export type ReadingPosition = { key: string; fraction: number };
 
 /** What both reading routes load ($lib/server/reading); anything hidden arrives blank. */
 export type ReaderData = {
-	book: { id: number; title: string; description: string } & HeadingStyles;
+	book: { id: number; title: string; description: string; cover?: CoverArt | null } & HeadingStyles;
 	parts: {
 		id: number;
 		bookId: number;

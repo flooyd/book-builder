@@ -5,9 +5,11 @@ description: How Book Builder's art studio works (idea 25), covering the drawing
 
 # Book Builder: the art studio
 
-A vector drawing program that runs entirely in the browser. Nothing in it touches the server:
-drawings are kept in IndexedDB until saving to the art shelf arrives with idea 18. What's built,
-what's left and why are in `bb-roadmap`'s `ideas/25-art-studio.md`.
+A vector drawing program that runs entirely in the browser. Drawings are kept in IndexedDB as
+they're made; **Save to shelf** in the bar sends the picture as it looks to the art shelf (idea
+18, the `bb-art` skill), replacing its earlier copy so the covers it's on follow. That's the only
+time the studio reaches the server. What's built, what's left and why are in `bb-roadmap`'s
+`ideas/25-art-studio.md`.
 
 ## Where the code is
 

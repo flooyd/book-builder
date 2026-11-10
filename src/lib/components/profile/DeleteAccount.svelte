@@ -3,6 +3,7 @@
 	import { ACCOUNT_PHRASE, typedTitle } from '$lib/confirm';
 	import { plural, sendJSON } from '$lib/library';
 	import {
+		artStore,
 		booksStore,
 		chaptersStore,
 		charactersStore,
@@ -106,6 +107,13 @@
 								? ' and '
 								: ''}{shared ? plural(shared, 'share link') : ''}: readers who have them will find
 							nothing there</span
+						>
+					</li>
+				{/if}
+				{#if $artStore.length}
+					<li>
+						<Icon name="image" size={16} /><span
+							>{plural($artStore.length, 'picture')} on your art shelf, and every cover made from one</span
 						>
 					</li>
 				{/if}
