@@ -99,11 +99,16 @@ export async function prepare(
 /** Kinds of file a writer can choose. Not SVG: it can carry script. */
 export const PICK_TYPES = 'image/jpeg,image/png,image/webp,image/gif,image/avif';
 
-/** Read a chosen file into the two files to send, turned the way the camera held it. */
+/**
+ * Read a chosen file into the two files to send, turned the way the camera held it. A file with
+ * no type is tried anyway (some phones' pickers give none, even for a photograph): it's only ever
+ * opened as a picture, so anything that isn't one fails there.
+ */
 export async function prepareFile(file: File) {
-	if (file.type === 'image/svg+xml' || !file.type.startsWith('image/')) {
+	if (file.type === 'image/svg+xml' || (file.type && !file.type.startsWith('image/'))) {
 		throw new Error('Choose a photograph or a picture: a JPEG, PNG, WebP or GIF.');
 	}
+	const photo = file.type === 'image/jpeg' || (!file.type && /\.jpe?g$/i.test(file.name));
 	let bitmap: ImageBitmap;
 	try {
 		bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
@@ -111,7 +116,7 @@ export async function prepareFile(file: File) {
 		throw new Error('That file couldn’t be opened as a picture.');
 	}
 	try {
-		return await prepare(bitmap, bitmap.width, bitmap.height, file.type !== 'image/jpeg');
+		return await prepare(bitmap, bitmap.width, bitmap.height, !photo);
 	} finally {
 		bitmap.close();
 	}

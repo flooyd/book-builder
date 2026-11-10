@@ -31,7 +31,9 @@
 		busy = true;
 		onerror?.('');
 		try {
-			onuploaded?.(await uploadFile(file));
+			// Not `onuploaded?.(await uploadFile(file))`: with no listener, `?.` skips the upload too.
+			const picture = await uploadFile(file);
+			onuploaded?.(picture);
 		} catch (problem) {
 			onerror?.(problem instanceof Error ? problem.message : 'Couldn’t upload the picture.');
 		} finally {

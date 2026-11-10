@@ -41,6 +41,8 @@ should reuse all of this. The plan and what was left out are in `bb-roadmap`'s
    see-through stays a PNG; flat colour (the studio, an uploaded PNG) is a PNG unless a JPEG is
    less than half its size; photographs are JPEGs. Re-drawing drops a camera's metadata. Only
    JPEG and PNG are ever stored, because those are what PDFKit draws. No SVG: it can carry script.
+   A chosen file with no type is tried anyway (`prepareFile`), since some Android pickers give
+   none even for a photograph; one that isn't a picture fails when it's opened.
 2. **`POST /api/art/upload`** with each file's type and exact size: the server checks the room
    (under a Postgres advisory lock per writer, so two uploads can't both squeeze in), allows four
    under way at once, records an `art_upload` row holding those bytes, and hands back a Blob client
@@ -102,6 +104,11 @@ picker.
   (429), abandoned uploads cleared; deleting an account (its files gone, a wrong password leaving
   them); and hostile requests (SVG, sizes, another writer's picture, wrong bytes for the type, a
   path not handed out, paths climbing out of the folder). 1440 and 390, both themes.
+- **Test each button that uploads, not just one.** The shelf's own "Upload a picture" did nothing
+  until 2026-11-10 while the cover picker's worked: `UploadButton` called
+  `onuploaded?.(await uploadFile(file))`, and with no `onuploaded` (the shelf passes none) `?.`
+  skips its argument, upload and all. Pick the file with a tap and `page.waitForFileChooser()` at
+  390 with touch, as a phone does; a photo the size a camera takes (4032 × 3024) is worth one run.
 - **Not checked against the real store**: the Blob calls themselves (`put`, `head`, `del`, client
   tokens) only run with the key. Try one upload on a preview deployment before relying on it.
 - After adding to the server side, run a production build (see `bb-stack`). `@vercel/blob` 2.8.2
