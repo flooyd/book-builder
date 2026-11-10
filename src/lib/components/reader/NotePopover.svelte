@@ -7,8 +7,19 @@
 	let html = $state('');
 	let number = $state('');
 	let from: HTMLElement | null = null;
+	/**
+	 * The number whose note was showing when the latest press began. The browser closes a note as
+	 * a press outside it ends, before the click, so without this a second tap on the number would
+	 * close its note and open it straight back.
+	 */
+	let shownAtPress: HTMLElement | null = null;
 
-	/** A click in the book: if it's on a footnote's number, show its note. */
+	/** Whether a note is showing, so a tap that closes it can do nothing else (BookView). */
+	export function isOpen() {
+		return !!panel?.matches(':popover-open');
+	}
+
+	/** A click in the book: if it's on a footnote's number, show its note, or close it if shown. */
 	export function click(event: MouseEvent) {
 		if (event.defaultPrevented || event.button !== 0) return;
 		// A link opened in a new tab, or a jump to the notes, still works as a link.
@@ -16,6 +27,13 @@
 		const ref = (event.target as Element | null)?.closest?.<HTMLElement>('.bb-fn-ref');
 		const note = ref?.dataset.note;
 		if (!ref || !note || !/^\d+$/.test(note)) return;
+		// A click from the keyboard (detail 0) comes with no press, so it asks what's showing now.
+		const shown = event.detail > 0 ? shownAtPress : isOpen() ? from : null;
+		if (shown === ref) {
+			event.preventDefault();
+			if (isOpen()) panel?.hidePopover();
+			return;
+		}
 		const text = ref
 			.closest('.bb-prose')
 			?.querySelector(`.bb-notes li[data-note="${note}"] .bb-note-text`);
@@ -50,20 +68,32 @@
 		from = null;
 	}
 
+	/** A tap on the note puts it away, unless it was to select some of it. */
+	function onclick() {
+		if (!getSelection()?.toString()) panel?.hidePopover();
+	}
+
 	// It stays by its number while the page scrolls under it.
 	$effect(() => {
 		const follow = () => {
 			if (from) requestAnimationFrame(place);
 		};
+		// Captured before anything else hears the press, while the note is still showing.
+		const press = () => {
+			shownAtPress = isOpen() ? from : null;
+		};
 		addEventListener('scroll', follow, true);
 		addEventListener('resize', follow);
+		addEventListener('pointerdown', press, true);
 		return () => {
 			removeEventListener('scroll', follow, true);
 			removeEventListener('resize', follow);
+			removeEventListener('pointerdown', press, true);
 		};
 	});
 </script>
 
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions (Escape closes it from the keyboard, as any popover) -->
 <div
 	bind:this={panel}
 	class="note"
@@ -72,6 +102,7 @@
 	aria-label="Note {number}"
 	tabindex="-1"
 	{ontoggle}
+	{onclick}
 >
 	<p class="overline">Note {number}</p>
 	<!-- eslint-disable-next-line svelte/no-at-html-tags -- copied from toHTML's own list of notes -->

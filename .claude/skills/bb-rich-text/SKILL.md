@@ -137,7 +137,10 @@ skill) says what tripped them up. The plan for pictures is idea 22.
 7. **The book view.** Each chapter is set in CSS columns one page wide and measured in a hidden
    copy to count its pages (`reader/book-layout.ts`). Something that changes size after that, or
    can't break across a column, moves every page after it. Give it its size up front and say how
-   it breaks.
+   it breaks. A chapter with footnotes is cut into pages by the app instead (`sliceFlow`, with
+   lines read by `reader/flow-lines.ts`), which treats a heading, a title or a scene break as one
+   block that isn't split and reads everything else as lines of text: a new block that mustn't
+   be cut needs adding to the list in `flowLines`.
 8. **Both exported files.** They read the document themselves, not through `toHTML`:
    `manuscript.ts`, `pdf.ts` and `word.ts`. See the `bb-export` skill.
 9. **Saving, on the server.** If it points at something a writer owns, check that on save, as

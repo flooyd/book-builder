@@ -286,11 +286,13 @@
 	{/if}
 </svelte:head>
 
+<!-- A tap on a footnote's number is caught before anything else hears it: SvelteKit's router would
+	take it for a jump to the note, remember that address, and on the next tap scroll there itself. -->
 <svelte:window
 	{onscroll}
 	onresize={onscroll}
 	{onkeydown}
-	onclick={(event) => notePopover?.click(event)}
+	onclickcapture={(event) => notePopover?.click(event)}
 />
 
 {#snippet ornament()}
@@ -460,6 +462,7 @@
 				start={bookStart}
 				{resume}
 				onmove={onbookmove}
+				noteOpen={() => notePopover?.isOpen() ?? false}
 			/>
 		</main>
 	{:else}

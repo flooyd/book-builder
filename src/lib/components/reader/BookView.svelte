@@ -9,7 +9,7 @@
 		type ReaderPrefs,
 		type ReadingPosition
 	} from '$lib/reading';
-	import { textWithNotes } from '$lib/rich';
+	import { footnotesIn, textWithNotes } from '$lib/rich';
 	import { nextBookHref, seriesHref } from '$lib/series';
 	import RichText from '$lib/components/rich/RichText.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
@@ -18,11 +18,15 @@
 		geometryFor,
 		pageOf,
 		positionOf,
+		sliceFlow,
+		sliceRoom,
 		type BookItem,
 		type BookLayout,
 		type BookPage,
-		type Geometry
+		type Geometry,
+		type Slice
 	} from './book-layout';
+	import { flowLines, noteLines } from './flow-lines';
 
 	// Reading mode as a book: the cover opens on the title page, the text is set into pages
 	// (book-layout.ts), and pages turn in 3D like the book on the home page. Click or tap a page,
@@ -37,7 +41,8 @@
 		facts,
 		start = null,
 		resume = null,
-		onmove
+		onmove,
+		noteOpen = () => false
 	}: {
 		data: ReaderData;
 		outline: OutlinePart<ReaderData['parts'][number], ReaderData['chapters'][number]>[];
@@ -50,6 +55,8 @@
 		resume?: (ReadingPosition & { label: string }) | null;
 		/** After every turn: where the reader is now, and how far through the book. */
 		onmove: (at: { position: ReadingPosition | null; progress: number }) => void;
+		/** Whether a footnote's note is showing (Reader's NotePopover): a tap then only closes it. */
+		noteOpen?: () => boolean;
 	} = $props();
 
 	// ---- What goes in the book ---------------------------------------------------------------
@@ -59,6 +66,8 @@
 		title: string;
 		description: string;
 		editHref: string;
+		/** It has footnotes, so it's cut into pages itself (sliceFlow), not set in columns. */
+		sliced: boolean;
 	};
 
 	const plan = $derived.by(() => {
@@ -80,7 +89,8 @@
 						over: line.over,
 						title: line.title,
 						description: chapter.description,
-						editHref: resolve('/chapter/[id]', { id: String(chapter.id) })
+						editHref: resolve('/chapter/[id]', { id: String(chapter.id) }),
+						sliced: footnotesIn(data.texts[key] ?? '').length > 0
 					});
 				}
 			} else {
@@ -90,7 +100,8 @@
 					over: heading.over,
 					title: heading.title,
 					description: entry.part.description,
-					editHref: resolve('/part/[id]', { id: String(entry.part.id) })
+					editHref: resolve('/part/[id]', { id: String(entry.part.id) }),
+					sliced: footnotesIn(data.texts[key] ?? '').length > 0
 				});
 			}
 		});
@@ -139,14 +150,27 @@
 		stop();
 		const columnsOf = (flow: HTMLElement) =>
 			Math.max(1, Math.round((flow.scrollWidth + next.gap) / (next.cw + next.gap)));
-		const columns = [...measureBox.querySelectorAll<HTMLElement>('[data-flow]')].map(columnsOf);
+		// A flow with footnotes is cut into pages from its lines; the rest count their columns.
+		const room = sliceRoom(next);
+		const slices: (Slice[] | null)[] = [];
+		const columns = [...measureBox.querySelectorAll<HTMLElement>('[data-flow]')].map((flow) => {
+			const notes = flow.nextElementSibling;
+			if (!flow.matches('.sliced') || !(notes instanceof HTMLElement)) {
+				slices.push(null);
+				return columnsOf(flow);
+			}
+			const cut = sliceFlow(flowLines(flow), noteLines(notes), room);
+			slices.push(cut);
+			return cut.length;
+		});
 		const contents = measureBox.querySelector<HTMLElement>('[data-contents]');
 		layout = buildPages(
 			plan.items,
 			columns,
 			contents ? columnsOf(contents) : 1,
 			next.single,
-			data.book.title
+			data.book.title,
+			slices
 		);
 		const page =
 			(keep && pageOf(layout, keep)) ??
@@ -376,11 +400,17 @@
 
 	// ---- Clicks and swipes -----------------------------------------------------------------------
 	let book = $state<HTMLElement>();
-	let press: { x: number; y: number; touch: boolean } | null = null;
+	let press: { x: number; y: number; touch: boolean; closing: boolean } | null = null;
 
 	function onpointerdown(event: PointerEvent) {
 		if (event.button !== 0) return;
-		press = { x: event.clientX, y: event.clientY, touch: event.pointerType !== 'mouse' };
+		press = {
+			x: event.clientX,
+			y: event.clientY,
+			touch: event.pointerType !== 'mouse',
+			// The browser closes an open note when this press ends; that's all the tap is for.
+			closing: noteOpen()
+		};
 	}
 
 	// Clicking quickly through the pages makes double and triple clicks. Left alone they select a
@@ -393,14 +423,14 @@
 		if (!press || !book) return;
 		const dx = event.clientX - press.x;
 		const dy = event.clientY - press.y;
-		const touch = press.touch;
+		const { touch, closing } = press;
 		press = null;
 		// A swipe turns the way the finger goes; a mouse drag is selecting text.
 		if (touch && Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {
 			step(dx < 0 ? 1 : -1);
 			return;
 		}
-		if (Math.hypot(dx, dy) > 6) return;
+		if (Math.hypot(dx, dy) > 6 || closing) return;
 		// A footnote's number opens its note (Reader's NotePopover), and doesn't turn the page.
 		if ((event.target as Element).closest('a, button, input, .bb-fn-ref')) return;
 		if (getSelection()?.toString()) return;
@@ -573,7 +603,30 @@
 		<div class="sheet {side}" class:endpaper={page.kind === 'endpaper'}>
 			{#if page.head}<p class="head">{page.head}</p>{/if}
 			<div class="block">
-				{#if page.kind === 'text'}
+				{#if page.kind === 'text' && page.slice}
+					<!-- A flow with footnotes: a window onto its text, and another onto its notes at the
+					     foot, both copies of the whole flow set as one long column. -->
+					{@const slice = page.slice}
+					{#if slice.text}
+						<div class="clip" style:height="{slice.text.bottom - slice.text.top}px">
+							<div class="flow sliced" style:transform="translateY({-slice.text.top}px)">
+								{@render flowContent(plan.flows[page.flow])}
+							</div>
+						</div>
+					{/if}
+					{#if slice.notes}
+						<div class="foot" style:height="{slice.notes.bottom - slice.notes.top}px">
+							<div class="clip">
+								<div
+									class="flow sliced notes-only"
+									style:transform="translateY({-slice.notes.top}px)"
+								>
+									{@render flowContent(plan.flows[page.flow])}
+								</div>
+							</div>
+						</div>
+					{/if}
+				{:else if page.kind === 'text'}
 					<div class="clip">
 						<div
 							class="flow"
@@ -695,6 +748,7 @@
 	style:--ch="{geo?.ch ?? 0}px"
 	style:--gap="{geo?.gap ?? 0}px"
 	style:--font="{geo?.font ?? 16}px"
+	style:--note-rule="{geo ? sliceRoom(geo).rule : 22}px"
 	style:--o="{geo?.overhang ?? 8}px"
 	style:--spine-x={single ? '0px' : `${geo?.pw ?? 0}px`}
 	style:--turn="{TURN_MS}ms"
@@ -768,11 +822,17 @@
 			{/if}
 		</div>
 
-		<!-- Hidden copies of every flow, set at page size, to count their pages. -->
+		<!-- Hidden copies of every flow, set at page size, to count their pages. A flow with
+		     footnotes has two, its text and its notes, each one long column, to read lines from. -->
 		<div class="measure" bind:this={measureBox} data-scheme="light" aria-hidden="true" inert>
 			<div class="flow" data-contents>{@render contentsFlow()}</div>
 			{#each plan.flows as flow (flow.key)}
-				<div class="flow" data-flow>{@render flowContent(flow)}</div>
+				{#if flow.sliced}
+					<div class="flow sliced" data-flow>{@render flowContent(flow)}</div>
+					<div class="flow sliced notes-only">{@render flowContent(flow)}</div>
+				{:else}
+					<div class="flow" data-flow>{@render flowContent(flow)}</div>
+				{/if}
 			{/each}
 		</div>
 	{/if}
@@ -1023,6 +1083,44 @@
 
 	.flow :global(.bb-prose :is(h4, h5, h6)) {
 		break-after: avoid;
+	}
+
+	/* A flow with footnotes: one long column, shown a window at a time (see book-layout.ts). The
+	   text's copy leaves out the list of notes, and the notes' copy holds nothing else. */
+	.flow.sliced {
+		height: auto;
+		column-width: auto;
+	}
+
+	.flow.sliced:not(.notes-only) :global(.bb-notes),
+	.flow.notes-only > :is(.opener, .no-text),
+	.flow.notes-only :global(.bb-prose > :not(.bb-notes)) {
+		display: none;
+	}
+
+	.flow.notes-only :global(.bb-notes) {
+		margin: 0;
+	}
+
+	.flow.notes-only :global(.bb-notes::before) {
+		display: none;
+	}
+
+	/* The notes at the foot of the page, under a short rule, as in print. */
+	.foot {
+		position: absolute;
+		left: 0;
+		bottom: 0;
+		width: 100%;
+	}
+
+	.foot::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		bottom: calc(100% + var(--note-rule) / 2);
+		width: 3.8em;
+		border-top: 1px solid var(--bb-line-control);
 	}
 
 	.opener {
