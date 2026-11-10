@@ -28,7 +28,8 @@
 	} from './book-layout';
 	import { flowLines, noteLines } from './flow-lines';
 
-	// Reading mode as a book: the cover opens on the title page, the text is set into pages
+	// Reading mode as a book: it waits shut on its cover until the reader turns it, opens on the
+	// title page, and shuts again when turned back from there. The text is set into pages
 	// (book-layout.ts), and pages turn in 3D like the book on the home page. Click or tap a page,
 	// swipe, use the arrows below or the keyboard (the Reader passes keys on) to turn.
 	//
@@ -229,9 +230,9 @@
 	/** The spread (open book) or page (one at a time) on show. */
 	let at = $state(0);
 	let turning = $state<Turn | null>(null);
-	/** Where to go once the current turn lands (pressing again mid-turn). */
+	/** Where to go once the current turn lands (pressing again mid-turn); -1 is the cover. */
 	let queued: number | null = null;
-	/** Before the cover opens. */
+	/** Shut, with the cover on top. */
 	let closed = $state(true);
 	let reduced = false;
 	let turns = 0;
@@ -240,6 +241,11 @@
 	/** How long a page and the cover take to turn; the CSS takes them from here. */
 	const TURN_MS = 750;
 	const COVER_MS = 1100;
+
+	/** Where the reader is, or is headed mid-turn: a view, or -1 for the shut cover. */
+	const place = $derived(
+		turning ? (turning.cover && turning.back ? -1 : turning.to) : closed ? -1 : at
+	);
 
 	const shown = $derived.by((): { left: Ref; right: Ref } => {
 		if (turning) return turning;
@@ -256,18 +262,42 @@
 		return left?.kind === 'text' && right?.kind === 'text' && left.key === right.key;
 	});
 
+	/** Turn to a view, or to -1 to shut the book. */
 	function show(target: number, animate = true) {
 		if (!geo || count === 0) return;
-		target = Math.min(count - 1, Math.max(0, target));
+		target = Math.min(count - 1, Math.max(-1, target));
 		// The scrubber goes straight there, even mid-turn.
 		if (!animate) stop();
 		if (turning) {
 			queued = target;
 			return;
 		}
+		if (target === -1) {
+			if (closed) return;
+			// The cover shuts over the first spread, so from further in, turn there first.
+			if (at > 0 && animate && !reduced) {
+				show(0);
+				queued = -1;
+				return;
+			}
+			at = 0;
+			close();
+			return;
+		}
+		if (closed) {
+			if (!animate || reduced) {
+				closed = false;
+				at = target;
+				report();
+				return;
+			}
+			// The cover opens on the first spread, and the book goes on from there.
+			open();
+			if (target !== at) queued = target;
+			return;
+		}
 		if (target === at) return;
-		if (!animate || reduced || closed) {
-			closed = false;
+		if (!animate || reduced) {
 			at = target;
 			report();
 			return;
@@ -351,12 +381,16 @@
 		queued = null;
 	}
 
-	function open() {
-		closed = false;
-		if (reduced) return;
+	/** The cover turning over, or back: it lies on the first spread either way. */
+	function turnCover(back: boolean) {
+		closed = back;
+		if (reduced) {
+			report();
+			return;
+		}
 		begin({
 			to: at,
-			back: false,
+			back,
 			cover: true,
 			left: null,
 			right: single ? at : 2 * at + 1,
@@ -365,13 +399,17 @@
 		});
 	}
 
-	/** Turn one page (spread) on or back. */
+	const open = () => turnCover(false);
+	const close = () => turnCover(true);
+
+	/** Turn one page (spread) on or back; back from the first spread shuts the book. */
 	export function step(direction: 1 | -1) {
-		show((queued ?? turning?.to ?? at) + direction);
+		show((queued ?? place) + direction);
 	}
 
 	/** The first or the last page. */
 	export function edge(last: boolean) {
+		if (!last && place === -1) return;
 		show(last ? count - 1 : 0);
 	}
 
@@ -442,12 +480,14 @@
 		if (getSelection()?.toString()) return;
 		const rect = book.getBoundingClientRect();
 		const x = (event.clientX - rect.left) / rect.width;
-		step(x < (single ? 0.3 : 0.5) ? -1 : 1);
+		// Anywhere on the shut book opens it.
+		step(!closed && x < (single ? 0.3 : 0.5) ? -1 : 1);
 	}
 
 	// ---- Labels --------------------------------------------------------------------------------
 	const pageLabel = $derived.by(() => {
 		if (pages.length === 0) return '';
+		if (place === -1) return 'Cover';
 		const view = turning?.to ?? at;
 		const visible = pagesOn(view).filter(
 			(page): page is BookPage => !!page && page.kind !== 'endpaper'
@@ -484,14 +524,9 @@
 		(async () => {
 			await measure(geometryNow(), start);
 			if (gone) return;
-			if (start) {
-				closed = false;
-			} else {
-				// A moment on the closed cover before it opens.
-				await new Promise((done) => setTimeout(done, reduced ? 0 : 450));
-				// Unless the reader has already turned past it.
-				if (!gone && closed) open();
-			}
+			// Coming from the scroll view it opens at the same place. Otherwise it stays shut on its
+			// cover until the reader turns it.
+			if (start) closed = false;
 			if (area) observer.observe(area);
 		})();
 		return () => {
@@ -827,6 +862,7 @@
 				<div
 					class="leaf cover-leaf"
 					class:turning={turning?.cover}
+					class:back={turning?.cover && turning.back}
 					data-turn={turning?.id}
 					onanimationend={landed}
 					aria-hidden="true"
@@ -858,8 +894,8 @@
 	<button
 		type="button"
 		class="nav"
-		aria-label={single ? 'Previous page' : 'Previous pages'}
-		disabled={!geo || (turning?.to ?? at) === 0}
+		aria-label={place === 0 ? 'Back to the cover' : single ? 'Previous page' : 'Previous pages'}
+		disabled={!geo || place === -1}
 		onclick={() => step(-1)}
 	>
 		<Icon name="chevron-left" size={20} />
@@ -880,13 +916,15 @@
 	<button
 		type="button"
 		class="nav"
-		aria-label={single ? 'Next page' : 'Next pages'}
-		disabled={!geo || (turning?.to ?? at) >= count - 1}
+		aria-label={place === -1 ? 'Open the book' : single ? 'Next page' : 'Next pages'}
+		disabled={!geo || place >= count - 1}
 		onclick={() => step(1)}
 	>
 		<Icon name="chevron-right" size={20} />
 	</button>
-	<p class="sr-only" aria-live="polite">{pageLabel ? `Page ${pageLabel}` : ''}</p>
+	<p class="sr-only" aria-live="polite">
+		{place === -1 ? 'The cover' : pageLabel ? `Page ${pageLabel}` : ''}
+	</p>
 </div>
 
 <style>
@@ -1537,6 +1575,11 @@
 
 	.cover-leaf.turning {
 		animation: turn var(--cover-turn) cubic-bezier(0.45, 0.05, 0.3, 1) both;
+	}
+
+	/* Shutting: the shorthand above sets the direction back, so reverse it again. */
+	.cover-leaf.turning.back {
+		animation-direction: reverse;
 	}
 
 	.side {
