@@ -8,11 +8,15 @@
 import { SvelteMap } from 'svelte/reactivity';
 import {
 	BLENDS,
+	MAX_LAYERS,
 	MAX_PIXELS,
+	MAX_SHAPES,
 	MAX_SIDE,
 	MIN_SIDE,
+	allShapes,
 	newLayer,
 	paintLayerLimit,
+	shapeCount,
 	solid,
 	type Blend,
 	type Drawing,
@@ -20,7 +24,8 @@ import {
 	type Matrix,
 	type Paint,
 	type Shape,
-	type Stroke
+	type Stroke,
+	type VectorLayer
 } from '$lib/drawing';
 import {
 	arrangeShapes,
@@ -50,6 +55,7 @@ import {
 	type Bounds
 } from './geometry';
 import type { View } from './render';
+import { surprise as makeSurprise, SURPRISES, type SurpriseKind } from './surprise';
 
 export type ToolId =
 	| 'select'
@@ -115,10 +121,23 @@ export class Studio {
 
 	#undo: Entry[] = $state.raw([]);
 	#redo: Entry[] = $state.raw([]);
+	/**
+	 * The pictures "Surprise me" made, by their lists of shapes. Edits replace a layer's list, so a
+	 * layer still holding one of these is a picture nobody has drawn on.
+	 */
+	readonly #made = new WeakSet<Shape[]>();
+	#lastKind: SurpriseKind | null = null;
 
 	canUndo = $derived(this.#undo.length > 0);
 	canRedo = $derived(this.#redo.length > 0);
 	activeLayer = $derived(this.doc.layers.find((layer) => layer.id === this.activeLayerId) ?? null);
+	/** Whether "Surprise me" now rolls the active layer's picture again, in its place. */
+	rerolls = $derived.by(() => {
+		const layer = this.activeLayer;
+		return (
+			layer?.kind === 'vector' && !layer.hidden && !layer.locked && this.#made.has(layer.shapes)
+		);
+	});
 	selected = $derived(locateAll(this.doc, this.selection));
 	selectionBounds = $derived(boundsOf(this.doc, this.selection));
 	tool = $derived(this.heldTool ?? this.toolId);
@@ -557,6 +576,48 @@ export class Studio {
 		layers.splice(index, 0, copy);
 		this.apply({ ...this.doc, layers }, []);
 		this.activeLayerId = copy.id;
+	}
+
+	/**
+	 * A random picture (see surprise.ts) on a new layer at the top, where it's sure to be seen,
+	 * which becomes the active layer. While the active layer holds a picture nobody has drawn on,
+	 * it rolls again in its place instead, keeping the layer where it is, so a picture moved down
+	 * behind a drawing can still be swapped. Each roll is a step of its own, so undo goes back
+	 * through them. False when the drawing has no room for it.
+	 */
+	surprise(kind: SurpriseKind | 'any') {
+		const active = this.activeLayer;
+		const old = this.rerolls && active?.kind === 'vector' ? active : null;
+		const art = makeSurprise(this.doc.width, this.doc.height, { kind, avoid: this.#lastKind });
+		const replacing = old ? [...allShapes(old.shapes)].length : 0;
+		if (shapeCount(this.doc) - replacing + [...allShapes(art.shapes)].length > MAX_SHAPES) {
+			return false;
+		}
+		let next: Drawing;
+		let layerId: string;
+		if (old) {
+			// A name the writer gave it stays; the name of the kind changes with the picture.
+			const named = !SURPRISES.some((item) => item.label === old.name);
+			layerId = old.id;
+			next = mapLayer(this.doc, layerId, () => ({
+				...old,
+				name: named ? old.name : art.label,
+				shapes: art.shapes
+			}));
+		} else {
+			if (this.doc.layers.length >= MAX_LAYERS) return false;
+			const layer: VectorLayer = {
+				...(newLayer('vector', art.label) as VectorLayer),
+				shapes: art.shapes
+			};
+			layerId = layer.id;
+			next = { ...this.doc, layers: [...this.doc.layers, layer] };
+		}
+		this.#made.add(art.shapes);
+		this.#lastKind = art.kind;
+		this.apply(next, []);
+		this.activeLayerId = layerId;
+		return true;
 	}
 
 	setBackground(color: string | null, merge?: string) {

@@ -1,12 +1,14 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
 	import { flatten } from '$lib/studio/render';
 	import type { Studio } from '$lib/studio/studio.svelte';
+	import { SURPRISES, type SurpriseKind } from '$lib/studio/surprise';
 
-	// The studio's top bar: back to the shelf, the drawing's name, whether it's kept, undo and redo,
-	// the zoom, and downloading a picture. On small screens it also opens the panels.
+	// The studio's top bar: back to the shelf, the drawing's name, whether it's kept, "Surprise me",
+	// undo and redo, the zoom, and downloading a picture. On small screens it also opens the panels.
 	let {
 		studio,
 		title = $bindable(),
@@ -25,7 +27,45 @@
 
 	const zoomId = 'studio-zoom';
 	const downloadId = 'studio-download';
+	const surpriseId = 'studio-surprise';
 	const keep = (event: MouseEvent) => event.preventDefault();
+
+	// "Surprise me" rolls the kind picked last, remembered in this browser.
+	const KIND_KEY = 'bb-studio-surprise';
+	let kind = $state<SurpriseKind | 'any'>('any');
+	let spins = $state(0);
+	let notice = $state('');
+	let noticeTimer: ReturnType<typeof setTimeout> | undefined;
+	const kindLabel = $derived(SURPRISES.find((item) => item.key === kind)?.label ?? 'Any kind');
+
+	onMount(() => {
+		try {
+			const saved = localStorage.getItem(KIND_KEY);
+			if (saved && SURPRISES.some((item) => item.key === saved)) kind = saved as SurpriseKind;
+		} catch {
+			// Storage switched off: start from any kind.
+		}
+		return () => clearTimeout(noticeTimer);
+	});
+
+	function roll(next = kind) {
+		spins++;
+		if (studio.surprise(next)) return;
+		notice = 'No room for another picture: the drawing has all the layers or shapes it can hold';
+		clearTimeout(noticeTimer);
+		noticeTimer = setTimeout(() => (notice = ''), 6000);
+	}
+
+	function choose(next: SurpriseKind | 'any') {
+		kind = next;
+		try {
+			localStorage.setItem(KIND_KEY, next);
+		} catch {
+			// Not remembered, which is fine.
+		}
+		document.getElementById(surpriseId)?.hidePopover();
+		roll(next);
+	}
 	const percent = $derived(`${Math.round(studio.view.zoom * 100)}%`);
 
 	const doubleFits = $derived(studio.doc.width * studio.doc.height * 4 <= 4096 * 4096);
@@ -98,13 +138,75 @@
 				}}
 			/>
 		</label>
-		<span class="status" class:failed={status === 'failed'} role="status">
-			{#if status === 'kept'}<Icon name="check" size={13} />{/if}
-			<span class="status-text">{STATUS[status]}</span>
+		<span class="status" class:failed={status === 'failed' || !!notice} role="status">
+			{#if status === 'kept' && !notice}<Icon name="check" size={13} />{/if}
+			<span class="status-text">{notice || STATUS[status]}</span>
 		</span>
 	</div>
 
 	<div class="end">
+		<div class="surprise">
+			<button
+				type="button"
+				class="roll"
+				aria-label="Surprise me"
+				title={studio.rerolls
+					? 'Another random picture, in place of this one'
+					: 'Surprise me: a random picture on a new layer at the top'}
+				onmousedown={keep}
+				onclick={() => roll()}
+			>
+				<span class="die" style:transform="rotate({spins * 180}deg)"
+					><Icon name="dice" size={16} /></span
+				>
+				<span class="roll-text">Surprise me</span>
+			</button>
+			<button
+				type="button"
+				class="roll-kind"
+				popovertarget={surpriseId}
+				aria-label="What kind of picture, now {kindLabel}"
+				title="What kind of picture"
+				onmousedown={keep}
+			>
+				<Icon name="chevron-down" size={13} />
+			</button>
+		</div>
+		<div
+			id={surpriseId}
+			class="menu kinds"
+			popover="auto"
+			role="menu"
+			aria-label="What kind of picture"
+			onbeforetoggle={(event) => placeBelow(event, surpriseId, 'end')}
+		>
+			<p class="menu-note">
+				A random picture on a new layer at the top, made of shapes you can change. Until you draw on
+				it, press again for another in its place.
+			</p>
+			<button
+				type="button"
+				role="menuitemradio"
+				aria-checked={kind === 'any'}
+				onclick={() => choose('any')}
+			>
+				Any kind
+				{#if kind === 'any'}<Icon name="check" size={14} />{/if}
+			</button>
+			<hr />
+			{#each SURPRISES as item (item.key)}
+				<button
+					type="button"
+					role="menuitemradio"
+					aria-checked={kind === item.key}
+					onclick={() => choose(item.key)}
+				>
+					{item.label}
+					{#if kind === item.key}<Icon name="check" size={14} />{/if}
+				</button>
+			{/each}
+		</div>
+
 		<button
 			type="button"
 			class="icon"
@@ -342,6 +444,67 @@
 		text-overflow: ellipsis;
 	}
 
+	.surprise {
+		display: inline-flex;
+		flex: none;
+		height: 36px;
+		margin-right: 6px;
+		border: 1px solid var(--bb-line-control);
+		border-radius: 10px;
+	}
+
+	.roll,
+	.roll-kind {
+		display: inline-flex;
+		align-items: center;
+		border: none;
+		background: none;
+	}
+
+	.roll {
+		gap: 7px;
+		padding: 0 10px 0 10px;
+		border-radius: 9px 0 0 9px;
+		color: var(--bb-text-strong);
+		font: 600 13.5px var(--font-ui);
+		white-space: nowrap;
+	}
+
+	.roll-kind {
+		justify-content: center;
+		width: 26px;
+		padding: 0;
+		border-left: 1px solid var(--bb-line-soft);
+		border-radius: 0 9px 9px 0;
+		color: var(--bb-text-label);
+	}
+
+	.roll:hover,
+	.roll-kind:hover {
+		background: var(--bb-hover);
+	}
+
+	.die {
+		display: grid;
+		color: var(--studio-accent);
+		transition: transform 0.4s cubic-bezier(0.3, 1.4, 0.5, 1);
+	}
+
+	.kinds {
+		width: 250px;
+	}
+
+	.menu-note {
+		margin: 4px 8px 8px;
+		color: var(--bb-text-3);
+		font-size: 12px;
+		line-height: 1.45;
+	}
+
+	.menu button[aria-checked='true'] {
+		color: var(--bb-text-strong);
+	}
+
 	.zoom {
 		display: inline-flex;
 		align-items: center;
@@ -432,9 +595,25 @@
 		font-variant-numeric: tabular-nums;
 	}
 
+	@media (prefers-reduced-motion: reduce) {
+		.die {
+			transition: none;
+		}
+	}
+
 	@media (max-width: 900px) {
 		.status-text {
 			display: none;
+		}
+	}
+
+	@media (max-width: 1100px) {
+		.roll-text {
+			display: none;
+		}
+
+		.roll {
+			padding: 0 8px;
 		}
 	}
 
@@ -465,6 +644,33 @@
 		.zoom {
 			min-width: 0;
 			padding: 0 6px;
+		}
+
+		/* Tighter, so the drawing's name keeps room beside one more button. */
+		.end {
+			gap: 2px;
+		}
+
+		.back,
+		.icon {
+			width: 32px;
+		}
+
+		.surprise {
+			height: 38px;
+			margin-right: 0;
+			border: none;
+		}
+
+		.roll-kind {
+			display: none;
+		}
+
+		.roll {
+			justify-content: center;
+			width: 32px;
+			padding: 0;
+			border-radius: 9px;
 		}
 	}
 </style>

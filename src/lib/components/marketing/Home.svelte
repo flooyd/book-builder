@@ -126,9 +126,9 @@
 			body: 'Click for corners, drag for curves, then reshape any point or handle.'
 		},
 		{
-			title: 'Layers that blend',
-			icon: 'layers',
-			body: 'Show, hide, lock and reorder them, each with its own opacity and blend mode.'
+			title: 'Surprise me',
+			icon: 'dice',
+			body: 'Roll a random night sky, mountains, tiles or a rosette, then make it your own.'
 		},
 		{
 			title: 'Exact when you need it',

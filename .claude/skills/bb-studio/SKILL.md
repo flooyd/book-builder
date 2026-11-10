@@ -11,15 +11,15 @@ what's left and why are in `bb-roadmap`'s `ideas/25-art-studio.md`.
 
 ## Where the code is
 
-| Layer    | Files                                                                                                                                                                                                                   |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Format   | `lib/drawing.ts`: types, limits, `newDrawing`, `PRESETS`, `cleanDrawing` (the allow-list). Imports nothing.                                                                                                             |
-| Engine   | `lib/studio/`: `geometry.ts` (matrices, bounds, outlines, `normalize`), `fit.ts` (pencil curve fitting), `edit.ts` (immutable changes), `render.ts`, `color.ts`, `numbers.ts` (sums in fields), `draft.ts` (IndexedDB). |
-| State    | `lib/studio/studio.svelte.ts`: the `Studio` class (drawing, selection, view, tool, style, undo).                                                                                                                        |
-| Tools    | `lib/studio/tools/`: `tool.ts` (the interface, cursors), `marks.ts`, `path-edit.ts`, one file per tool, `index.ts` (names, keys, icons, `makeTools`).                                                                   |
-| Screen   | `lib/components/studio/`: `StudioApp` (root, keys, drafts), `Stage` (canvas and pointer), `Overlay` (the tool's marks), `ToolRail`, `StudioBar`, `Inspector`, `LayersPanel`, `ColorPicker`, `ColorWell`, `NumberField`. |
-| Pages    | `routes/studio` (`Shelf`, `NewDrawing`) and `routes/studio/draft/[key]` (`StudioApp`). The root layout treats the drawing page like reading mode: no app header, no dock.                                               |
-| Homepage | `marketing/StudioShowcase.svelte`, section 04 (see `bb-homepage`).                                                                                                                                                      |
+| Layer    | Files                                                                                                                                                                                                                                                    |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Format   | `lib/drawing.ts`: types, limits, `newDrawing`, `PRESETS`, `cleanDrawing` (the allow-list). Imports nothing.                                                                                                                                              |
+| Engine   | `lib/studio/`: `geometry.ts` (matrices, bounds, outlines, `normalize`), `fit.ts` (pencil curve fitting), `edit.ts` (immutable changes), `render.ts`, `color.ts`, `numbers.ts` (sums in fields), `draft.ts` (IndexedDB), `surprise.ts` (random pictures). |
+| State    | `lib/studio/studio.svelte.ts`: the `Studio` class (drawing, selection, view, tool, style, undo).                                                                                                                                                         |
+| Tools    | `lib/studio/tools/`: `tool.ts` (the interface, cursors), `marks.ts`, `path-edit.ts`, one file per tool, `index.ts` (names, keys, icons, `makeTools`).                                                                                                    |
+| Screen   | `lib/components/studio/`: `StudioApp` (root, keys, drafts), `Stage` (canvas and pointer), `Overlay` (the tool's marks), `ToolRail`, `StudioBar`, `Inspector`, `LayersPanel`, `ColorPicker`, `ColorWell`, `NumberField`.                                  |
+| Pages    | `routes/studio` (`Shelf`, `NewDrawing`) and `routes/studio/draft/[key]` (`StudioApp`). The root layout treats the drawing page like reading mode: no app header, no dock.                                                                                |
+| Homepage | `marketing/StudioShowcase.svelte`, section 04 (see `bb-homepage`).                                                                                                                                                                                       |
 
 ## The drawing
 
@@ -112,6 +112,26 @@ what's left and why are in `bb-roadmap`'s `ideas/25-art-studio.md`.
   turned with it, or the box round several. Resizing scales about the frame's top left in the
   frame's own space.
 
+## Surprise me
+
+- **`surprise.ts`** makes a random picture the size of a drawing: `surprise(width, height, options)`
+  with an optional `kind`, `seed` and `avoid`. Seven kinds in `SURPRISES`, each a `Maker` that composes shapes from a
+  seeded random (`Roll`, mulberry32), so the same seed and size make the same picture. Colours come
+  from `PALETTES`, sorted dark to light. It imports only `drawing`, `color` and `geometry`.
+- **Its output is what the cleaner would keep**: coordinates rounded to two places, matrix
+  entries to six, opacity to three, every colour eight digits. A scratch test runs every kind at
+  every preset size (and 16 × 16 and 4096 × 16) through `cleanDrawing` and expects it back
+  unchanged; do the same after changing a maker. Counts are capped (`scatter`, about 150 tiles)
+  so a long thin drawing doesn't make thousands of shapes.
+- **No gradients yet**, so a sky's glow is 18 faint bands stacked towards the horizon (`glow`).
+  Fewer, stronger bands show as stripes.
+- **`Studio.surprise(kind)`** puts a new picture on a new layer at the top, or, while the active
+  layer still holds a list of shapes it made (`#made`, a `WeakSet` of the lists; any edit replaces
+  a layer's list), rolls again in that layer's place. `rerolls` says which, for the bar's tooltip.
+  A layer's name changes with the picture only while it's still a kind's name.
+- **Judging the look**: the scratch test can also write contact sheets (each shape as SVG through
+  `outline` and `pathData`), quicker to look at than the studio for dozens of seeds.
+
 ## Drafts
 
 - **`draft.ts`**: database `bb-studio`, stores `drafts` (by key, with an `owner` index) and
@@ -142,7 +162,9 @@ Downloading at twice the size is offered only while that stays inside `MAX_PIXEL
   `Browser.setDownloadBehavior` through a CDP session and read the PNG's size from its header.
 - **Checked on 2026-11-10**: 1440 and 390 wide in both themes; drawing every shape tool, the
   pen and the pencil; select, move, undo, typed sums, turning; the colour picker; a reload
-  keeping everything; Alt-drag copies; a full-size PNG.
+  keeping everything; Alt-drag copies; a full-size PNG. Surprise me: every kind from the menu,
+  rolling in place, undo and redo through rolls, rolling in place after the layer moved to the
+  bottom, a new layer once drawn on, Start with a surprise, the bar at 1024 and 390.
 
 ## Things that tripped it up
 

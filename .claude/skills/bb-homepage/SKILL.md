@@ -19,8 +19,9 @@ description: Book Builder's signed-out homepage and marketing content, covering 
      (the Meridian under a crescent moon, the far fleet, a beacon under the ice) with its big sail
      selected. The art uses only what the studio can really draw: solid fills, strokes, opacity,
      ellipses, stars and pen paths (the crescent is a sky-coloured disc over a pale one). Under it,
-     four points: the pen, layers, exact numbers, and downloading. The header's nav has a Studio
-     link to it.
+     four points: the pen, "Surprise me" (random pictures, which took the place of layers, already
+     in the lede, on 2026-11-10), exact numbers, and downloading. The pictured bar has the Surprise
+     me button, as the real one does. The header's nav has a Studio link to it.
    - `#focus` **05 — Focus, goals, insights and share**: four cards, two by two: focus mode, the author page (the "Oriel Vance" picture, with a "See the demo author" link to the real Demo Author page) writing goals (a picture of today's progress, a streak and two weeks of bars) and manuscript insights (a small pacing chart, drawn like the real one, and one finding).
    - `#soon` **06 — On the shelf next**: the Coming soon shelf, rendered from `SOON`, and hidden (with its header link) when the list is empty.
 3. **Closing** call to action, then the footer.

@@ -72,6 +72,28 @@ portrait, a map, a picture in the page (idea 22) or an ornament (idea 26).
   that made them, in that browser only.
 - **Download** as PNG at full size, twice the size (when that stays under 4096² pixels) or half.
 
+### Surprise me, 2026-11-10
+
+The user asked for it the day (a) shipped: "a random button that will randomly create art". It's
+procedural, not generated art in the sense ruled out above: seven kinds of composition (night sky,
+mountains, waves, tiles, cut paper, orbits, rosette), each with rules of its own, coloured from
+sixteen palettes picked to go together, made of the studio's own shapes in named groups that can
+be picked apart and changed. Nothing is learned or fetched.
+
+- **In the bar**, "Surprise me" puts a picture on a new layer at the top, where it's sure to be
+  seen (every kind has its own ground, so a picture under another would show nothing). While its
+  layer is the active one and nobody has drawn on it, pressing again rolls another in its place,
+  wherever the layer has been moved, so a picture slid behind a drawing can still be swapped. Each
+  roll is an undo step. The arrow beside it picks a kind ("Any kind" doesn't repeat the last),
+  remembered in this browser.
+- **In New drawing**, "Start with a surprise" puts a picture on the bottom layer with an empty one
+  above it to draw on.
+- **On the homepage**, it's one of the studio section's four points, and the picture of the
+  studio's bar shows the button.
+
+Left out: rolling again in place after a reload (the studio only knows the pictures it made in
+this visit), a seed to share or type in, and a picture made to fit a book (its title, its mood).
+
 Left out of (a), for now:
 
 - **Saving to the art shelf** (with a description for screen readers), which needs 18. Until

@@ -3,11 +3,22 @@
 	import { resolve } from '$app/paths';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
-	import { MAX_PIXELS, MAX_SIDE, MIN_SIDE, PRESETS, newDrawing } from '$lib/drawing';
+	import Icon from '$lib/components/ui/Icon.svelte';
+	import {
+		MAX_PIXELS,
+		MAX_SIDE,
+		MIN_SIDE,
+		PRESETS,
+		newDrawing,
+		newLayer,
+		type VectorLayer
+	} from '$lib/drawing';
 	import { createDraft } from '$lib/studio/draft';
+	import { surprise } from '$lib/studio/surprise';
 
-	// Starting a drawing: what it's for (which sets its size), or a size of its own, and the ground
-	// it's drawn on. It's made in this browser and opened straight away.
+	// Starting a drawing: what it's for (which sets its size), or a size of its own, the ground it's
+	// drawn on, and whether it starts with a random picture to draw over. It's made in this browser
+	// and opened straight away.
 	let { owner, onclose }: { owner: string; onclose: () => void } = $props();
 
 	const GROUNDS = [
@@ -22,6 +33,7 @@
 	let height = $state<number>(PRESETS[0].height);
 	let ground = $state<string>('paper');
 	let name = $state('');
+	let withArt = $state(false);
 	let busy = $state(false);
 	let error = $state('');
 
@@ -51,7 +63,16 @@
 		error = '';
 		try {
 			const background = GROUNDS.find((item) => item.key === ground)?.color ?? null;
-			const doc = newDrawing(width, height, background);
+			let doc = newDrawing(width, height, background);
+			if (withArt) {
+				// The picture on a layer of its own at the bottom, and the empty layer above it to draw on.
+				const art = surprise(doc.width, doc.height);
+				const layer: VectorLayer = {
+					...(newLayer('vector', art.label) as VectorLayer),
+					shapes: art.shapes
+				};
+				doc = { ...doc, layers: [layer, ...doc.layers] };
+			}
 			const fallback = PRESETS.find((item) => item.key === preset)?.label ?? 'Drawing';
 			const key = await createDraft(owner, name.trim() || fallback, doc);
 			await goto(resolve('/studio/draft/[key]', { key }));
@@ -156,6 +177,16 @@
 				{/each}
 			</div>
 		</fieldset>
+
+		<label class="art" class:on={withArt}>
+			<input type="checkbox" bind:checked={withArt} />
+			<span class="art-icon" aria-hidden="true"><Icon name="dice" size={20} /></span>
+			<span class="art-text">
+				<span class="art-name">Start with a surprise</span>
+				<span class="art-hint">A random picture on a layer of its own, to draw over or change</span>
+			</span>
+			<span class="art-tick" aria-hidden="true"><Icon name="check" size={14} /></span>
+		</label>
 
 		<label class="name">
 			<span>Name <span class="optional">(you can change it later)</span></span>
@@ -331,6 +362,84 @@
 
 	.chip.clear {
 		background: repeating-conic-gradient(#d9d9d9 0 25%, #fff 0 50%) 0 0 / 8px 8px;
+	}
+
+	.art {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 10px 14px 10px 10px;
+		border: 1px solid var(--bb-line-soft);
+		border-radius: 14px;
+		cursor: pointer;
+	}
+
+	.art:hover {
+		border-color: var(--bb-line-control);
+		background: var(--bb-hover);
+	}
+
+	.art.on {
+		border-color: var(--bb-sky);
+		background: color-mix(in srgb, var(--bb-sky) 8%, transparent);
+	}
+
+	.art:has(input:focus-visible) {
+		box-shadow: var(--focus-ring);
+	}
+
+	.art input {
+		position: absolute;
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.art-icon {
+		display: grid;
+		flex: none;
+		place-items: center;
+		width: 40px;
+		height: 40px;
+		border-radius: 10px;
+		background: color-mix(in srgb, var(--bb-sky) 14%, transparent);
+		color: var(--bb-sky);
+	}
+
+	.art-text {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+	}
+
+	.art-name {
+		color: var(--bb-text);
+		font-size: 13.5px;
+		font-weight: 600;
+	}
+
+	.art-hint {
+		color: var(--bb-text-3);
+		font-size: 12.5px;
+	}
+
+	.art-tick {
+		display: grid;
+		flex: none;
+		place-items: center;
+		width: 22px;
+		height: 22px;
+		border: 1.5px solid var(--bb-line-control);
+		border-radius: 6px;
+		color: transparent;
+	}
+
+	.art.on .art-tick {
+		border-color: var(--bb-sky);
+		background: var(--bb-sky);
+		color: var(--bb-night);
 	}
 
 	.name {

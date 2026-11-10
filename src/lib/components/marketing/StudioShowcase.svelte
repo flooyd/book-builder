@@ -87,6 +87,12 @@
 			<span class="bar-status"><Icon name="check" size={11} />Kept in this browser</span>
 		</span>
 		<span class="bar-end">
+			<span class="bar-surprise"
+				><span class="bar-die"><Icon name="dice" size={12} /></span>Surprise me<Icon
+					name="chevron-down"
+					size={10}
+				/></span
+			>
 			<span class="bar-history"><Icon name="undo" size={14} /><Icon name="redo" size={14} /></span>
 			<span class="bar-zoom">25%</span>
 			<span class="bar-download"><Icon name="download" size={12} />Download</span>
@@ -324,6 +330,23 @@
 		gap: 4px;
 		color: var(--bb-text-3);
 		white-space: nowrap;
+	}
+
+	.bar-surprise {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		padding: 4px 7px;
+		border: 1px solid var(--bb-line-control);
+		border-radius: 7px;
+		color: var(--bb-text-strong);
+		font-weight: 600;
+		white-space: nowrap;
+	}
+
+	.bar-die {
+		display: grid;
+		color: var(--accent);
 	}
 
 	.bar-history {
@@ -588,6 +611,7 @@
 		}
 
 		.bar-status,
+		.bar-surprise,
 		.bar-history,
 		.bar-zoom {
 			display: none;
