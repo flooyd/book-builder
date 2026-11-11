@@ -53,11 +53,15 @@ More features, kept out of the table so it stays readable:
 - **The art studio** (`/studio`, `/studio/draft/[key]`, idea 25): a vector drawing program that runs
   in the browser, with drafts kept in IndexedDB. The format and its cleaner are `lib/drawing.ts`;
   the engine is `lib/studio/` (geometry, fit, edit, render, color, numbers, draft, text (setting
-  and measuring text), the random pictures of "Surprise me" in `surprise.ts`, the `Studio` state
+  and measuring text), the random pictures of "Surprise me" in `surprise.ts`, placed pictures in
+  `pictures.ts`, a drawing started from a picture in `start.ts`, the SVG download in `svg.ts`, the
+  `Studio` state
   in `studio.svelte.ts`, and the tools in `studio/tools/`, the text tool among them); the screen is
   `lib/components/studio/` (`StudioApp` at the root, `Stage`, `Overlay`, `TextEditor` (where text
   is typed, over the stage), `ToolRail`, `StudioBar`,
-  `Inspector`, `LayersPanel`, `ColorPicker`, `ColorWell`, `NumberField`, `Shelf`, `NewDrawing`). The
+  `Inspector`, `LayersPanel`, `ColorPicker`, `ColorWell`, `NumberField`, `PlacePicture` and
+  `ShelfPicker` (putting a picture in), `Shelf`, `NewDrawing`, `StartFromPicture`). The art
+  shelf's cards start a drawing from a picture too ("Draw over it in the studio"). The
   root layout gives the drawing page the whole window (no app header). The `bb-studio` skill has
   how it all works.
 - **The art shelf and covers** (`/art`, idea 18): pictures uploaded or saved from the studio, in

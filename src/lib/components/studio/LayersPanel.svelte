@@ -32,7 +32,8 @@
 		line: 'slash',
 		path: 'pen-nib',
 		group: 'group',
-		text: 'type'
+		text: 'type',
+		image: 'image'
 	};
 
 	const BLEND_NAMES: Record<string, string> = {

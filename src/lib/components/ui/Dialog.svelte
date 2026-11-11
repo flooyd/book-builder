@@ -20,14 +20,14 @@
 		// Controls inside custom elements (a Button's motion-press wrapper) only render once Lit has
 		// filled in the element's slot, so the native initial focus falls back to the dialog itself.
 		// A frame later they exist: focus the first one, unless the owner already moved focus
-		// (CreateModal focuses its title field).
+		// (CreateModal focuses its title field). Chrome may also start on a list that scrolls, which
+		// isn't a control, so that's moved on from too (the art studio's shelf picker).
+		const controls =
+			'[autofocus], button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
 		const frame = requestAnimationFrame(() => {
-			if (document.activeElement !== dialog) return;
-			dialog
-				.querySelector<HTMLElement>(
-					'[autofocus], button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'
-				)
-				?.focus();
+			const focused = document.activeElement;
+			if (focused !== dialog && (!dialog.contains(focused) || focused?.matches(controls))) return;
+			dialog.querySelector<HTMLElement>(controls)?.focus();
 		});
 		return () => {
 			cancelAnimationFrame(frame);

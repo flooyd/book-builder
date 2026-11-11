@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { useAppHeader } from '$lib/app-header.svelte';
 	import { DESCRIPTION_LIMIT, formatBytes, TITLE_LIMIT, type ArtPicture } from '$lib/art';
@@ -11,6 +12,8 @@
 		usedBytes
 	} from '$lib/art-shelf';
 	import { listDrafts } from '$lib/studio/draft';
+	import { fetchPicture } from '$lib/studio/pictures';
+	import { startFromPicture } from '$lib/studio/start';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
@@ -90,6 +93,30 @@
 			deleteError = problem instanceof Error ? problem.message : 'Couldn’t delete it.';
 		} finally {
 			deleting = false;
+		}
+	}
+
+	// Drawing over a picture: a new drawing in this browser, the picture's size, with the picture
+	// locked on its bottom layer. The shelf's copy is left as it is. A picture saved from a drawing
+	// that's in this browser offers that drawing instead.
+	let opening = $state<number | null>(null);
+	/** What went wrong drawing over a picture, shown on its card. */
+	let openError = $state<{ id: number; message: string } | null>(null);
+
+	async function drawOver(picture: ArtPicture) {
+		if (opening !== null) return;
+		opening = picture.id;
+		openError = null;
+		try {
+			const art = await fetchPicture(picture.url);
+			const key = await startFromPicture(owner, art, picture.title);
+			art.bitmap.close();
+			await goto(resolve('/studio/draft/[key]', { key }));
+		} catch (problem) {
+			const message =
+				problem instanceof Error ? problem.message : 'Couldn’t open it in the studio.';
+			openError = { id: picture.id, message };
+			opening = null;
 		}
 	}
 
@@ -181,6 +208,20 @@
 							>
 								<Icon name="palette" size={16} />
 							</a>
+						{:else}
+							<button
+								type="button"
+								class="icon"
+								disabled={opening !== null}
+								aria-busy={opening === picture.id}
+								aria-label="Draw over {picture.title || 'this picture'} in the studio"
+								title={opening === picture.id
+									? 'Opening it in the studio…'
+									: 'Draw over it in the studio'}
+								onclick={() => drawOver(picture)}
+							>
+								<Icon name="pen-nib" size={16} />
+							</button>
 						{/if}
 						<button
 							type="button"
@@ -204,6 +245,11 @@
 							<Icon name="trash" size={16} />
 						</button>
 					</div>
+					{#if openError?.id === picture.id}
+						<p class="card-error" role="alert">
+							<Icon name="alert-circle" size={15} />{openError.message}
+						</p>
+					{/if}
 				</li>
 			{/each}
 		</ul>
@@ -439,13 +485,39 @@
 		cursor: pointer;
 	}
 
-	.icon:hover {
+	.icon:disabled {
+		cursor: default;
+		opacity: 0.5;
+	}
+
+	.icon[aria-busy='true'] {
+		opacity: 1;
+		border-color: var(--bb-sky);
+		color: var(--bb-sky);
+	}
+
+	.icon:hover:not(:disabled) {
 		border-color: var(--bb-line-control);
 		color: var(--bb-text-strong);
 	}
 
 	.icon.danger:hover {
 		color: var(--bb-coral);
+	}
+
+	.card-error {
+		display: flex;
+		align-items: baseline;
+		gap: 6px;
+		margin: 0;
+		color: var(--bb-coral);
+		font-size: 13px;
+		line-height: 1.45;
+	}
+
+	.card-error :global(svg) {
+		flex: none;
+		transform: translateY(2px);
 	}
 
 	.empty {

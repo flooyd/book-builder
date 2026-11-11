@@ -65,6 +65,8 @@ type Op =
 			grab: Point;
 			/** Only text is picked. */
 			texts: boolean;
+			/** Only pictures (and text) are picked: they keep their proportions unless Shift is held. */
+			pictures: boolean;
 	  }
 	| {
 			kind: 'rotate';
@@ -235,7 +237,10 @@ export class SelectTool implements Tool {
 				handle: grip.handle,
 				frame,
 				grab: { x: local.x - handle.x, y: local.y - handle.y },
-				texts: studio.selected.every((item) => item.shape.kind === 'text')
+				texts: studio.selected.every((item) => item.shape.kind === 'text'),
+				pictures:
+					studio.selected.some((item) => item.shape.kind === 'image') &&
+					studio.selected.every((item) => item.shape.kind === 'image' || item.shape.kind === 'text')
 			};
 			return;
 		}
@@ -366,8 +371,9 @@ export class SelectTool implements Tool {
 		let sy = reachY ? (local.y - fixedY) / reachY : 1;
 		if (!width) sx = 1;
 		if (!height) sy = 1;
-		// Text isn't stretched (its size takes the scale), so its box keeps its proportions.
-		if (press.shift || op.texts) {
+		// Text isn't stretched (its size takes the scale), so its box keeps its proportions. A
+		// picture keeps its own too, and Shift lets it stretch, the other way round from shapes.
+		if (press.shift !== op.pictures || op.texts) {
 			if (left || right) {
 				if (top || bottom) {
 					const size = Math.max(Math.abs(sx), Math.abs(sy));

@@ -8,6 +8,7 @@
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
 	import { flatten } from '$lib/studio/render';
+	import { svgFile } from '$lib/studio/svg';
 	import type { Studio } from '$lib/studio/studio.svelte';
 	import { SURPRISES, type SurpriseKind } from '$lib/studio/surprise';
 	import { artStore, artUploadsOpen } from '$lib/stores';
@@ -84,21 +85,40 @@
 		if (downloading) return;
 		downloading = true;
 		try {
-			const canvas = flatten({ doc: studio.doc, paint: studio.paint }, scale);
+			const canvas = flatten(
+				{ doc: studio.doc, paint: studio.paint, pictures: studio.pictures },
+				scale
+			);
 			const blob = await new Promise<Blob | null>((done) => canvas.toBlob(done, 'image/png'));
-			if (!blob) return;
-			const url = URL.createObjectURL(blob);
-			const link = document.createElement('a');
-			link.href = url;
-			link.download = `${(title.trim() || 'Drawing').replace(/[\\/:*?"<>|]+/g, '')}${scale === 1 ? '' : ` @${scale}x`}.png`;
-			document.body.append(link);
-			link.click();
-			link.remove();
-			setTimeout(() => URL.revokeObjectURL(url), 10_000);
+			if (blob) hand(blob, `${scale === 1 ? '' : ` @${scale}x`}.png`);
 		} finally {
 			downloading = false;
 			document.getElementById(downloadId)?.hidePopover();
 		}
+	}
+
+	/** The drawing as an SVG: its shapes stay shapes, to change in another drawing program. */
+	async function downloadSvg() {
+		if (downloading) return;
+		downloading = true;
+		try {
+			hand(await svgFile(studio.doc, studio, title), '.svg');
+		} finally {
+			downloading = false;
+			document.getElementById(downloadId)?.hidePopover();
+		}
+	}
+
+	/** Hands a file to the browser to save, named after the drawing. */
+	function hand(blob: Blob, ending: string) {
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = `${(title.trim() || 'Drawing').replace(/[\\/:*?"<>|]+/g, '')}${ending}`;
+		document.body.append(link);
+		link.click();
+		link.remove();
+		setTimeout(() => URL.revokeObjectURL(url), 10_000);
 	}
 
 	// Saving to the art shelf: the picture as it looks now, made in this browser and sent straight
@@ -114,7 +134,7 @@
 		saving = true;
 		document.getElementById(savedId)?.hidePopover();
 		try {
-			const canvas = flatten({ doc: studio.doc, paint: studio.paint });
+			const canvas = flatten({ doc: studio.doc, paint: studio.paint, pictures: studio.pictures });
 			const prepared = await prepare(canvas, canvas.width, canvas.height, true);
 			const replaces = savedFrom(draftKey);
 			saved = await savePrepared(prepared, {
@@ -359,6 +379,9 @@
 				PNG, half the size <span class="size"
 					>{Math.round(studio.doc.width / 2)} × {Math.round(studio.doc.height / 2)}</span
 				>
+			</button>
+			<button type="button" role="menuitem" disabled={downloading} onclick={downloadSvg}>
+				SVG <span class="size">Shapes stay shapes</span>
 			</button>
 		</div>
 

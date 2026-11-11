@@ -1,6 +1,7 @@
 # Idea 25: the art studio
 
-**Piece (a) shipped on 2026-11-10; (b), (c) and (d) are still a plan,** written 2026-11-09.
+**Pieces (a) and (d) shipped on 2026-11-10, and text from (c); (b) and the rest of (c) are still
+a plan,** written 2026-11-09.
 "Built" below is the record of what's there; the rest of the file is the plan it came from. How the
 code works is the `bb-studio` skill. Check both against the code before leaning on them.
 
@@ -116,6 +117,35 @@ Left out: text that wraps in a box, text on a path, a different style for some o
 other typefaces (the writer's own, or more of Google's), turning text into paths to edit its
 letters (it needs the font's outlines), and kerning or other OpenType features by hand.
 
+### (d) Working from pictures, 2026-11-10
+
+The user asked for it by its letter ("Start on that"). Painting on a picture waits for brushes in
+(b), so "open a picture" became starting a drawing from one, to draw over.
+
+- **Put in a picture**: a button in the tool rail, set apart under the tools, puts a picture in
+  from the device or from the art shelf, in the middle of the drawing (shrunk to fit if it's
+  bigger), on top of the active layer, picked. A shelf picture is copied in, so the shelf's copy
+  stays as it is, and one from the device is never uploaded: both stay with the drawing in this
+  browser. Up to 12 different pictures in a drawing; a big one is kept at 3000 pixels a side.
+- **Working with it**: it moves, turns and flips like any shape, and keeps its proportions when
+  resized (Shift stretches it). The inspector has Fit the drawing and Fill the drawing, and says
+  how to trace: lower its opacity, lock it, draw on top. Copy and paste carry it to another
+  drawing.
+- **Starting from a picture**: "From a picture" on the studio page (from the device or the
+  shelf), and "Draw over it in the studio" on an art shelf card, make a drawing the picture's
+  size with the picture locked on a bottom layer called Picture and an empty layer above it. A
+  card for a picture saved from a drawing that's in this browser opens that drawing instead.
+- **Download as SVG**, beside the three PNGs: shapes stay shapes (paths, lines with their
+  arrowheads, text in its typeface), layers stay layers with their opacity and blend (Inkscape
+  reads them as its own), and pictures and paint layers go in as pictures. It's the drawing's own
+  size; being vector, it has no other.
+
+Left out: painting on a picture (with brushes, in b), cropping a picture, one picture's opacity
+or colours changed apart from the shape's opacity, turning a picture into paths (tracing it
+automatically), choosing the SVG's size, putting the typefaces inside the SVG (it asks Google
+Fonts for them, so a program offline shows a stand-in), and keeping a shelf picture linked to
+the shelf rather than copied.
+
 Left out of (a), for now:
 
 - ~~**Saving to the art shelf**~~ came with 18's covers on 2026-11-10: "Save to shelf" in the bar
@@ -180,6 +210,8 @@ version worth showing; it needs idea 18 to save.
   and ornaments.
 
 ### d. Working from pictures
+
+Shipped 2026-11-10 (see "(d) Working from pictures" under Built). The plan was:
 
 - **Place a picture** from the art shelf as a layer, to trace over a sketch or paint over a photo.
 - **Open an uploaded picture** to paint on it.

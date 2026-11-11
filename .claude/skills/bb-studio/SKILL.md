@@ -1,6 +1,6 @@
 ---
 name: bb-studio
-description: How Book Builder's art studio works (idea 25), covering the drawing format and its cleaner in lib/drawing.ts, the Canvas 2D engine in lib/studio (geometry, curve fitting, immutable edits and undo, rendering, hit-testing), the tools and their shared interface, the stage's pointer, wheel, pinch and keyboard handling, the panels, colours and number fields, drafts kept in IndexedDB, downloads, the limits on size and layers, and how to test drawing in a headless browser. Use this whenever a task touches the studio, /studio, drawing, painting, shapes, the pen or pencil, layers, brushes, the colour picker, art or artwork made in the app, or adds a tool or a kind of shape.
+description: How Book Builder's art studio works (idea 25), covering the drawing format and its cleaner in lib/drawing.ts, the Canvas 2D engine in lib/studio (geometry, curve fitting, immutable edits and undo, rendering, hit-testing), the tools and their shared interface, the stage's pointer, wheel, pinch and keyboard handling, the panels, colours and number fields, drafts kept in IndexedDB, pictures placed in a drawing and drawings started from a picture, downloads (PNG and SVG), the limits on size and layers, and how to test drawing in a headless browser. Use this whenever a task touches the studio, /studio, drawing, painting, shapes, the pen or pencil, layers, brushes, the colour picker, placing or tracing a picture, SVG, art or artwork made in the app, or adds a tool or a kind of shape.
 ---
 
 # Book Builder: the art studio
@@ -8,20 +8,21 @@ description: How Book Builder's art studio works (idea 25), covering the drawing
 A vector drawing program that runs entirely in the browser. Drawings are kept in IndexedDB as
 they're made; **Save to shelf** in the bar sends the picture as it looks to the art shelf (idea
 18, the `bb-art` skill), replacing its earlier copy so the covers it's on follow. That's the only
-time the studio reaches the server. What's built, what's left and why are in `bb-roadmap`'s
+time the studio sends anything to the server; it also fetches a shelf picture the writer puts in
+a drawing, straight from storage. What's built, what's left and why are in `bb-roadmap`'s
 `ideas/25-art-studio.md`.
 
 ## Where the code is
 
-| Layer    | Files                                                                                                                                                                                                                                                                              |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Format   | `lib/drawing.ts`: types, limits, `newDrawing`, `PRESETS`, `cleanDrawing` (the allow-list). Imports nothing.                                                                                                                                                                        |
-| Engine   | `lib/studio/`: `geometry.ts` (matrices, bounds, outlines, `normalize`), `fit.ts` (pencil curve fitting), `edit.ts` (immutable changes), `render.ts`, `text.ts` (setting text), `color.ts`, `numbers.ts` (sums in fields), `draft.ts` (IndexedDB), `surprise.ts` (random pictures). |
-| State    | `lib/studio/studio.svelte.ts`: the `Studio` class (drawing, selection, view, tool, style, undo).                                                                                                                                                                                   |
-| Tools    | `lib/studio/tools/`: `tool.ts` (the interface, cursors), `marks.ts`, `path-edit.ts`, one file per tool, `index.ts` (names, keys, icons, `makeTools`).                                                                                                                              |
-| Screen   | `lib/components/studio/`: `StudioApp` (root, keys, drafts), `Stage` (canvas and pointer), `Overlay` (the tool's marks), `TextEditor` (where text is typed), `ToolRail`, `StudioBar`, `Inspector`, `LayersPanel`, `ColorPicker`, `ColorWell`, `NumberField`.                        |
-| Pages    | `routes/studio` (`Shelf`, `NewDrawing`) and `routes/studio/draft/[key]` (`StudioApp`). The root layout treats the drawing page like reading mode: no app header, no dock.                                                                                                          |
-| Homepage | `marketing/StudioShowcase.svelte`, section 04 (see `bb-homepage`).                                                                                                                                                                                                                 |
+| Layer    | Files                                                                                                                                                                                                                                                                                                                                                                                        |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Format   | `lib/drawing.ts`: types, limits, `newDrawing`, `PRESETS`, `cleanDrawing` (the allow-list). Imports nothing.                                                                                                                                                                                                                                                                                  |
+| Engine   | `lib/studio/`: `geometry.ts` (matrices, bounds, outlines, `normalize`), `fit.ts` (pencil curve fitting), `edit.ts` (immutable changes), `render.ts`, `text.ts` (setting text), `color.ts`, `numbers.ts` (sums in fields), `draft.ts` (IndexedDB), `surprise.ts` (random pictures), `pictures.ts` (reading a picture in), `start.ts` (a drawing from a picture), `svg.ts` (the SVG download). |
+| State    | `lib/studio/studio.svelte.ts`: the `Studio` class (drawing, selection, view, tool, style, undo).                                                                                                                                                                                                                                                                                             |
+| Tools    | `lib/studio/tools/`: `tool.ts` (the interface, cursors), `marks.ts`, `path-edit.ts`, one file per tool, `index.ts` (names, keys, icons, `makeTools`).                                                                                                                                                                                                                                        |
+| Screen   | `lib/components/studio/`: `StudioApp` (root, keys, drafts), `Stage` (canvas and pointer), `Overlay` (the tool's marks), `TextEditor` (where text is typed), `ToolRail`, `StudioBar`, `Inspector`, `LayersPanel`, `ColorPicker`, `ColorWell`, `NumberField`, `PlacePicture`, `ShelfPicker`.                                                                                                   |
+| Pages    | `routes/studio` (`Shelf`, `NewDrawing`, `StartFromPicture`) and `routes/studio/draft/[key]` (`StudioApp`). The root layout treats the drawing page like reading mode: no app header, no dock.                                                                                                                                                                                                |
+| Homepage | `marketing/StudioShowcase.svelte`, section 04 (see `bb-homepage`).                                                                                                                                                                                                                                                                                                                           |
 
 ## The drawing
 
@@ -29,7 +30,8 @@ time the studio reaches the server. What's built, what's left and why are in `bb
   layer is only its settings: its pixels live beside the document, by layer id (`Studio.paint`,
   and the `pixels` store in IndexedDB), so a drawing holds no addresses.
 - **Shapes**: rect, ellipse, polygon, star (each a box from 0,0 to width,height), line (two ends
-  and arrowheads), path (subpaths of anchors), group, text (see "Text" below). Every shape has a
+  and arrowheads), path (subpaths of anchors), group, text (see "Text" below), image (a placed
+  picture, see "Pictures" below). Every shape has a
   `transform` matrix,
   `opacity`, `hidden`, `locked`, `name`. Paths' anchors are tuples
   `[x, y, inX, inY, outX, outY, kind]`, kind 0 corner, 1 smooth, 2 symmetric.
@@ -154,6 +156,40 @@ time the studio reaches the server. What's built, what's left and why are in `bb
   picked, for the next text (`studio.textDefaults`; a size of 0 means a twelfth of the drawing's
   shorter side). A new text takes the fill for new shapes and no outline.
 
+## Pictures
+
+- **An `image` shape** is a box (0,0 to width,height) that shows a picture by `picture`, an id
+  (`PICTURE_ID`, the shape ids' alphabet). The pixels aren't in the drawing: they're in
+  `Studio.pictures` (a `SvelteMap` of `Picture`: the file's `blob`, an `ImageBitmap`, and its
+  size) and in the drafts' `pictures` store, by `[draft, id]`. Several shapes may show one
+  picture. One whose pixels are missing draws as a pale frame with a cross.
+- **Reading one in** (`readPicture` in `pictures.ts`): any picture the browser opens except SVG,
+  turned the right way up (`imageOrientation: 'from-image'`). A JPEG, PNG or WebP within
+  `PICTURE_SIDE` (3000) a side and `PICTURE_PIXELS` (9 million) keeps its own file; anything else
+  is drawn smaller and kept as a PNG if it's see-through, otherwise a JPEG. `fetchPicture` brings
+  one in from the art shelf with a plain `fetch` (storage answers any site), so nothing passes
+  through the server.
+- **`MAX_PICTURES`** (12) different pictures in a drawing, counted by the cleaner across groups.
+  `studio.pictureRoom()` checks before asking for a file, and paste drops pictured shapes that
+  wouldn't fit.
+- **Placing** (`studio.placePicture`, the rail's `PlacePicture` button under the tools): from the
+  device or the shelf (`ShelfPicker`), centred, shrunk to fit the drawing if it's bigger, on top of
+  the active layer and picked. The inspector's Picture section has **Fit the drawing** and **Fill
+  the drawing** (`studio.fitPictures`), in the picture's own proportions, centred and straight.
+- **Resizing keeps the proportions**; Shift stretches (the other way round from other shapes, as
+  for text). `normalize` bakes the scale into width and height, like a rectangle. A picture has no
+  fill or stroke, so the colour wells, swapping colours and the points tool pass it by.
+- **Copy and paste** between drawings: `copy` keeps the pictures' pixels beside the shapes in a
+  module-level record, so a paste in another drawing (moved to inside the app, not reloaded) has
+  them.
+- **Only pictures that are shown are kept**: `keep()` in StudioApp writes pictures new to the
+  drawing and drops ones nothing shows any more, but `Studio.pictures` keeps them in memory for
+  the rest of the visit so undo can bring a deleted picture back.
+- **Starting from a picture** (`startFromPicture` in `start.ts`, from `StartFromPicture` on the
+  studio page or "Draw over it" on an art shelf card): a drawing the picture's size (clamped to the
+  limits), a clear ground, the picture on a locked bottom layer named Picture, and an empty Layer 1
+  above it; its card has the picture as its thumbnail at once.
+
 ## Surprise me
 
 - **`surprise.ts`** makes a random picture the size of a drawing: `surprise(width, height, options)`
@@ -176,19 +212,37 @@ time the studio reaches the server. What's built, what's left and why are in `bb
 
 ## Drafts
 
-- **`draft.ts`**: database `bb-studio`, stores `drafts` (by key, with an `owner` index) and
-  `pixels` (by `[draft, layer]`). A draft belongs to the account that made it.
+- **`draft.ts`**: database `bb-studio` (version 2), stores `drafts` (by key, with an `owner`
+  index), `pixels` (by `[draft, layer]`) and `pictures` (placed pictures' files, by
+  `[draft, id]`, with a `draft` index). A draft belongs to the account that made it. An open
+  connection closes itself when another tab upgrades the database (`onversionchange`).
 - **StudioApp keeps it** 0.7 s after a change (`revision`, `paintTick` or the title), with a
   WebP picture for the shelf, and at once when the tab is hidden or the page is left. Only paint
   layers whose pixels changed are written again.
 - **Paint layers** are loaded back onto canvases with `createImageBitmap`. Their canvases live in
   `Studio.paint`, kept for a deleted layer too so undo can bring it back.
 
+## Downloads
+
+- **PNG** at full size, twice (while that stays inside `MAX_PIXELS`) or half, through `flatten`.
+- **SVG** (`svg.ts`): `drawingSvg(doc, pixels, title)` builds the text with no browser, so it's
+  tested alone; `svgFile` gathers placed pictures and paint layers as data URLs first. Shapes are
+  paths through `outline` and `pathData`, lines with their arrowheads as polygons, text as `<text>`
+  a line each, placed by alignment (`text-anchor`), with `paint-order="stroke"` for the outline
+  under the letters and an `@import` of only the Google Fonts it uses. Colours go out as `#rrggbb`
+  with an opacity (older programs don't read eight digits), and a shape's opacity is passed down to
+  each shape's own fill and stroke, as the canvas does; a layer's opacity and blend go on its
+  group (`inkscape:groupmode="layer"`, so Inkscape sees the layers). Shown as an `<img>`, an SVG
+  can't load web fonts, so text there falls back to Georgia and the like; opened as a file, it
+  loads them.
+
 ## Limits
 
 `MAX_SIDE` 4096 a side and `MAX_PIXELS` 4096² in all (Safari on iPhone limits a canvas to about
 16.7 million pixels), `MAX_LAYERS` 32, paint layers by `paintLayerLimit` against a pixel budget,
-`MAX_SHAPES` 5000, `MAX_ANCHORS` 60,000. The layers panel lists at most 200 shapes a layer.
+`MAX_SHAPES` 5000, `MAX_ANCHORS` 60,000, `MAX_PICTURES` 12 placed pictures, each kept within
+`PICTURE_SIDE` 3000 and `PICTURE_PIXELS` 9 million. The layers panel lists at most 200 shapes a
+layer.
 Downloading at twice the size is offered only while that stays inside `MAX_PIXELS`.
 
 ## Testing
@@ -211,7 +265,14 @@ Downloading at twice the size is offered only while that stays inside `MAX_PIXEL
   nothing, a typeface, bold and centring from the inspector, a corner resize scaling the size in
   proportion, double-click to retype, a reload, Save to shelf with the text in the picture, 1440
   and 390 in both themes; and the cleaner with hostile settings and words (`test-lib.mjs`, 10
-  tests).
+  tests). Pictures (piece d): starting from a picture from the device (its size, the locked
+  Picture layer, its card's thumbnail) and drawing over a shelf picture from `/art`; putting one
+  in from the device and from the shelf; W keeping the ratio, fit and fill; copy in one drawing
+  and paste in another, kept after a reload; PNG and SVG downloads compared pixel by pixel (0.8%
+  apart, the text's typeface in an `<img>`), the SVG parsing as XML and loading its typeface when
+  opened; 1440 and 390 in both themes, with no sideways scroll; and 20 `test-lib.mjs` tests
+  (hostile picture ids, the cap of 12 across groups, extra keys, `normalize`, the drawing a
+  picture starts, and the SVG's colours, strokes, layers, text, arrowheads, pictures and escaping).
 
 ## Things that tripped it up
 
@@ -223,3 +284,9 @@ Downloading at twice the size is offered only while that stays inside `MAX_PIXEL
   own.
 - **Popovers and keys**: the keyboard handler leaves `[popover]` alone, so Delete in the colour
   picker's hex field doesn't delete the selection.
+- **A popover has no size before it opens.** In `beforetoggle` its `offsetHeight` is 0, so a
+  menu placed above the phone's tool strip by `top = trigger.top - height` opened off the bottom
+  of the screen (the shapes flyout had this from the start). Place it by `bottom` instead.
+- **A list that scrolls takes the first focus in a dialog** in Chrome (scrollers are focusable),
+  which drew a focus ring round the shelf picker's pictures. The shared `Dialog` now moves focus
+  on to the first control when the browser starts on something that isn't one.

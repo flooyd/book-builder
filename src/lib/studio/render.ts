@@ -11,6 +11,7 @@
 import {
 	IDENTITY,
 	type Drawing,
+	type ImageShape,
 	type LineShape,
 	type Matrix,
 	type Shape,
@@ -30,9 +31,15 @@ export type LiveStroke = {
 	erase: boolean;
 };
 
+/** A placed picture's pixels, ready to draw. */
+export type PictureSource = { bitmap: CanvasImageSource };
+export type Pictures = ReadonlyMap<string, PictureSource>;
+
 export type Scene = {
 	doc: Drawing;
 	paint: Map<string, HTMLCanvasElement>;
+	/** Placed pictures' pixels, by picture id. One not there yet shows as an empty frame. */
+	pictures?: Pictures;
 	live?: LiveStroke | null;
 	/** A shape being drawn, shown on its layer before it's part of the drawing. */
 	sketch?: { layerId: string; shape: Shape } | null;
@@ -149,15 +156,48 @@ function drawText(ctx: Context, shape: TextShape) {
 	if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
 }
 
+/**
+ * A placed picture, stretched to its box. Until its pixels are there (still loading, or lost with
+ * the browser's storage) it's a pale frame with a cross, so it can still be seen and picked.
+ */
+function drawImage(ctx: Context, shape: ImageShape, pictures: Pictures | undefined) {
+	const picture = pictures?.get(shape.picture);
+	if (picture) {
+		ctx.imageSmoothingEnabled = true;
+		ctx.imageSmoothingQuality = 'high';
+		ctx.drawImage(picture.bitmap, 0, 0, shape.width, shape.height);
+		return;
+	}
+	const { width, height } = shape;
+	ctx.fillStyle = '#ddd8cc';
+	ctx.fillRect(0, 0, width, height);
+	ctx.strokeStyle = '#9d9585';
+	ctx.lineWidth = Math.max(1, Math.min(width, height) / 200);
+	ctx.setLineDash([]);
+	ctx.beginPath();
+	ctx.rect(0, 0, width, height);
+	ctx.moveTo(0, 0);
+	ctx.lineTo(width, height);
+	ctx.moveTo(width, 0);
+	ctx.lineTo(0, height);
+	ctx.stroke();
+}
+
 /** Draws shapes through m (their parent's place on the canvas), each with its own transform. */
-export function drawShapes(ctx: Context, shapes: Shape[], m: Matrix, alpha = 1) {
+export function drawShapes(
+	ctx: Context,
+	shapes: Shape[],
+	m: Matrix,
+	alpha = 1,
+	pictures?: Pictures
+) {
 	for (const shape of shapes) {
 		if (shape.hidden) continue;
 		const placed = multiply(m, shape.transform);
 		const opacity = alpha * shape.opacity;
 		if (opacity <= 0) continue;
 		if (shape.kind === 'group') {
-			drawShapes(ctx, shape.children, placed, opacity);
+			drawShapes(ctx, shape.children, placed, opacity, pictures);
 			continue;
 		}
 		ctx.setTransform(...placed);
@@ -168,6 +208,10 @@ export function drawShapes(ctx: Context, shapes: Shape[], m: Matrix, alpha = 1) 
 		}
 		if (shape.kind === 'text') {
 			drawText(ctx, shape);
+			continue;
+		}
+		if (shape.kind === 'image') {
+			drawImage(ctx, shape, pictures);
 			continue;
 		}
 		const path = pathOf(shape);
@@ -199,7 +243,7 @@ export type SceneOptions = {
 
 /** Draws the drawing's ground and layers onto a cleared canvas, clipped to the artboard. */
 export function drawScene(ctx: Context, scene: Scene, options: SceneOptions) {
-	const { doc, paint } = scene;
+	const { doc, paint, pictures } = scene;
 	const { base } = options;
 	const left = base[4];
 	const top = base[5];
@@ -261,12 +305,12 @@ export function drawScene(ctx: Context, scene: Scene, options: SceneOptions) {
 		}
 
 		if (plain) {
-			drawShapes(ctx, layer.shapes, base);
+			drawShapes(ctx, layer.shapes, base, 1, pictures);
 			if (sketch) drawShapes(ctx, [sketch], base);
 			continue;
 		}
 		const scratch = options.scratch();
-		drawShapes(scratch, layer.shapes, base);
+		drawShapes(scratch, layer.shapes, base, 1, pictures);
 		if (sketch) drawShapes(scratch, [sketch], base);
 		layOn(ctx, scratch, layer.opacity, layer.blend);
 	}
@@ -443,8 +487,10 @@ export function hitShape(
 		return ctx.isPointInStroke(path, x, y) ? shape : null;
 	}
 	const path = pathOf(shape);
-	// A text is picked anywhere in its box, not only on its letters.
-	if (shape.kind === 'text') return ctx.isPointInPath(path, x, y) ? shape : null;
+	// A text is picked anywhere in its box, not only on its letters, and so is a picture.
+	if (shape.kind === 'text' || shape.kind === 'image') {
+		return ctx.isPointInPath(path, x, y) ? shape : null;
+	}
 	if (
 		shape.fill &&
 		ctx.isPointInPath(path, x, y, shape.kind === 'path' ? shape.fillRule : 'nonzero')

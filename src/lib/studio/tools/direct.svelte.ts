@@ -63,11 +63,11 @@ const REACH = 7;
 
 /**
  * The points a shape is edited by: its own, or its outline's for a shape that isn't a path yet. A
- * text has none.
+ * text and a picture have none.
  */
 function editable(shape: Shape): Subpath[] {
 	if (shape.kind === 'path') return shape.paths;
-	if (shape.kind === 'group' || shape.kind === 'text') return [];
+	if (shape.kind === 'group' || shape.kind === 'text' || shape.kind === 'image') return [];
 	return outline(shape);
 }
 
@@ -86,7 +86,13 @@ export class DirectTool implements Tool {
 		const studio = this.#studio;
 		return studio.selection
 			.map((id) => locate(studio.doc, id))
-			.filter((found) => !!found && found.shape.kind !== 'group' && found.shape.kind !== 'text')
+			.filter(
+				(found) =>
+					!!found &&
+					found.shape.kind !== 'group' &&
+					found.shape.kind !== 'text' &&
+					found.shape.kind !== 'image'
+			)
 			.map((found) => ({
 				id: found!.shape.id,
 				shape: found!.shape,

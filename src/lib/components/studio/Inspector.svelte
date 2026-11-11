@@ -51,7 +51,17 @@
 		};
 	});
 
-	let keepRatio = $state(false);
+	/** Pictures picked, and nothing else: their size keeps their proportions unless unlocked. */
+	const picturesOnly = $derived(
+		shapes.length > 0 && shapes.every((shape) => shape.kind === 'image')
+	);
+	let shapeRatio = $state(false);
+	let pictureRatio = $state(true);
+	const keepRatio = $derived(picturesOnly ? pictureRatio : shapeRatio);
+	function toggleRatio() {
+		if (picturesOnly) pictureRatio = !pictureRatio;
+		else shapeRatio = !shapeRatio;
+	}
 	const mergeOf = (key: string, live: boolean) => (live ? `inspector-${key}` : undefined);
 
 	function moveTo(axis: 'x' | 'y', value: number, live: boolean) {
@@ -87,11 +97,20 @@
 	}
 
 	// ---- Paint ----
-	const painted = $derived(shapes.filter((shape) => shape.kind !== 'group'));
+	// Groups and pictures have no fill or stroke of their own.
+	const painted = $derived(
+		shapes.filter((shape) => shape.kind !== 'group' && shape.kind !== 'image')
+	);
 	const fillable = $derived(painted.filter((shape) => shape.kind !== 'line'));
 	const fillOf = (shape: Shape) =>
-		shape.kind === 'group' || shape.kind === 'line' ? null : (shape.fill?.color ?? null);
-	const strokeOf = (shape: Shape): Stroke | null => (shape.kind === 'group' ? null : shape.stroke);
+		shape.kind === 'group' || shape.kind === 'line' || shape.kind === 'image'
+			? null
+			: (shape.fill?.color ?? null);
+	const strokeOf = (shape: Shape): Stroke | null =>
+		shape.kind === 'group' || shape.kind === 'image' ? null : shape.stroke;
+
+	// ---- Pictures ----
+	const pictures = $derived(shapes.filter((shape) => shape.kind === 'image'));
 	const fill = $derived(fillable.length ? fillOf(fillable[0]) : null);
 	const fillMixed = $derived(fillable.some((shape) => fillOf(shape) !== fill));
 	const stroke = $derived(painted.length ? strokeOf(painted[0]) : null);
@@ -426,7 +445,7 @@
 						aria-pressed={keepRatio}
 						aria-label="Keep the proportions"
 						title="Keep the proportions"
-						onclick={() => (keepRatio = !keepRatio)}
+						onclick={toggleRatio}
 					>
 						<Icon name={keepRatio ? 'lock' : 'unlock'} size={13} />
 					</button>
@@ -534,6 +553,33 @@
 				</div>
 			{/if}
 		</section>
+
+		{#if pictures.length}
+			<section aria-label="Picture">
+				{#if !single}<h3>{pictures.length === 1 ? 'Picture' : 'Pictures'}</h3>{/if}
+				<div class="fits">
+					<button
+						type="button"
+						class="toggle"
+						title="As large as fits, all of it showing"
+						onclick={() => studio.fitPictures('fit')}
+					>
+						Fit the drawing
+					</button>
+					<button
+						type="button"
+						class="toggle"
+						title="Covering the whole drawing; its edges may be cut off"
+						onclick={() => studio.fitPictures('fill')}
+					>
+						Fill the drawing
+					</button>
+				</div>
+				<p class="note">
+					To trace over it, lower its opacity and lock it in the layers list, then draw on top.
+				</p>
+			</section>
+		{/if}
 
 		{#if texts.length}
 			<section aria-label="Text">
@@ -890,6 +936,29 @@
 		display: flex;
 		align-items: center;
 		gap: 6px;
+	}
+
+	.fits {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.fits .toggle {
+		flex: 1;
+		min-height: 32px;
+	}
+
+	.toggle:hover {
+		color: var(--bb-text-strong);
+		border-color: var(--bb-line-mid);
+	}
+
+	.note {
+		margin: 10px 0 0;
+		color: var(--bb-text-3);
+		font-size: 12px;
+		line-height: 1.5;
 	}
 
 	.small-label {

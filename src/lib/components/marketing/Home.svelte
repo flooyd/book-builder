@@ -138,7 +138,7 @@
 		{
 			title: 'Yours to keep',
 			icon: 'download',
-			body: 'Download your drawing as a PNG at full size, twice the size or half.'
+			body: 'Download it as a PNG, or as an SVG whose shapes stay shapes in other drawing programs.'
 		}
 	];
 
@@ -554,8 +554,8 @@
 			</h2>
 			<p class="studio-lede">
 				A drawing studio in your browser for covers, portraits, maps and ornaments. Shapes, a pen
-				for curves, a pencil that smooths your line, words in eight typefaces, and layers that
-				blend. Nothing to install, and every change is kept as you go.
+				for curves, a pencil that smooths your line, words in eight typefaces, your own pictures to
+				trace over, and layers that blend. Nothing to install, and every change is kept as you go.
 			</p>
 		</div>
 

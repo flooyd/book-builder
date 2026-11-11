@@ -3,8 +3,15 @@
 	import { beforeNavigate } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import Icon from '$lib/components/ui/Icon.svelte';
-	import { TEXT_FONT_SHEET } from '$lib/drawing';
-	import { readDraft, writeDraft, writePixels, type DraftInfo } from '$lib/studio/draft';
+	import { TEXT_FONT_SHEET, picturesIn } from '$lib/drawing';
+	import {
+		readDraft,
+		writeDraft,
+		writePictures,
+		writePixels,
+		type DraftInfo
+	} from '$lib/studio/draft';
+	import { restorePicture } from '$lib/studio/pictures';
 	import { thumbnail } from '$lib/studio/render';
 	import { Studio, type ToolId } from '$lib/studio/studio.svelte';
 	import { onFontsLoaded } from '$lib/studio/text';
@@ -57,6 +64,15 @@
 				}
 			}
 			for (const layer of found.doc.layers) if (layer.kind === 'paint') next.ensurePaint(layer.id);
+			// Placed pictures' files, read back into pixels. One the browser can't read any more
+			// shows as an empty frame.
+			const shown = picturesIn(found.doc);
+			for (const [id, blob] of found.pictures) {
+				if (!shown.includes(id)) continue;
+				const picture = await restorePicture(blob);
+				if (picture) next.pictures.set(id, picture);
+			}
+			keptPictures = shown.filter((id) => found.pictures.has(id));
 			info = found.info;
 			title = found.info.title;
 			keptTitle = title;
@@ -79,6 +95,8 @@
 	let keptRevision = 0;
 	let keptPaint = 0;
 	let keptTitle = '';
+	/** The pictures the draft holds files for. */
+	let keptPictures: string[] = [];
 	let running: Promise<void> | null = null;
 
 	$effect(() => {
@@ -116,7 +134,11 @@
 		const named = title;
 		running = (async () => {
 			try {
-				const thumb = await toBlob(thumbnail({ doc, paint: now.paint }), 'image/webp', 0.86);
+				const thumb = await toBlob(
+					thumbnail({ doc, paint: now.paint, pictures: now.pictures }),
+					'image/webp',
+					0.86
+				);
 				const next: DraftInfo = {
 					...base,
 					title: named.trim(),
@@ -137,6 +159,21 @@
 						if (blob) changed.push([id, blob]);
 					}
 					await writePixels(draftKey, changed, paintIds);
+				}
+				// Pictures put in since the last keep, and those taken out forgotten.
+				const shown = picturesIn(doc);
+				const same =
+					shown.length === keptPictures.length && shown.every((id) => keptPictures.includes(id));
+				if (!same) {
+					const added: [string, Blob][] = [];
+					for (const id of shown) {
+						const picture = now.pictures.get(id);
+						if (!keptPictures.includes(id) && picture) added.push([id, picture.blob]);
+					}
+					await writePictures(draftKey, added, shown);
+					keptPictures = shown.filter(
+						(id) => keptPictures.includes(id) || added.some(([item]) => item === id)
+					);
 				}
 				info = next;
 				keptRevision = revision;
@@ -335,7 +372,8 @@
 
 	function swapColours() {
 		if (!studio) return;
-		const first = studio.selected[0]?.shape;
+		const picked = studio.selected[0]?.shape;
+		const first = picked?.kind === 'image' ? undefined : picked;
 		const fill =
 			first && first.kind !== 'group' && first.kind !== 'line'
 				? (first.fill?.color ?? null)

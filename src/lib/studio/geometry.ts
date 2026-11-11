@@ -6,6 +6,7 @@ import {
 	IDENTITY,
 	type Anchor,
 	type BoxShape,
+	type ImageShape,
 	type Matrix,
 	type Shape,
 	type Subpath
@@ -440,6 +441,8 @@ export function outline(shape: Shape): Subpath[] {
 			const layout = layoutText(shape);
 			return [rectOutline(layout.width, layout.height, 0)];
 		}
+		case 'image':
+			return [rectOutline(shape.width, shape.height, 0)];
 	}
 }
 
@@ -466,11 +469,13 @@ export function localBounds(shape: Shape): Bounds | null {
 
 // ---- Changing a shape's size ------------------------------------------------------------------------
 
-const isBox = (shape: Shape): shape is BoxShape =>
+/** Shapes whose geometry is a box: a placed picture too, though it has no fill or stroke. */
+const isBox = (shape: Shape): shape is BoxShape | ImageShape =>
 	shape.kind === 'rect' ||
 	shape.kind === 'ellipse' ||
 	shape.kind === 'polygon' ||
-	shape.kind === 'star';
+	shape.kind === 'star' ||
+	shape.kind === 'image';
 
 /**
  * The shape with its transform's scale moved into its geometry, so a resized shape keeps its
@@ -535,10 +540,16 @@ export function transformShape(shape: Shape, m: Matrix): Shape {
 
 /**
  * A shape's geometry as a path, for editing its points: it keeps its look, transform and paint.
- * A text stays a text: it has no points to edit.
+ * A text stays a text, and a picture a picture: neither has points to edit.
  */
 export function toPath(shape: Shape): Shape {
-	if (shape.kind === 'path' || shape.kind === 'group' || shape.kind === 'text') return shape;
+	if (
+		shape.kind === 'path' ||
+		shape.kind === 'group' ||
+		shape.kind === 'text' ||
+		shape.kind === 'image'
+	)
+		return shape;
 	const paths = outline(shape);
 	const base = {
 		id: shape.id,

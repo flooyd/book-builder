@@ -9,18 +9,22 @@ import { SvelteMap } from 'svelte/reactivity';
 import {
 	BLENDS,
 	MAX_LAYERS,
+	MAX_PICTURES,
 	MAX_PIXELS,
 	MAX_SHAPES,
 	MAX_SIDE,
 	MIN_SIDE,
 	allShapes,
+	cleanName,
 	newId,
 	newLayer,
 	paintLayerLimit,
+	picturesIn,
 	shapeCount,
 	solid,
 	type Blend,
 	type Drawing,
+	type ImageShape,
 	type Layer,
 	type Matrix,
 	type Paint,
@@ -50,12 +54,14 @@ import {
 import {
 	boundsHeight,
 	boundsWidth,
+	invert,
 	multiply,
 	scaling,
 	transformShape,
 	translation,
 	type Bounds
 } from './geometry';
+import type { Picture } from './pictures';
 import type { View } from './render';
 import { surprise as makeSurprise, SURPRISES, type SurpriseKind } from './surprise';
 
@@ -115,6 +121,11 @@ export const ZOOM_MAX = 64;
 
 /** Shapes copied in the studio, kept for pasting into any drawing in this tab. */
 let clipboard: Shape[] = [];
+/** The pictures the copied shapes show, so they can go into another drawing with them. */
+let clipboardPictures: Record<string, Picture> = {};
+
+/** Rounded as the cleaner keeps a size, so a drawing reads back as it was made. */
+const round2 = (value: number) => Math.round(value * 100) / 100;
 
 export class Studio {
 	doc = $state.raw<Drawing>(null!);
@@ -149,6 +160,11 @@ export class Studio {
 	readonly paint = new SvelteMap<string, HTMLCanvasElement>();
 	/** Counts changes to paint layers' pixels, so the stage knows to draw again. */
 	paintTick = $state(0);
+	/**
+	 * Placed pictures' files and pixels, by picture id. Kept for a picture taken out too, so undo
+	 * can bring it back; only those the drawing shows are kept with the draft.
+	 */
+	readonly pictures = new SvelteMap<string, Picture>();
 	/** Counts every change to the drawing, for the draft to be kept. */
 	revision = $state(0);
 
@@ -455,6 +471,75 @@ export class Studio {
 		this.doc = { ...this.doc };
 	}
 
+	// ---- Pictures ----------------------------------------------------------------------------------------
+
+	/** Whether a new picture can be placed: the drawing shows fewer than it may hold. */
+	pictureRoom() {
+		return picturesIn(this.doc).length < MAX_PICTURES && shapeCount(this.doc) < MAX_SHAPES;
+	}
+
+	/**
+	 * Places a picture in the middle of the drawing, at its own size or as large as fits, on top of
+	 * the active vector layer, and picks it. False when the drawing holds as many as it can.
+	 */
+	placePicture(picture: Picture, name: string) {
+		if (!this.pictureRoom()) return false;
+		this.endTyping();
+		const id = newId();
+		this.pictures.set(id, picture);
+		const fit = Math.min(1, this.doc.width / picture.width, this.doc.height / picture.height);
+		const width = round2(picture.width * fit);
+		const height = round2(picture.height * fit);
+		const shape: ImageShape = {
+			id: newId(),
+			name: cleanName(name, ''),
+			transform: translation(
+				round2((this.doc.width - width) / 2),
+				round2((this.doc.height - height) / 2)
+			),
+			opacity: 1,
+			hidden: false,
+			locked: false,
+			kind: 'image',
+			picture: id,
+			width,
+			height
+		};
+		this.addShape(shape);
+		return true;
+	}
+
+	/**
+	 * Sizes the selected pictures to the drawing, in their own proportions, centred and straight:
+	 * 'fit' shows all of the picture, 'fill' covers the drawing (its edges cut off by the artboard).
+	 */
+	fitPictures(how: 'fit' | 'fill') {
+		let next = this.doc;
+		for (const item of this.selected) {
+			const shape = item.shape;
+			if (shape.kind !== 'image') continue;
+			const own = this.pictures.get(shape.picture);
+			const ratio = own ? own.width / own.height : shape.width / shape.height;
+			const across = this.doc.width / ratio;
+			const tall = how === 'fit' ? across <= this.doc.height : across >= this.doc.height;
+			const width = round2(tall ? this.doc.width : this.doc.height * ratio);
+			const height = round2(tall ? across : this.doc.height);
+			const place = translation(
+				round2((this.doc.width - width) / 2),
+				round2((this.doc.height - height) / 2)
+			);
+			// Inside a group, the place is in the group's coordinates.
+			const parent = invert(item.matrix);
+			const transform = parent ? multiply(parent, place) : place;
+			next = mapShapes(
+				next,
+				[shape.id],
+				(found) => ({ ...found, width, height, transform }) as Shape
+			);
+		}
+		this.apply(next);
+	}
+
 	/** The fill and stroke a new shape gets, from the style. */
 	newPaint(): { fill: Paint | null; stroke: Stroke | null } {
 		return {
@@ -540,7 +625,7 @@ export class Studio {
 	setFill(color: string | null, merge?: string) {
 		this.style.fill = color;
 		this.changeSelected((shape) => {
-			if (shape.kind === 'line' || shape.kind === 'group') return shape;
+			if (shape.kind === 'line' || shape.kind === 'group' || shape.kind === 'image') return shape;
 			return { ...shape, fill: color ? solid(color) : null };
 		}, merge);
 	}
@@ -549,7 +634,7 @@ export class Studio {
 	setStroke(color: string | null, merge?: string) {
 		this.style.stroke = color;
 		this.changeSelected((shape) => {
-			if (shape.kind === 'group') return shape;
+			if (shape.kind === 'group' || shape.kind === 'image') return shape;
 			if (!color) return shape.kind === 'line' ? shape : { ...shape, stroke: null };
 			const stroke = shape.stroke
 				? { ...shape.stroke, paint: solid(color) }
@@ -561,7 +646,7 @@ export class Studio {
 	/** Changes the selection's strokes (width, dashes, ends). */
 	changeStroke(change: (stroke: Stroke) => Stroke, merge?: string) {
 		this.changeSelected((shape) => {
-			if (shape.kind === 'group' || !shape.stroke) return shape;
+			if (shape.kind === 'group' || shape.kind === 'image' || !shape.stroke) return shape;
 			return { ...shape, stroke: change(shape.stroke) };
 		}, merge);
 	}
@@ -575,6 +660,11 @@ export class Studio {
 		clipboard = locateAll(this.doc, outermost(this.doc, this.selection)).map(
 			(item) => ({ ...item.shape, transform: multiply(item.matrix, item.shape.transform) }) as Shape
 		);
+		clipboardPictures = {};
+		for (const id of picturesIn(clipboard)) {
+			const picture = this.pictures.get(id);
+			if (picture) clipboardPictures[id] = picture;
+		}
 		return clipboard.length;
 	}
 
@@ -584,8 +674,25 @@ export class Studio {
 
 	paste() {
 		if (!clipboard.length) return;
+		// Pictures from another drawing come too, as far as this one has room for them.
+		const showing = picturesIn(this.doc);
+		const welcome = [...showing];
+		for (const id of picturesIn(clipboard)) {
+			if (welcome.includes(id) || welcome.length >= MAX_PICTURES) continue;
+			welcome.push(id);
+			const picture = clipboardPictures[id];
+			if (picture && !this.pictures.has(id)) this.pictures.set(id, picture);
+		}
+		const fits = (shape: Shape): Shape | null => {
+			if (shape.kind === 'image') return welcome.includes(shape.picture) ? shape : null;
+			if (shape.kind !== 'group') return shape;
+			const children = shape.children.map(fits).filter((child) => child !== null);
+			return children.length ? { ...shape, children } : null;
+		};
+		const shapes = clipboard.map(fits).filter((shape) => shape !== null);
+		if (!shapes.length) return;
 		const { doc, layerId } = this.vectorLayerForDrawing();
-		const copies = clipboard.map(withNewIds);
+		const copies = shapes.map(withNewIds);
 		this.activeLayerId = layerId;
 		this.apply(
 			insertShapes(doc, layerId, copies),

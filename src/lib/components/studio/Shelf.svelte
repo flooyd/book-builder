@@ -7,6 +7,7 @@
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import { deleteDraft, listDrafts, type DraftInfo } from '$lib/studio/draft';
 	import NewDrawing from './NewDrawing.svelte';
+	import StartFromPicture from './StartFromPicture.svelte';
 
 	// The studio's front page: the drawings kept in this browser, newest first, and a way to start
 	// one. Nothing here reaches the server.
@@ -88,6 +89,7 @@
 		</div>
 		<div class="top-actions">
 			<Button size="lg" href={resolve('/art')}><Icon name="image" size={18} /> Art shelf</Button>
+			<StartFromPicture {owner} />
 			<Button variant="primary" size="lg" glow onclick={() => (starting = true)}>
 				<Icon name="plus" size={18} /> New drawing
 			</Button>
@@ -251,11 +253,12 @@
 		transform: translateY(-2px);
 	}
 
+	/* A length, not 100%: a percentage height doesn't hold a tall drawing inside the grid cell. */
 	.frame img,
 	.blank {
 		display: block;
 		max-width: 100%;
-		max-height: 100%;
+		max-height: 184px;
 		box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.5);
 		background: repeating-conic-gradient(#e3e3e3 0 25%, #fff 0 50%) 0 0 / 12px 12px;
 	}

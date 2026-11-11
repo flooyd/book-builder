@@ -8,7 +8,8 @@
 import { cleanDrawing, newId, type Drawing } from '$lib/drawing';
 
 const NAME = 'bb-studio';
-const VERSION = 1;
+/** 2 added the pictures store. */
+const VERSION = 2;
 
 export type DraftInfo = {
 	key: string;
@@ -23,6 +24,8 @@ export type DraftInfo = {
 
 type DraftRecord = DraftInfo & { doc: Drawing };
 type PixelRecord = { draft: string; layer: string; blob: Blob };
+/** A placed picture's file, by its id in the drawing. */
+type PictureRecord = { draft: string; id: string; blob: Blob };
 
 let database: Promise<IDBDatabase> | null = null;
 
@@ -40,8 +43,22 @@ function open(): Promise<IDBDatabase> {
 					'draft'
 				);
 			}
+			if (!db.objectStoreNames.contains('pictures')) {
+				db.createObjectStore('pictures', { keyPath: ['draft', 'id'] }).createIndex(
+					'draft',
+					'draft'
+				);
+			}
 		};
-		request.onsuccess = () => resolve(request.result);
+		request.onsuccess = () => {
+			const db = request.result;
+			// A newer version opening in another tab: step aside, so its upgrade isn't held up.
+			db.onversionchange = () => {
+				db.close();
+				database = null;
+			};
+			resolve(db);
+		};
 		request.onerror = () => {
 			database = null;
 			reject(request.error);
@@ -85,10 +102,13 @@ export async function listDrafts(owner: string): Promise<DraftInfo[]> {
 		.sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
-/** A draft and its paint layers' pixels, or null if there's no such draft for this account. */
+/**
+ * A draft, its paint layers' pixels and its placed pictures' files, or null if there's no such
+ * draft for this account.
+ */
 export async function readDraft(key: string, owner: string) {
 	const db = await open();
-	const transaction = db.transaction(['drafts', 'pixels']);
+	const transaction = db.transaction(['drafts', 'pixels', 'pictures']);
 	const record = await result<DraftRecord | undefined>(transaction.objectStore('drafts').get(key));
 	if (!record || record.owner !== owner) return null;
 	const doc = cleanDrawing(record.doc);
@@ -97,7 +117,11 @@ export async function readDraft(key: string, owner: string) {
 		transaction.objectStore('pixels').index('draft').getAll(key)
 	);
 	const pixels = new Map(stored.map((item) => [item.layer, item.blob]));
-	return { info: { ...record, doc: undefined } as DraftInfo, doc, pixels };
+	const files = await result<PictureRecord[]>(
+		transaction.objectStore('pictures').index('draft').getAll(key)
+	);
+	const pictures = new Map(files.map((item) => [item.id, item.blob]));
+	return { info: { ...record, doc: undefined } as DraftInfo, doc, pixels, pictures };
 }
 
 /** Keeps a draft's drawing (and picture). */
@@ -126,22 +150,57 @@ export async function writePixels(
 	await finished(transaction);
 }
 
-export async function deleteDraft(key: string) {
+/**
+ * Keeps placed pictures' files, and forgets those the drawing no longer shows. A picture taken out
+ * and brought back by undo is still in memory, so it's written again on the next keep.
+ */
+export async function writePictures(
+	key: string,
+	added: Iterable<[id: string, blob: Blob]>,
+	keep: string[]
+) {
 	const db = await open();
-	const transaction = db.transaction(['drafts', 'pixels'], 'readwrite');
-	transaction.objectStore('drafts').delete(key);
-	const pixels = transaction.objectStore('pixels');
-	const keys = await result<IDBValidKey[]>(pixels.index('draft').getAllKeys(key));
-	for (const id of keys) pixels.delete(id);
+	const transaction = db.transaction('pictures', 'readwrite');
+	const store = transaction.objectStore('pictures');
+	for (const [id, blob] of added) store.put({ draft: key, id, blob } satisfies PictureRecord);
+	const stored = await result<IDBValidKey[]>(store.index('draft').getAllKeys(key));
+	for (const stamp of stored) {
+		if (!keep.includes((stamp as [string, string])[1])) store.delete(stamp);
+	}
 	await finished(transaction);
 }
 
-/** Makes a new, empty draft and returns its key. */
-export async function createDraft(owner: string, title: string, doc: Drawing) {
+export async function deleteDraft(key: string) {
+	const db = await open();
+	const transaction = db.transaction(['drafts', 'pixels', 'pictures'], 'readwrite');
+	transaction.objectStore('drafts').delete(key);
+	for (const name of ['pixels', 'pictures']) {
+		const store = transaction.objectStore(name);
+		const keys = await result<IDBValidKey[]>(store.index('draft').getAllKeys(key));
+		for (const id of keys) store.delete(id);
+	}
+	await finished(transaction);
+}
+
+/** Makes a new draft, with the files of any pictures it starts with, and returns its key. */
+export async function createDraft(
+	owner: string,
+	title: string,
+	doc: Drawing,
+	pictures: [id: string, blob: Blob][] = [],
+	thumb: Blob | null = null
+) {
 	const key = newDraftKey();
 	await writeDraft(
-		{ key, owner, title, width: doc.width, height: doc.height, updatedAt: Date.now(), thumb: null },
+		{ key, owner, title, width: doc.width, height: doc.height, updatedAt: Date.now(), thumb },
 		doc
 	);
+	if (pictures.length) {
+		await writePictures(
+			key,
+			pictures,
+			pictures.map(([id]) => id)
+		);
+	}
 	return key;
 }

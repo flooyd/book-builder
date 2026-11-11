@@ -3,10 +3,12 @@
 	import type { Studio, ToolId } from '$lib/studio/studio.svelte';
 	import { RAIL, SHAPE_TOOLS, TOOL_INFO } from '$lib/studio/tools';
 	import ColorWell from './ColorWell.svelte';
+	import PlacePicture from './PlacePicture.svelte';
 
 	// The tools, in a rail down the left (a strip along the bottom on small screens), with the
-	// shapes in one slot that shows the last one used, and below them the fill and stroke: the
-	// selection's, or what new shapes get when nothing is selected. Buttons here don't take focus
+	// shapes in one slot that shows the last one used, then putting in a picture (not a tool, so set
+	// apart), and below them the fill and stroke: the selection's, or what new shapes get when nothing
+	// is selected. Buttons here don't take focus
 	// from a mouse click, so Space still means the hand afterwards.
 	let {
 		studio,
@@ -31,13 +33,16 @@
 
 	function placeFlyout(event: ToggleEvent) {
 		if (event.newState !== 'open' || !panel || !slot) return;
+		// Before it opens it has no size yet, so above the strip it's placed by its bottom edge.
 		const box = slot.getBoundingClientRect();
 		if (across) {
 			panel.style.left = `${Math.max(8, Math.min(box.left, innerWidth - 220))}px`;
-			panel.style.top = `${box.top - 8 - panel.offsetHeight}px`;
+			panel.style.top = 'auto';
+			panel.style.bottom = `${innerHeight - box.top + 8}px`;
 		} else {
 			panel.style.left = `${box.right + 8}px`;
 			panel.style.top = `${box.top - 6}px`;
+			panel.style.bottom = 'auto';
 		}
 	}
 
@@ -45,8 +50,11 @@
 	const titleOf = (id: ToolId) => `${TOOL_INFO[id].label}${keyOf(id) ? ` (${keyOf(id)})` : ''}`;
 	const keep = (event: MouseEvent) => event.preventDefault();
 
-	// The wells follow the selection when there is one.
-	const first = $derived(studio.selected[0]?.shape ?? null);
+	// The wells follow the selection when there is one (a picture has no colours of its own).
+	const first = $derived.by(() => {
+		const shape = studio.selected[0]?.shape ?? null;
+		return shape?.kind === 'image' ? null : shape;
+	});
 	const fill = $derived(
 		first && first.kind !== 'group' && first.kind !== 'line'
 			? (first.fill?.color ?? null)
@@ -116,6 +124,8 @@
 				</button>
 			{/if}
 		{/each}
+		<span class="divider" aria-hidden="true"></span>
+		<PlacePicture {studio} {across} />
 	</div>
 
 	<div class="colours">
@@ -214,8 +224,24 @@
 		gap: 6px;
 	}
 
-	.across .tool {
+	.across .tool,
+	.across .tools :global(.tool) {
 		width: 38px;
+	}
+
+	/* Between the tools and putting in a picture, which isn't one. */
+	.divider {
+		align-self: center;
+		width: 22px;
+		height: 1px;
+		margin: 4px 0;
+		background: var(--bb-line-soft);
+	}
+
+	.across .divider {
+		width: 1px;
+		height: 22px;
+		margin: 0 3px;
 	}
 
 	.tool {

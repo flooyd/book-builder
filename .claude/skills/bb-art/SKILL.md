@@ -12,14 +12,14 @@ should reuse all of this. The plan and what was left out are in `bb-roadmap`'s
 
 ## Where the code is
 
-| Piece   | Files                                                                                                                                                                                                                  |
-| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Rules   | `lib/art.ts`: types (`ArtPicture`, `CoverArt`), `ROOM_BYTES`, sizes, `ART_TYPES`, `looksLike` (a file's first bytes), `coverFrom`, `formatBytes`. Imports nothing.                                                     |
-| Browser | `lib/art-upload.ts` (`prepare`, `prepareFile`, `savePicture`), `lib/art-shelf.ts` (store updates: `uploadFile`, `savePrepared`, `deletePicture`, `setCover`, `refreshShelf`).                                          |
-| Server  | `lib/server/art-store.ts` (storage: `uploadTarget`, `inspect`, `remove`, `readPicture`, the stand-in), `lib/server/art.ts` (`startUpload`, `finishUpload`, `deleteArt`, `removeAllArt`, `coversFor`).                  |
-| API     | `POST /api/art/upload` (start), `GET`/`POST /api/art` (list, finish), `PUT`/`DELETE /api/art/[id]`, `PUT /api/book/[id]/cover`, and the stand-in's `/api/art/local/[...path]`.                                         |
-| Screens | `routes/art` with `components/art/ArtShelf.svelte`; `CoverPicker` (the book page's "Change the cover"), `UseAsCover` (a picture onto books), `UploadButton`, `RoomMeter`; "Save to shelf" in the studio's `StudioBar`. |
-| Data    | Tables `art` and `art_upload`, and `book.cover_art_id` (migration `0016_art.sql`). `artStore` and `artUploadsOpen` in `$lib/stores`, loaded with the library from `/api/art`.                                          |
+| Piece   | Files                                                                                                                                                                                                                                                                                                                                                |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rules   | `lib/art.ts`: types (`ArtPicture`, `CoverArt`), `ROOM_BYTES`, sizes, `ART_TYPES`, `looksLike` (a file's first bytes), `coverFrom`, `formatBytes`. Imports nothing.                                                                                                                                                                                   |
+| Browser | `lib/art-upload.ts` (`prepare`, `prepareFile`, `savePicture`), `lib/art-shelf.ts` (store updates: `uploadFile`, `savePrepared`, `deletePicture`, `setCover`, `refreshShelf`).                                                                                                                                                                        |
+| Server  | `lib/server/art-store.ts` (storage: `uploadTarget`, `inspect`, `remove`, `readPicture`, the stand-in), `lib/server/art.ts` (`startUpload`, `finishUpload`, `deleteArt`, `removeAllArt`, `coversFor`).                                                                                                                                                |
+| API     | `POST /api/art/upload` (start), `GET`/`POST /api/art` (list, finish), `PUT`/`DELETE /api/art/[id]`, `PUT /api/book/[id]/cover`, and the stand-in's `/api/art/local/[...path]`.                                                                                                                                                                       |
+| Screens | `routes/art` with `components/art/ArtShelf.svelte`; `CoverPicker` (the book page's "Change the cover"), `UseAsCover` (a picture onto books), `UploadButton`, `RoomMeter`; "Save to shelf" in the studio's `StudioBar`; a card's "Draw over it in the studio", and the studio's `ShelfPicker`, which copy a picture into a drawing (see `bb-studio`). |
+| Data    | Tables `art` and `art_upload`, and `book.cover_art_id` (migration `0016_art.sql`). `artStore` and `artUploadsOpen` in `$lib/stores`, loaded with the library from `/api/art`.                                                                                                                                                                        |
 
 ## Storage
 
@@ -111,5 +111,11 @@ picker.
   390 with touch, as a phone does; a photo the size a camera takes (4032 × 3024) is worth one run.
 - **Not checked against the real store**: the Blob calls themselves (`put`, `head`, `del`, client
   tokens) only run with the key. Try one upload on a preview deployment before relying on it.
+- **The studio fetches shelf pictures from the browser** (`fetchPicture` in
+  `lib/studio/pictures.ts`), to copy one into a drawing. On the stand-in that's the same site; on
+  Blob it's another, and works because a public store's files answer with
+  `access-control-allow-origin: *` (a plain `fetch`, no headers, so no preflight). That was read
+  from Vercel's community answers, not seen: the Neon query that would have found a real file's
+  address was refused, so try putting a shelf picture in a drawing on a preview deployment too.
 - After adding to the server side, run a production build (see `bb-stack`). `@vercel/blob` 2.8.2
   is pinned; its `@vercel/oidc` brings an older `jose` that stays nested under it.

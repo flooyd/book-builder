@@ -37,6 +37,7 @@
 			{
 				doc: studio.doc,
 				paint: studio.paint,
+				pictures: studio.pictures,
 				sketch: studio.sketch ? { layerId: studio.activeLayerId, shape: studio.sketch } : null
 			},
 			studio.view,
@@ -52,7 +53,9 @@
 			studio.sketch,
 			studio.paintTick,
 			studio.activeLayerId,
-			studio.stage
+			studio.stage,
+			// A picture's pixels arriving after the drawing opened.
+			studio.pictures.size
 		];
 		schedule();
 	});

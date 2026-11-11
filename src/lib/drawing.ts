@@ -4,7 +4,7 @@
 // nothing but known shapes and checked values is kept.
 //
 // The document holds no addresses. A paint layer's pixels are stored beside it, by the layer's id,
-// so a drawing can't point a reader's browser anywhere.
+// and a placed picture's by an id of its own, so a drawing can't point a reader's browser anywhere.
 //
 // It imports nothing, so the browser and the server share it and it can be tested alone.
 
@@ -26,6 +26,11 @@ export const MAX_SHAPES = 5000;
 export const MAX_ANCHORS = 60_000;
 /** Groups inside groups. */
 export const MAX_DEPTH = 8;
+/** Different pictures placed in one drawing (each held in memory while it's open). */
+export const MAX_PICTURES = 12;
+/** A placed picture is kept at most this many pixels on its longer side, and in all. */
+export const PICTURE_SIDE = 3000;
+export const PICTURE_PIXELS = 9_000_000;
 export const MAX_NAME = 80;
 /** Coordinates beyond this, either way, are kept at it. */
 const FAR = 100_000;
@@ -175,6 +180,18 @@ export type TextShape = ShapeBase &
 		tracking: number;
 	};
 
+/**
+ * A picture placed in the drawing (a photograph, a sketch to trace), drawn to fill a box from
+ * (0, 0) to (width, height). Its pixels are kept beside the drawing by `picture`, an id, like a
+ * paint layer's, and several shapes may show the same one.
+ */
+export type ImageShape = ShapeBase & {
+	kind: 'image';
+	picture: string;
+	width: number;
+	height: number;
+};
+
 export type Shape =
 	| RectShape
 	| EllipseShape
@@ -183,7 +200,8 @@ export type Shape =
 	| LineShape
 	| PathShape
 	| GroupShape
-	| TextShape;
+	| TextShape
+	| ImageShape;
 export type ShapeKind = Shape['kind'];
 /** The shapes with a box (width and height) as their geometry. */
 export type BoxShape = RectShape | EllipseShape | PolygonShape | StarShape;
@@ -302,7 +320,10 @@ export function cleanColor(value: unknown): string | null {
 
 // ---- Cleaning ----------------------------------------------------------------------------------
 
-type Budget = { shapes: number; anchors: number; ids: Set<string> };
+type Budget = { shapes: number; anchors: number; ids: Set<string>; pictures: Set<string> };
+
+/** A placed picture's id: the same alphabet as a shape's. */
+export const PICTURE_ID = /^[a-z0-9]{1,24}$/;
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
 	!!value && typeof value === 'object' && !Array.isArray(value);
@@ -516,6 +537,15 @@ function cleanShape(value: unknown, budget: Budget, depth: number): Shape | null
 				tracking: number(value.tracking, -0.5, 2, 0, 3)
 			};
 		}
+		case 'image': {
+			const picture = value.picture;
+			if (typeof picture !== 'string' || !PICTURE_ID.test(picture)) return null;
+			if (!budget.pictures.has(picture)) {
+				if (budget.pictures.size >= MAX_PICTURES) return null;
+				budget.pictures.add(picture);
+			}
+			return { ...base, kind, picture, width: side('width'), height: side('height') };
+		}
 		default:
 			budget.shapes++;
 			return null;
@@ -565,7 +595,12 @@ export function cleanDrawing(value: unknown): Drawing | null {
 		width = Math.floor(width * shrink);
 		height = Math.floor(height * shrink);
 	}
-	const budget: Budget = { shapes: MAX_SHAPES, anchors: MAX_ANCHORS, ids: new Set() };
+	const budget: Budget = {
+		shapes: MAX_SHAPES,
+		anchors: MAX_ANCHORS,
+		ids: new Set(),
+		pictures: new Set()
+	};
 	const paintRoom = { left: paintLayerLimit(width, height) };
 	const layers: Layer[] = [];
 	if (Array.isArray(value.layers)) {
@@ -612,6 +647,20 @@ export function shapeCount(drawing: Drawing) {
 	return count;
 }
 
+/** The ids of the pictures a drawing (or some shapes) shows. */
+export function picturesIn(source: Drawing | Shape[]): string[] {
+	const lists = Array.isArray(source)
+		? [source]
+		: source.layers.map((layer) => (layer.kind === 'vector' ? layer.shapes : []));
+	const ids: string[] = [];
+	for (const shapes of lists) {
+		for (const shape of allShapes(shapes)) {
+			if (shape.kind === 'image' && !ids.includes(shape.picture)) ids.push(shape.picture);
+		}
+	}
+	return ids;
+}
+
 /** What a shape is called in a list when it has no name of its own. */
 export function kindLabel(shape: Shape) {
 	switch (shape.kind) {
@@ -631,6 +680,8 @@ export function kindLabel(shape: Shape) {
 			return 'Group';
 		case 'text':
 			return 'Text';
+		case 'image':
+			return 'Picture';
 	}
 }
 
