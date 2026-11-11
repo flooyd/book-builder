@@ -7,6 +7,7 @@ import { findOwnedChapter, findOwnedPart } from '$lib/server/ownership';
 import { cleanValue } from '$lib/rich';
 import { dayFor, recordWords, todayFor, wordsIn } from '$lib/server/goals';
 import { castNamed, indexMentions, ownedMentions } from '$lib/server/bible';
+import { ownedPictures } from '$lib/server/art';
 import { findVersion, keepVersion } from '$lib/server/story-versions';
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -96,7 +97,11 @@ export function storyTextHandlers(target: 'part' | 'chapter') {
 		const at = new Date();
 		const day = todayFor(event);
 		const created = await db.transaction(async (tx) => {
-			const kept = await ownedMentions(tx, owned.userId, content);
+			const kept = await ownedPictures(
+				tx,
+				owned.userId,
+				await ownedMentions(tx, owned.userId, content)
+			);
 			const [row] = await tx
 				.insert(storyText)
 				.values({ ...link, content: kept, createdAt: at, updatedAt: at })
@@ -142,7 +147,11 @@ export function storyTextHandlers(target: 'part' | 'chapter') {
 		const day = todayFor(event);
 		const before = wordsIn(existing.content);
 		const updated = await db.transaction(async (tx) => {
-			const kept = await ownedMentions(tx, owned.userId, content);
+			const kept = await ownedPictures(
+				tx,
+				owned.userId,
+				await ownedMentions(tx, owned.userId, content)
+			);
 			const after = wordsIn(kept);
 			const version =
 				kept === existing.content && !restoring

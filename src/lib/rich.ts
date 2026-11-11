@@ -6,6 +6,7 @@
 // against an allow-list when saved and again when shown: shared books are public, so nothing but
 // known nodes, marks and attribute values may reach a page.
 
+import { DESCRIPTION_LIMIT, SMALL_SIDE } from '$lib/art';
 import { isEntryType, type EntryType } from '$lib/bible';
 
 export type RichMark = { type: string; attrs?: Record<string, unknown> };
@@ -176,15 +177,18 @@ const textNode = (text: string, marks?: RichMark[]): RichNode =>
 const MAX_NOTE = 100_000;
 
 /**
- * A footnote's note, cleaned as a description value: plain text, or inline formatting as JSON.
- * Null when there's nothing in it, so a note the writer never wrote isn't kept.
+ * A description value held in an attribute (a footnote's note, a picture's caption): plain text,
+ * or inline formatting as JSON. Null when there's nothing in it.
  */
-function noteOf(attrs: unknown): string | null {
-	const note = (attrs as Record<string, unknown> | undefined)?.note;
-	if (typeof note !== 'string' || note.length > MAX_NOTE) return null;
-	const clean = serialize(parse(note, 'description'), 'description');
+function descriptionAttr(value: unknown): string | null {
+	if (typeof value !== 'string' || value.length > MAX_NOTE) return null;
+	const clean = serialize(parse(value, 'description'), 'description');
 	return clean ? clean : null;
 }
+
+/** A footnote's note. Null when it's empty, so a note the writer never wrote isn't kept. */
+const noteOf = (attrs: unknown) =>
+	descriptionAttr((attrs as Record<string, unknown> | undefined)?.note);
 
 function cleanInline(nodes: unknown, kind: RichKind): RichNode[] {
 	if (!Array.isArray(nodes)) return [];
@@ -246,6 +250,10 @@ function cleanBlocks(nodes: unknown, depth: number, kind: RichKind): RichNode[] 
 			});
 		} else if (type === 'horizontalRule') {
 			clean.push({ type });
+		} else if (type === 'picture' && kind === 'story' && depth === 0) {
+			// Between blocks of the story only: never in a quote or a list, never in a description.
+			const picture = pictureAttrs(node.attrs);
+			if (picture) clean.push({ type, attrs: picture });
 		}
 	}
 	return clean;
@@ -296,8 +304,15 @@ export function cleanValue(value: string, kind: RichKind): string {
 
 // ---- Plain text ------------------------------------------------------------------------------
 
-/** How a node that isn't words reads as text: a mention as something else, a footnote's number. */
-type Reading = { mention?: string; footnote?: (node: RichNode) => string };
+/**
+ * How a node that isn't words reads as text: a mention as something else, a footnote's number, a
+ * picture as a line of its own (left out without one).
+ */
+type Reading = {
+	mention?: string;
+	footnote?: (node: RichNode) => string;
+	picture?: (node: RichNode) => string;
+};
 
 function textOf(node: RichNode, reading: Reading = {}): string {
 	if (node.type === 'text') return node.text ?? '';
@@ -313,6 +328,7 @@ const BLOCK_TYPES = new Set(['paragraph', 'heading']);
 function blockLines(nodes: RichNode[], out: string[], reading: Reading = {}) {
 	for (const node of nodes) {
 		if (BLOCK_TYPES.has(node.type)) out.push(textOf(node, reading));
+		else if (node.type === 'picture' && reading.picture) out.push(reading.picture(node));
 		else if (node.content) blockLines(node.content, out, reading);
 	}
 	return out;
@@ -320,8 +336,8 @@ function blockLines(nodes: RichNode[], out: string[], reading: Reading = {}) {
 
 /**
  * The words of the story, a line per paragraph (Insights, word maps, names, search). Footnotes
- * are left out: a note isn't narration, so nothing reads it as the paragraph it hangs from. Count
- * words with `storyWords` in $lib/reading, which adds them back. Given a `mention`, each mention
+ * and pictures' captions are left out: they aren't narration, so nothing reads them as the story.
+ * Count words with `storyWords` in $lib/reading, which adds them back. Given a `mention`, each mention
  * reads as that instead of its words: looking for names in what's left mustn't find a mention a
  * second time.
  */
@@ -333,7 +349,9 @@ export function plainText(value: string, kind: RichKind = 'story', mention?: str
 
 function isEmpty(doc: RichDoc) {
 	return (
-		!(doc.content ?? []).some((node) => node.type === 'horizontalRule') &&
+		!(doc.content ?? []).some(
+			(node) => node.type === 'horizontalRule' || node.type === 'picture'
+		) &&
 		blockLines(doc.content ?? [], []).every((line) => !line.trim()) &&
 		footnoteNodes(doc.content ?? []).length === 0
 	);
@@ -475,22 +493,163 @@ const SUPERSCRIPT = '⁰¹²³⁴⁵⁶⁷⁸⁹';
 const superscript = (number: number) =>
 	[...String(number)].map((digit) => SUPERSCRIPT[Number(digit)]).join('');
 
-/**
- * The words with the footnotes in them, for comparing versions: each number where it sits, and
- * the notes after the story, a line each. An edit inside a note, or a note moved, shows. It's
- * also how to ask whether a text holds anything to read, since `plainText` leaves notes out.
- */
-export function textWithNotes(value: string) {
-	if (!mayFootnote(value)) return plainText(value);
+/** A description value as one line of words. */
+const oneLine = (value: string) => plainText(value, 'description').replace(/\s*\n\s*/g, ' ');
+
+/** The words, with each footnote's number where it sits and the notes after, a line each. */
+function wordsAndNotes(value: string, reading: Reading = {}) {
+	if (!mayFootnote(value) && !(reading.picture && mayPicture(value))) return plainText(value);
 	const content = parse(value, 'story').content ?? [];
 	let count = 0;
-	const lines = blockLines(content, [], { footnote: () => superscript(++count) });
+	const lines = blockLines(content, [], { ...reading, footnote: () => superscript(++count) });
 	const notes = footnoteNodes(content).map(
-		(node, index) =>
-			`${superscript(index + 1)} ${plainText(String(node.attrs?.note ?? ''), 'description').replace(/\s*\n\s*/g, ' ')}`
+		(node, index) => `${superscript(index + 1)} ${oneLine(String(node.attrs?.note ?? ''))}`
 	);
 	return [...lines, ...notes].join('\n');
 }
+
+/**
+ * The words with the footnotes and pictures in them, for comparing versions: each number where
+ * it sits, the notes after the story, a line each, and a line for each picture, with its caption.
+ * An edit inside a note, or a picture added, taken out or moved, shows.
+ */
+export const textWithNotes = (value: string) =>
+	wordsAndNotes(value, {
+		picture: (node) => {
+			const caption = oneLine(String(node.attrs?.caption ?? '')).trim();
+			const alt = String(node.attrs?.alt ?? '').trim();
+			return `[Picture${caption || alt ? `: ${caption || alt}` : ''}]`;
+		}
+	});
+
+/**
+ * Whether a story value holds anything to read: words, a note or a picture. Given `pictures`, a
+ * picture counts only if it's there to show (one taken off the shelf isn't).
+ */
+export function hasContent(value: string, pictures?: PictureSources) {
+	if (wordsAndNotes(value).trim()) return true;
+	return picturesIn(value).some((picture) => !pictures || pictures[picture.art]);
+}
+
+// ---- Pictures --------------------------------------------------------------------------------
+//
+// A picture from the writer's art shelf, a block of its own between the story's other blocks
+// (idea 22): {"type":"picture","attrs":{"art":12,"width":1800,"height":1200,"size":"wide",
+// "alt":"…","decorative":false,"caption":"…"}}. The caption is a description value. The document
+// holds the picture's id on the shelf and never an address: whatever shows it looks the id up in
+// `PictureSources`, which only the server fills, so no document can make a reader's browser load
+// anything from anywhere else.
+
+export const PICTURE_SIZES = [
+	{ id: 'wide', label: 'Wide', hint: 'As wide as the text' },
+	{ id: 'small', label: 'Small', hint: 'Smaller, in the middle' },
+	{ id: 'page', label: 'Own page', hint: 'A page to itself in the book and the PDF' }
+] as const;
+export type PictureSize = (typeof PICTURE_SIZES)[number]['id'];
+
+export type Picture = {
+	/** Its id on the art shelf. */
+	art: number;
+	width: number;
+	height: number;
+	size: PictureSize;
+	/** What it shows, for someone who can't see it. */
+	alt: string;
+	/** Only decoration: a screen reader passes over it. */
+	decorative: boolean;
+	/** A description value, or ''. */
+	caption: string;
+};
+
+/** Where a picture's files are, by its id on the shelf: what the server tells a page. */
+export type PictureSource = { url: string; smallUrl: string; width: number; height: number };
+export type PictureSources = Record<number, PictureSource>;
+
+/** Bigger than any picture the shelf keeps (LONG_SIDE). */
+const MAX_SIDE = 20_000;
+
+const isSide = (value: number) => Number.isInteger(value) && value > 0 && value <= MAX_SIDE;
+
+/** A picture's own attributes, or null if they aren't a picture's. */
+function pictureAttrs(attrs: unknown): Picture | null {
+	const source = attrs as Record<string, unknown> | undefined;
+	const art = Number(source?.art);
+	const width = Number(source?.width);
+	const height = Number(source?.height);
+	if (!Number.isSafeInteger(art) || art <= 0 || !isSide(width) || !isSide(height)) return null;
+	const size = PICTURE_SIZES.find((choice) => choice.id === source?.size)?.id ?? 'wide';
+	const alt =
+		typeof source?.alt === 'string'
+			? source.alt.replace(/\s+/g, ' ').trim().slice(0, DESCRIPTION_LIMIT)
+			: '';
+	return {
+		art,
+		width,
+		height,
+		size,
+		alt,
+		decorative: source?.decorative === true,
+		caption: descriptionAttr(source?.caption) ?? ''
+	};
+}
+
+/** Quick test before parsing: most story text has no pictures. */
+const mayPicture = (value: string) => isRich(value) && value.includes('"type":"picture"');
+
+/** The pictures of a story value, in the order they're read. */
+export function picturesIn(value: string): Picture[] {
+	if (!mayPicture(value)) return [];
+	return (parse(value, 'story').content ?? [])
+		.filter((node) => node.type === 'picture')
+		.map((node) => pictureAttrs(node.attrs))
+		.filter((picture): picture is Picture => picture !== null);
+}
+
+/**
+ * A stored story value with its pictures changed: `change` returns the picture as it should be,
+ * or null to take it out. Unchanged text comes back as it was, so a caller can compare.
+ */
+export function mapPictures(value: string, change: (picture: Picture) => Picture | null) {
+	if (!mayPicture(value)) return value;
+	const doc = parse(value, 'story');
+	let changed = false;
+	const content: RichNode[] = [];
+	for (const node of doc.content ?? []) {
+		const picture = node.type === 'picture' ? pictureAttrs(node.attrs) : null;
+		if (!picture) {
+			content.push(node);
+			continue;
+		}
+		const next = change(picture);
+		if (JSON.stringify(next) !== JSON.stringify(picture)) changed = true;
+		if (next) content.push({ type: 'picture', attrs: next });
+	}
+	if (!changed) return value;
+	const next = { ...doc, content };
+	return isEmpty(next) && !next.attrs ? '' : JSON.stringify(next);
+}
+
+/**
+ * The two files a browser may choose between for a picture, by how wide it's drawn: the small
+ * copy (at most SMALL_SIDE a side) on a phone, the whole picture on a large or sharp screen.
+ * No `srcset` when the small copy is the whole picture.
+ */
+export function pictureSizes(source: PictureSource, size: PictureSize) {
+	const small = Math.max(
+		1,
+		Math.round(source.width * Math.min(1, SMALL_SIDE / Math.max(source.width, source.height)))
+	);
+	return {
+		srcset:
+			small < source.width ? `${source.smallUrl} ${small}w, ${source.url} ${source.width}w` : '',
+		sizes: size === 'small' ? '(max-width: 640px) 70vw, 440px' : '(max-width: 720px) 100vw, 720px'
+	};
+}
+
+/** An address the server handed out for a file on the shelf: our own, or https. */
+const isFileAddress = (url: unknown): url is string =>
+	typeof url === 'string' &&
+	(/^\/api\/art\/local\/[\w./-]+$/.test(url) || /^https:\/\/[\w.-]+\/[\w./%-]+$/.test(url));
 
 // ---- HTML ------------------------------------------------------------------------------------
 
@@ -527,10 +686,10 @@ function textHTML(node: RichNode) {
 }
 
 /**
- * What making a story's HTML keeps track of: the notes met so far, in order, and the id their
- * links are made from, if they have links.
+ * What making a story's HTML keeps track of: the notes met so far, in order, the id their links
+ * are made from, if they have links, and where the pictures are.
  */
-type Page = { notes: string[]; id: string | null };
+type Page = { notes: string[]; id: string | null; pictures: PictureSources };
 
 /** A footnote's number in the line, a link to its note when the note has an id to link to. */
 function footnoteHTML(node: RichNode, page: Page) {
@@ -585,9 +744,42 @@ function blockHTML(node: RichNode, page: Page): string {
 			return `<li>${children()}</li>`;
 		case 'horizontalRule':
 			return '<hr>';
+		case 'picture': {
+			const picture = pictureAttrs(node.attrs);
+			return picture ? pictureHTML(picture, page.pictures[picture.art]) : '';
+		}
 		default:
 			return '';
 	}
+}
+
+/**
+ * A picture, if it's still on the shelf (nothing at all if it isn't). Its box has its shape from
+ * the start (`--ratio`), so nothing moves as the file arrives: the book view counts its pages
+ * before then. The editor draws its pictures with this too.
+ */
+export function pictureHTML(picture: Picture, source: PictureSource | undefined) {
+	if (
+		!source ||
+		!isFileAddress(source.url) ||
+		!isFileAddress(source.smallUrl) ||
+		!isSide(source.width) ||
+		!isSide(source.height)
+	) {
+		return '';
+	}
+	const ratio = (source.width / source.height).toFixed(4);
+	const { srcset, sizes } = pictureSizes(source, picture.size);
+	const choices = srcset ? ` srcset="${escape(srcset)}" sizes="${sizes}"` : '';
+	const alt = picture.decorative ? '' : escape(picture.alt);
+	const caption = picture.caption
+		? `<figcaption>${toHTML(picture.caption, 'description')}</figcaption>`
+		: '';
+	return (
+		`<figure class="bb-picture bb-picture-${picture.size}" style="--ratio: ${ratio}">` +
+		`<img src="${escape(source.url)}"${choices} width="${source.width}" height="${source.height}" alt="${alt}" decoding="async">` +
+		`${caption}</figure>`
+	);
 }
 
 /** The notes, after the story they belong to, each with a link back to its number. */
@@ -615,12 +807,22 @@ const NOTES_ID = /^[a-z][\w-]{0,60}$/i;
  * description becomes inline text, its paragraphs joined by line breaks (it sits inside a <p> or
  * <span>). Give story text `notes`, an id no other text on the page has (the section's key), and
  * each footnote's number links to its note and back. Leave it out where the same text is drawn
- * more than once, as the book view's pages are.
+ * more than once, as the book view's pages are. A picture shows only if `pictures` says where it
+ * is.
  */
-export function toHTML(value: string, kind: RichKind, notes?: string): string {
+export function toHTML(
+	value: string,
+	kind: RichKind,
+	notes?: string,
+	pictures: PictureSources = {}
+): string {
 	const doc = parse(value, kind);
 	if (kind === 'story') {
-		const page: Page = { notes: [], id: notes && NOTES_ID.test(notes) ? notes : null };
+		const page: Page = {
+			notes: [],
+			id: notes && NOTES_ID.test(notes) ? notes : null,
+			pictures
+		};
 		const blocks = (doc.content ?? []).map((node) => blockHTML(node, page)).join('');
 		return blocks + notesHTML(page);
 	}

@@ -10,12 +10,14 @@ import {
 	descriptionLines,
 	NOTE_SCALE,
 	noteInlines,
+	pictureFiles,
 	plainRun,
 	runsOf,
 	storyOf,
 	type FirstLetter,
 	type Inline,
 	type Manuscript,
+	type PictureFile,
 	type Run,
 	type Section
 } from './manuscript';
@@ -129,6 +131,18 @@ const bodyFlow = (changes: Partial<Flow> = {}): Flow => ({
 
 const NOTE_FLOW = bodyFlow({ size: NOTE_SIZE, leading: NOTE_LEADING });
 
+/** A picture's caption: small and centred under it, in the description's italic. */
+const CAPTION_FLOW = bodyFlow({
+	size: 9.5,
+	leading: 13,
+	align: 'center',
+	hyphenate: false,
+	color: INK.muted,
+	left: 18,
+	right: 18
+});
+const CAPTION_GAP = 7;
+
 /** The line a first letter takes out of its paragraph. */
 type Cap = FirstLetter & { face: string; size: number; width: number; box: number };
 
@@ -157,6 +171,11 @@ class Book {
 	// the page once the page is full: `reserved` is the room they take there, which moves the foot
 	// of the text up. A note that doesn't fit runs on (`carrying`), and nothing with a note of its
 	// own goes on that page after it.
+	/** The pictures set in the text, read from the shelf before setting starts (pictureFiles). */
+	pictures = new Map<number, PictureFile>();
+	/** Each picture opened once, so a picture used twice is in the file once. */
+	#opened = new Map<PictureFile, unknown>();
+
 	/** The notes of the section being set, note 1 first. */
 	#notes: string[] = [];
 	/** Each note set as lines, by its number, as they're needed. */
@@ -847,7 +866,8 @@ class Book {
 		if (lines.length < cap.lines) this.y = Math.max(this.y, bottom);
 	}
 
-	#heading(node: RichNode, base: Partial<Flow>) {
+	/** `after` is how much of what follows must share the page with the heading (#keepWith). */
+	#heading(node: RichNode, base: Partial<Flow>, after: number) {
 		const level = Number(node.attrs?.level ?? 1);
 		const align = (node.attrs?.textAlign as Flow['align']) ?? 'left';
 		const size = level === 1 ? SIZE * 1.6 : level === 2 ? SIZE * 1.3 : SIZE * 0.8;
@@ -866,7 +886,7 @@ class Book {
 		if (level === 3) {
 			runs = runs.map((run) => (run === 'break' ? run : { ...run, text: run.text.toUpperCase() }));
 		}
-		this.ensure(flow.leading + LEADING * 2 + SIZE * 1.3);
+		this.ensure(flow.leading + after + SIZE * 1.3);
 		this.gap(SIZE * 1.3);
 		this.#setBlock(runs, flow);
 		this.y += SIZE * 0.4;
@@ -903,7 +923,7 @@ class Book {
 		let previous = '';
 		let pending = cap;
 		let mark = marker;
-		for (const node of nodes) {
+		for (const [index, node] of nodes.entries()) {
 			if (node.type === 'paragraph') {
 				const runs = runsOf(node.content, quote ? { italic: true } : {});
 				const align = (node.attrs?.textAlign as Flow['align']) ?? flow.align;
@@ -921,7 +941,11 @@ class Book {
 				}
 				mark = undefined;
 			} else if (node.type === 'heading') {
-				this.#heading(node, { left: flow.left, right: flow.right });
+				this.#heading(
+					node,
+					{ left: flow.left, right: flow.right },
+					this.#keepWith(nodes[index + 1])
+				);
 			} else if (node.type === 'blockquote') {
 				this.gap(SIZE * 0.7);
 				this.#blocks(node.content ?? [], {
@@ -939,14 +963,93 @@ class Book {
 			} else if (node.type === 'bulletList' || node.type === 'orderedList') {
 				this.#list(node, flow, quote);
 			} else if (node.type === 'horizontalRule') {
-				this.ensure(SIZE * 2.6 + LEADING * 2);
+				this.ensure(SIZE * 2.6 + this.#keepWith(nodes[index + 1]));
 				this.gap(SIZE * 1.3);
 				this.ornament(this.left + MEASURE / 2, this.y + 5);
 				this.y += SIZE * 2.3;
 				this.#fresh = false;
+			} else if (node.type === 'picture') {
+				this.#picture(node);
 			}
 			previous = node.type;
 		}
+	}
+
+	/**
+	 * How much of `next` must go on the same page as a heading or a scene break before it: two
+	 * lines of text, or a whole picture with its caption. A picture with a page to itself starts
+	 * the next one anyway, so nothing.
+	 */
+	#keepWith(next: RichNode | undefined) {
+		if (next?.type !== 'picture') return LEADING * 2;
+		const picture = this.#pictureLayout(next);
+		if (!picture) return LEADING * 2;
+		return picture.own ? 0 : SIZE * 1.3 + picture.height + picture.under;
+	}
+
+	/**
+	 * A picture's size on the page, as reading mode sets it: as wide as the text, smaller in the
+	 * middle, or on a page of its own, with its caption under it, and never taller than a page has
+	 * room for. Null when its file isn't there (taken off the shelf): it's left out, as on the page.
+	 */
+	#pictureLayout(node: RichNode) {
+		const file = this.pictures.get(Number(node.attrs?.art));
+		if (!file) return null;
+		const own = node.attrs?.size === 'page';
+		const caption = descriptionLines(String(node.attrs?.caption ?? '')).flatMap((line, index) =>
+			index ? ['break' as const, ...line] : line
+		);
+		const room = MEASURE - CAPTION_FLOW.left - CAPTION_FLOW.right;
+		const lines = caption.length
+			? this.#lines(caption, CAPTION_FLOW, () => ({ inset: 0, room }))
+			: [];
+		const under = lines.length
+			? CAPTION_GAP + lines.reduce((sum, line) => sum + line.height, 0)
+			: 0;
+		const ratio = file.width / file.height;
+		// A picture in the text leaves room for a few lines with it; one on its own page fills it.
+		const tallest = (own ? FOOT - TOP : (FOOT - TOP) * 0.72) - under;
+		let width = node.attrs?.size === 'small' ? MEASURE * 0.6 : MEASURE;
+		let height = width / ratio;
+		if (height > tallest) {
+			height = tallest;
+			width = height * ratio;
+		}
+		return { file, own, lines, under, width, height };
+	}
+
+	#picture(node: RichNode) {
+		const layout = this.#pictureLayout(node);
+		if (!layout) return;
+		const { file, own, lines, under, width, height } = layout;
+		if (own) {
+			if (!this.#fresh) this.storyPage(false);
+			const space = FOOT - this.#reserved - TOP;
+			this.y = TOP + Math.max(0, (space - height - under) / 2);
+		} else {
+			this.ensure(SIZE * 1.3 + height + under);
+			this.gap(SIZE * 1.3);
+		}
+		let image = this.#opened.get(file);
+		if (!image) {
+			// pdfkit has openImage, but its types leave it out.
+			const doc = this.doc as unknown as { openImage: (source: Buffer) => unknown };
+			image = doc.openImage(file.bytes);
+			this.#opened.set(file, image);
+		}
+		this.doc.image(image as unknown as Buffer, this.left + (MEASURE - width) / 2, this.y, {
+			width,
+			height
+		});
+		this.y += height;
+		this.#fresh = false;
+		if (lines.length) {
+			this.y += CAPTION_GAP;
+			this.#place(lines, CAPTION_FLOW);
+		}
+		// Whatever comes next starts the next page.
+		if (own) this.y = FOOT;
+		else this.gap(SIZE * 1.3);
 	}
 
 	// ---- Sections ------------------------------------------------------------------------------
@@ -1381,6 +1484,7 @@ export async function pdfOf(manuscript: Manuscript) {
 	});
 
 	const book = new Book(doc, new FacePicker(loaded), manuscript.part?.name ?? manuscript.title);
+	book.pictures = await pictureFiles(manuscript);
 
 	if (!manuscript.part) {
 		book.cover(manuscript, await coverPicture(manuscript));

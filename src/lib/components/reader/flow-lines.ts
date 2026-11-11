@@ -56,14 +56,16 @@ export function flowLines(flow: HTMLElement): FlowLine[] {
 		for (const child of parent.children) {
 			if (!(child instanceof HTMLElement) || child.matches('.bb-notes')) continue;
 			if (getComputedStyle(child).display === 'none') continue;
-			if (child.matches('header, h1, h2, h3, h4, h5, h6, hr')) {
+			if (child.matches('header, h1, h2, h3, h4, h5, h6, hr, figure')) {
 				const box = child.getBoundingClientRect();
 				lines.push({
 					top: box.top - origin,
 					bottom: box.bottom - origin,
 					notes: [],
 					// A title or a heading stays with what follows it.
-					breakAfter: child.tagName === 'HR'
+					breakAfter: child.tagName === 'HR' || child.tagName === 'FIGURE',
+					// A picture with a page to itself.
+					alone: child.matches('.bb-picture-page')
 				});
 			} else if (holdsBlocks(child)) {
 				walk(child);

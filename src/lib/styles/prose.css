@@ -68,7 +68,7 @@
 }
 
 /* After anything but a paragraph, a paragraph starts flush, as in print. */
-.bb-prose :is(h1, h2, h3, h4, h5, h6, blockquote, ul, ol, hr) + p {
+.bb-prose :is(h1, h2, h3, h4, h5, h6, blockquote, ul, ol, hr, .bb-picture, .bb-picture-node) + p {
 	text-indent: 0;
 }
 
@@ -247,6 +247,52 @@
 	height: 7px;
 	background: var(--bb-sky);
 	transform: translate(-50%, -50%) rotate(45deg);
+}
+
+/* A picture from the art shelf (idea 22). Its box has the picture's shape before the file arrives
+   (--ratio, from its width and height), so nothing moves as it loads, and it's never taller than
+   --picture-most, which the book view sets from its page. It sits on paper, so line art drawn in
+   black on a clear ground still reads at night. */
+.bb-prose .bb-picture {
+	--picture-width: 100%;
+	margin: 1.5em 0;
+	text-align: center;
+	text-indent: 0;
+	break-inside: avoid;
+}
+
+.bb-prose .bb-picture img {
+	display: block;
+	width: min(var(--picture-width), calc(var(--picture-most, 78vh) * var(--ratio, 1.5)));
+	height: auto;
+	aspect-ratio: var(--ratio, 1.5);
+	margin: 0 auto;
+	border-radius: 2px;
+	background: var(--bb-paper);
+	object-fit: contain;
+}
+
+.bb-prose .bb-picture-small {
+	--picture-width: 60%;
+}
+
+.bb-prose .bb-picture-page {
+	margin: 2.2em 0;
+}
+
+.bb-prose .bb-picture figcaption {
+	max-width: 32em;
+	margin: 0.7em auto 0;
+	font-size: 0.86em;
+	font-style: italic;
+	line-height: 1.5;
+	color: var(--bb-text-desc);
+	text-wrap: balance;
+}
+
+/* Captions are italic, so emphasis in one turns roman. */
+.bb-prose .bb-picture figcaption em {
+	font-style: normal;
 }
 
 /* The first letter of the text. --cap-lines is how many lines it sits beside; the sizes are

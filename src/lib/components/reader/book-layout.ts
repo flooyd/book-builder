@@ -204,12 +204,14 @@ export function pageOf(layout: BookLayout, at: ReadingPosition): number | null {
 /** A stretch of a flow set as one long column, top to bottom, in px from its top. */
 export type Span = { top: number; bottom: number };
 
-/** A line of text in a flow, or a block that isn't split (a heading, a scene break). */
+/** A line of text in a flow, or a block that isn't split (a heading, a scene break, a picture). */
 export type FlowLine = Span & {
 	/** The footnotes whose numbers are in it. */
 	notes: number[];
 	/** A page may end after it: not after a heading, nor where it would leave one line alone. */
 	breakAfter: boolean;
+	/** It has a page to itself (a picture): a page ends before it and after it. */
+	alone?: boolean;
 };
 
 /** A line of a flow's notes, set on their own as one long column. */
@@ -282,6 +284,11 @@ export function sliceFlow(lines: FlowLine[], notes: NoteLine[], room: SliceRoom)
 		let best: State | null = null;
 		while (state.end < lines.length) {
 			const line = lines[state.end];
+			// A page of its own: whatever is already on this page ends it.
+			if (line.alone && state.end > next) {
+				best = state;
+				break;
+			}
 			let lineOwed = state.owed;
 			let lineTaken = state.taken;
 			if (line.notes.length) {
@@ -302,6 +309,7 @@ export function sliceFlow(lines: FlowLine[], notes: NoteLine[], room: SliceRoom)
 			if (line.bottom - top + foot(queued, lineTaken) > room.height) break;
 			state = { end: state.end + 1, taken: lineTaken, owed: lineOwed };
 			if (line.breakAfter || state.end === lines.length) best = state;
+			if (line.alone) break;
 		}
 
 		if (!best) {

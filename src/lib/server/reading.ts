@@ -1,10 +1,10 @@
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { coverFor } from '$lib/server/art';
+import { coverFor, picturesFor } from '$lib/server/art';
 import { book, chapter, part, user } from '$lib/server/db/schema';
 import { storyTexts } from '$lib/server/outline';
 import { publicHandleOf } from '$lib/server/profile';
-import { withoutMentions } from '$lib/rich';
+import { mapPictures, withoutMentions } from '$lib/rich';
 
 const iso = (date: Date) => date.toISOString();
 
@@ -14,7 +14,8 @@ const iso = (date: Date) => date.toISOString();
  * page), the story texts and the author's name. Shared by the owner's /book/[id]/read and the
  * public /read/[shareId], which anyone can open. Mentions become plain words here, because the
  * links themselves can give the story away: "the stranger" pointing at Juno's id is a spoiler for
- * anyone who reads the page source.
+ * anyone who reads the page source. Pictures come only from the author's own shelf, and one that's
+ * no longer there is taken out.
  */
 export async function readableBook(found: typeof book.$inferSelect) {
 	const parts = await db.select().from(part).where(eq(part.bookId, found.id));
@@ -37,6 +38,11 @@ export async function readableBook(found: typeof book.$inferSelect) {
 		.where(eq(user.id, found.userId))
 		.limit(1);
 	const cover = await coverFor(found.coverArtId);
+	const pictures = await picturesFor(found.userId, Object.values(texts));
+	// A picture taken off the shelf shows nothing, so neither it nor its caption goes to readers.
+	for (const [key, value] of Object.entries(texts)) {
+		texts[key] = mapPictures(value, (picture) => (pictures[picture.art] ? picture : null));
+	}
 
 	return {
 		book: {
@@ -69,6 +75,8 @@ export async function readableBook(found: typeof book.$inferSelect) {
 			createdAt: iso(c.createdAt)
 		})),
 		texts,
+		/** Where the pictures set in the text are, from the author's own shelf only. */
+		pictures,
 		author: author?.name ?? '',
 		/** The author's public page, if it is on. */
 		authorHandle: await publicHandleOf(found.userId)

@@ -2,6 +2,8 @@
 	import { onMount } from 'svelte';
 	import type { StoryTextDoc } from '$lib/story-text.svelte';
 	import { textWithNotes } from '$lib/rich';
+	import { shelfSources } from '$lib/art';
+	import { artStore } from '$lib/stores';
 	import { diffCounts, diffText, type Block } from '$lib/diff';
 	import { plural, putJSON, sendJSON } from '$lib/library';
 	import {
@@ -93,6 +95,8 @@
 	const selectedText = $derived(selectedId === null ? null : (texts[selectedId] ?? null));
 	// Footnotes are in the comparison: an edit inside a note is an edit.
 	const now = $derived(textWithNotes(doc.content));
+	// Pictures in a version as it reads, from the writer's own shelf.
+	const pictures = $derived(shelfSources($artStore));
 	const blocks = $derived(selectedText ? diffText(textWithNotes(selectedText.content), now) : []);
 	const counts = $derived(diffCounts(blocks));
 	const unchanged = $derived(blocks.every((block) => block.kind === 'same'));
@@ -334,7 +338,12 @@
 						{:else if !selectedText}
 							<p class="quiet" aria-busy="true">Loading…</p>
 						{:else if mode === 'text'}
-							<RichText value={selectedText.content} kind="story" class="version-prose" />
+							<RichText
+								value={selectedText.content}
+								kind="story"
+								class="version-prose"
+								{pictures}
+							/>
 						{:else if unchanged}
 							<p class="quiet">This version matches your text now.</p>
 						{:else}

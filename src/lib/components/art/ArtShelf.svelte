@@ -3,11 +3,18 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { useAppHeader } from '$lib/app-header.svelte';
-	import { DESCRIPTION_LIMIT, formatBytes, TITLE_LIMIT, type ArtPicture } from '$lib/art';
+	import {
+		DESCRIPTION_LIMIT,
+		formatBytes,
+		TITLE_LIMIT,
+		type ArtPicture,
+		type PictureUse
+	} from '$lib/art';
 	import {
 		coversWith,
 		deletePicture,
 		describePicture,
+		picturePlaces,
 		refreshShelf,
 		usedBytes
 	} from '$lib/art-shelf';
@@ -81,6 +88,26 @@
 
 	let deleting = $state(false);
 	let deleteError = $state('');
+	/** Where the picture about to go is set in story text; null while that's being checked. */
+	let doomedUses = $state<PictureUse[] | null>(null);
+
+	function askDelete(picture: ArtPicture) {
+		deleteError = '';
+		doomed = picture;
+		doomedUses = null;
+		picturePlaces(picture.id)
+			.then((uses) => {
+				if (doomed?.id === picture.id) doomedUses = uses;
+			})
+			.catch((problem) => {
+				if (doomed?.id !== picture.id) return;
+				doomedUses = [];
+				deleteError = problem instanceof Error ? problem.message : 'Couldn’t check that.';
+			});
+	}
+
+	const useName = (use: PictureUse) =>
+		use.title || (use.target === 'chapter' ? 'An untitled chapter' : 'An untitled part');
 
 	async function remove() {
 		if (!doomed) return;
@@ -237,10 +264,7 @@
 							class="icon danger"
 							aria-label="Delete {picture.title || 'this picture'}"
 							title="Delete"
-							onclick={() => {
-								deleteError = '';
-								doomed = picture;
-							}}
+							onclick={() => askDelete(picture)}
 						>
 							<Icon name="trash" size={16} />
 						</button>
@@ -304,12 +328,34 @@
 					The drawing itself stays in the studio, in the browser it was made in.
 				{/if}
 			</p>
+			{#if doomedUses === null}
+				<p class="checking" aria-busy="true">Checking where it’s used…</p>
+			{:else if doomedUses.length}
+				<div class="uses">
+					<p>
+						It’s set in {doomedUses.length === 1 ? 'this' : 'these'}. Readers will see nothing
+						there, and the editor will show where it was, for you to take out:
+					</p>
+					<ul>
+						{#each doomedUses as use (`${use.target}-${use.id}`)}
+							<li>
+								<a
+									href={resolve(use.target === 'chapter' ? '/chapter/[id]' : '/part/[id]', {
+										id: String(use.id)
+									})}>{useName(use)}</a
+								>
+								<span class="book">{use.book}</span>
+							</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
 			{#if deleteError}
 				<p class="notice error" role="alert"><Icon name="alert-circle" size={16} />{deleteError}</p>
 			{/if}
 			<div class="dialog-actions">
 				<Button variant="quiet" onclick={() => (doomed = null)}>Keep it</Button>
-				<Button variant="danger" disabled={deleting} onclick={remove}
+				<Button variant="danger" disabled={deleting || doomedUses === null} onclick={remove}
 					>{deleting ? 'Deleting…' : 'Delete'}</Button
 				>
 			</div>
@@ -605,6 +651,58 @@
 		justify-content: flex-end;
 		gap: 10px;
 		margin-top: 6px;
+	}
+
+	.dialog .checking {
+		color: var(--bb-text-3);
+		font-size: 14px;
+	}
+
+	.uses {
+		display: grid;
+		gap: 8px;
+		padding: 12px 14px;
+		border: 1px solid var(--bb-amber-wash);
+		border-radius: var(--r-row);
+		background: color-mix(in srgb, var(--bb-amber-wash) 40%, transparent);
+	}
+
+	.uses p {
+		font-size: 14px;
+	}
+
+	.uses ul {
+		display: grid;
+		gap: 4px;
+		max-height: 168px;
+		margin: 0;
+		padding: 0;
+		overflow-y: auto;
+		list-style: none;
+	}
+
+	.uses li {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 2px 10px;
+		font-size: 14px;
+	}
+
+	.uses a {
+		color: var(--bb-sky);
+		font-weight: 600;
+		text-decoration: none;
+	}
+
+	.uses a:hover {
+		text-decoration: underline;
+	}
+
+	.uses .book {
+		color: var(--bb-text-3);
+		font-size: 13px;
+		font-style: italic;
 	}
 
 	@media (max-width: 600px) {

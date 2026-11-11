@@ -3,22 +3,28 @@
 	import { resolve } from '$app/paths';
 	import type { ArtPicture } from '$lib/art';
 	import { refreshShelf } from '$lib/art-shelf';
+	import UploadButton from '$lib/components/art/UploadButton.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
-	import { artStore } from '$lib/stores';
+	import { artStore, artUploadsOpen } from '$lib/stores';
 
-	// Picking a picture from the writer's art shelf, to put in a drawing or start one from. The
-	// studio copies what's picked into the drawing (see $lib/studio/pictures), so it can be changed
-	// there without touching the shelf's copy.
+	// Picking a picture from the writer's art shelf: to put in a drawing or start one from (the
+	// studio copies what's picked into the drawing, see $lib/studio/pictures, so it can be changed
+	// there without touching the shelf's copy), or to set in story text. With `upload`, a picture
+	// can be uploaded from here, and it's chosen as soon as it's on the shelf.
 	let {
 		title = 'Choose a picture from your shelf',
+		note = 'A copy goes into the drawing, so changing it there leaves your shelf as it is.',
+		upload = false,
 		busy = null,
 		error = '',
 		onchoose,
 		onclose
 	}: {
 		title?: string;
+		note?: string;
+		upload?: boolean;
 		/** The picture being fetched, if one is. */
 		busy?: number | null;
 		error?: string;
@@ -29,6 +35,7 @@
 	const uid = $props.id();
 	let loading = $state($artStore.length === 0);
 	let failed = $state(false);
+	let uploadError = $state('');
 
 	onMount(() => {
 		refreshShelf()
@@ -41,7 +48,7 @@
 	<div class="picker">
 		<header>
 			<h2 id="{uid}-title">{title}</h2>
-			<p>A copy goes into the drawing, so changing it there leaves your shelf as it is.</p>
+			<p>{note}</p>
 		</header>
 
 		{#if $artStore.length}
@@ -76,12 +83,22 @@
 			</p>
 		{/if}
 
-		{#if error}
-			<p class="error" role="alert"><Icon name="alert-circle" size={16} />{error}</p>
+		{#if error || uploadError}
+			<p class="error" role="alert">
+				<Icon name="alert-circle" size={16} />{error || uploadError}
+			</p>
 		{/if}
 
 		<footer>
-			<a class="shelf-link" href={resolve('/art')}>Open your art shelf</a>
+			{#if upload && $artUploadsOpen}
+				<UploadButton
+					disabled={busy !== null}
+					onuploaded={onchoose}
+					onerror={(message) => (uploadError = message)}
+				/>
+			{:else}
+				<a class="shelf-link" href={resolve('/art')}>Open your art shelf</a>
+			{/if}
 			<Button onclick={onclose}>Cancel</Button>
 		</footer>
 	</div>

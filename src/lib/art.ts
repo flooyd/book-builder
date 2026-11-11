@@ -81,6 +81,27 @@ export function coverFrom(pictures: ArtPicture[], id: number | null): CoverArt |
 	return found ? coverOf(found) : null;
 }
 
+/** A chapter or story-text part a picture is set in (idea 22), as the delete dialog lists it. */
+export type PictureUse = { target: 'chapter' | 'part'; id: number; title: string; book: string };
+
+/**
+ * Where the pictures on the writer's own shelf are, for drawing their story text on their own
+ * pages (an old version, say), as `toHTML` takes them. Readers get theirs from the server.
+ */
+export function shelfSources(pictures: ArtPicture[]) {
+	return Object.fromEntries(
+		pictures.map((picture) => [
+			picture.id,
+			{
+				url: picture.url,
+				smallUrl: picture.smallUrl,
+				width: picture.width,
+				height: picture.height
+			}
+		])
+	);
+}
+
 /** "1.4 MB", "820 KB": room and sizes as a writer reads them. */
 export function formatBytes(bytes: number) {
 	if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;

@@ -2,7 +2,7 @@
 
 import type { CoverArt } from '$lib/art';
 import type { HeadingStyles } from '$lib/headings';
-import { footnotesIn, plainText } from '$lib/rich';
+import { footnotesIn, picturesIn, plainText, type PictureSources } from '$lib/rich';
 import type { ReaderSeries } from '$lib/series';
 
 export function countWords(text: string) {
@@ -11,11 +11,11 @@ export function countWords(text: string) {
 }
 
 /**
- * The words in a story value, its footnotes' included: the writer wrote those too. Every word
- * count and writing goal counts this way.
+ * The words in a story value, its footnotes' and pictures' captions included: the writer wrote
+ * those too. Every word count and writing goal counts this way.
  */
 export function storyWords(value: string) {
-	return footnotesIn(value).reduce(
+	return [...footnotesIn(value), ...picturesIn(value).map((picture) => picture.caption)].reduce(
 		(words, note) => words + countWords(plainText(note, 'description')),
 		countWords(plainText(value))
 	);
@@ -99,6 +99,8 @@ export type ReaderData = {
 	}[];
 	/** Story text by section anchor: "part-3", "chapter-12". */
 	texts: Record<string, string>;
+	/** The pictures set in the text, by their ids on the author's shelf. */
+	pictures: PictureSources;
 	author: string;
 	/** The author's public page address (/author/<handle>), when it is on. */
 	authorHandle: string | null;

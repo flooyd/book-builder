@@ -11,9 +11,16 @@ import { FONTS, HIGHLIGHTS, INKS, SIZES, highlightVar, inkVar, type RichKind } f
 import { mentionExtension, type MentionBridge } from './mention';
 import { autoMentionExtension } from './auto-mention';
 import { footnoteExtension, type FootnoteBridge } from './footnote';
+import { pictureExtension, type PictureBridge } from './picture';
+import { slashExtension, type SlashBridge } from './slash';
 
-/** The document keeps the story's first-letter settings (see $lib/rich DropCap). */
+/**
+ * The document keeps the story's first-letter settings (see $lib/rich DropCap), and holds
+ * pictures between its blocks: only here, never inside a quote or a list, as the cleaner keeps
+ * them.
+ */
 const StoryDocument = Document.extend({
+	content: '(block | figure)+',
 	addAttributes() {
 		return { dropCap: { default: null } };
 	}
@@ -47,13 +54,26 @@ export function cleanPastedHTML(html: string) {
 	return doc.body.innerHTML;
 }
 
-/** Escape leaves the editor (and lets a form cancel its edit). */
+/**
+ * Escape leaves the editor (and lets a form cancel its edit). Below the default priority, so a
+ * menu that's open (the @ list, the / list) takes Esc first and closes, and the caret stays.
+ * A toolbar menu (Insert, the colours) keeps the caret in the text while it's open, so Esc
+ * reaches the editor: it closes the menu and nothing else, or focus mode would close with it.
+ */
 const EscapeKey = (onescape?: () => void) =>
 	Extension.create({
 		name: 'escapeKey',
+		priority: 50,
 		addKeyboardShortcuts() {
 			return {
 				Escape: ({ editor }) => {
+					const menu = editor.view.dom.ownerDocument.querySelector<HTMLElement>(
+						'[data-menu]:popover-open'
+					);
+					if (menu) {
+						menu.hidePopover();
+						return true;
+					}
 					editor.commands.blur();
 					onescape?.();
 					return true;
@@ -62,12 +82,23 @@ const EscapeKey = (onescape?: () => void) =>
 		}
 	});
 
+/** What an editor is joined to: its boxes and menus, which it opens. */
+export type Bridges = {
+	onescape?: () => void;
+	/** Typing @ to mention the story bible, and its names linking themselves. */
+	mentions?: MentionBridge;
+	/** The box a footnote's note is written in. */
+	footnotes?: FootnoteBridge;
+	/** A picture's settings, and the shelf to choose one from. */
+	pictures?: PictureBridge;
+	/** The list that typing / on an empty line opens. */
+	slash?: SlashBridge;
+};
+
 export function extensionsFor(
 	kind: RichKind,
 	placeholder: string,
-	onescape?: () => void,
-	mentions?: MentionBridge,
-	footnotes?: FootnoteBridge
+	{ onescape, mentions, footnotes, pictures, slash }: Bridges = {}
 ) {
 	const story = kind === 'story';
 	return [
@@ -100,6 +131,9 @@ export function extensionsFor(
 		...(story && mentions ? [autoMentionExtension(mentions.bookId)] : []),
 		// Story text can always hold footnotes; `footnotes` is the box their notes open in.
 		...(story ? [footnoteExtension(footnotes)] : []),
+		// And pictures; `pictures` is their box and the shelf they're chosen from.
+		...(story ? [pictureExtension(pictures)] : []),
+		...(story && slash ? [slashExtension(slash, !!mentions)] : []),
 		EscapeKey(onescape)
 	];
 }

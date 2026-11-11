@@ -1,6 +1,7 @@
 # Idea 24: more kinds of text
 
-**A plan, written 2026-11-09. Nothing here is built.** This is the "etc." in what the user asked
+**A plan, written 2026-11-09. (a) shipped on 2026-11-10 and its section is now its record; b to f
+aren't built.** This is the "etc." in what the user asked
 for: "I want the editor to be more sophisticated and allow images in page, footnotes, etc."
 Pictures are idea 22 and footnotes idea 23. These are the smaller pieces, and each can ship on
 its own. The user can ask for one by letter ("24c").
@@ -12,24 +13,31 @@ the PDF and the Word file (`bb-export`).
 
 Undo and redo; paragraph, three headings and quote; four typefaces and six sizes; bold, italic,
 underline and strikethrough; text colour and highlight; four alignments; bulleted and numbered
-lists; scene break; the first letter; `@` mentions; clear formatting. That's 22 controls in one
-row, which wraps on a wide screen and scrolls sideways under 600 px.
+lists; the first letter; clear formatting; and, for story text, the Insert menu (picture,
+footnote, scene break, `@` mention). The row wraps on a wide screen and scrolls sideways under
+600 px.
 
 ## The pieces
 
-### a. An Insert menu
+### a. An Insert menu: shipped 2026-11-10
 
-The toolbar has no room for a picture button, a footnote button and the blocks below. Put what's
-inserted (picture, footnote, scene break, the kinds of quote, page break) in one Insert menu, and
-open the same list by typing `/` at the start of a line. `@tiptap/suggestion` is already
-installed for `@`, and `MentionMenu.svelte` shows how a list like that is mounted so it works
-over focus mode.
+Built with pictures (22), as planned. What's put into story text is one list in
+`rich/insert.ts` (Picture, Footnote, Scene break, and Mention where the editor can mention the
+story bible), each with its keys shown (Ctrl+Alt+F, @; hidden on touch screens). The toolbar's
+Insert button opens it in a `Menu`, and the scene break, mention and footnote buttons left the
+toolbar for it. Typing "/" on an empty line opens the same list where the caret is
+(`rich/slash.ts`, `SlashMenu.svelte`): `@tiptap/suggestion` with `startOfLine`, allowed only in a
+paragraph holding nothing but the "/", so a "/" mid-line or in a date is just a "/". A letter typed
+after it, or Esc, closes the list and leaves what was typed; the user chose that. Like the @ list,
+it's a top-layer popover mounted inside the editor, so it works over focus mode. No bar floats
+over selected text: the user doesn't like controls that come and go while typing.
 
-Worth doing as soon as there are two new things to insert. Footnotes (23) shipped first, with a
-button at the end of the toolbar's last group and Ctrl+Alt+F, so this comes with pictures (22),
-and the footnote button moves into it. Be careful with a bar that floats over selected text
-(`@tiptap/extension-bubble-menu`): the user doesn't like controls that come and go while typing
-(see "Things the user has reacted to" in the `bb-design` skill).
+What tripped it up was Esc, which three things wanted at once (see 3 in idea 22's "Things that
+tripped it up"). The editor's own Esc now runs last (priority 50), and closes an open toolbar
+menu rather than leaving the editor.
+
+**When b to f arrive**, each piece that puts something in (a kind of quote, a page break, a table)
+is a row in `insertItems` and a branch in `runInsert`, and the toolbar and "/" both get it.
 
 ### b. Small capitals, superscript and subscript
 

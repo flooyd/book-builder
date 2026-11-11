@@ -109,6 +109,8 @@ page looking right.
   before starting a server on it, and never edit the original.
 - **A reload the first time an editor opens.** On a freshly started dev server, the first page that loads Tiptap can make Vite log `optimized dependencies changed. reloading` and reload the page mid-test: the description box is missing, then the page goes blank. It isn't a bug. Run the script again, or open an editor once before testing.
 - **Duplicate headlines.** `motion-headline` keeps a hidden copy of its text for screen readers, so `h1.textContent` reads the title twice. That's expected.
+- **Typing straight after a click in the editor.** ProseMirror reads where a click put the caret a moment later, so keys pressed in the same instant land where the caret was before. Wait about 200 ms after `page.mouse.click` before typing. A person can't be that quick, so it isn't a bug.
+- **Esc.** It's wanted by many things at once in the editor (the @ and / lists, toolbar menus, a picture's or footnote's box, focus mode). After a change near any of them, press Esc from each, and check where focus and the caret end up (`document.activeElement`, `getSelection()`), not just that something closed.
 
 ## 4. Test data
 

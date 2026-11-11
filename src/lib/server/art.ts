@@ -1,7 +1,8 @@
 import { randomBytes } from 'node:crypto';
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { art, artUpload } from '$lib/server/db/schema';
+import { art, artUpload, book, chapter, part, storyText } from '$lib/server/db/schema';
+import { mapPictures, picturesIn, type PictureSources } from '$lib/rich';
 import {
 	DESCRIPTION_LIMIT,
 	isArtType,
@@ -12,7 +13,8 @@ import {
 	UPLOAD_MINUTES,
 	type ArtPicture,
 	type ArtSource,
-	type CoverArt
+	type CoverArt,
+	type PictureUse
 } from '$lib/art';
 import {
 	inspect,
@@ -374,4 +376,87 @@ export async function coversFor(ids: (number | null)[]) {
 
 export async function coverFor(id: number | null): Promise<CoverArt | null> {
 	return id === null ? null : ((await coversFor([id]))[id] ?? null);
+}
+
+// ---- Pictures in story text (idea 22) ---------------------------------------------------------
+
+/**
+ * Where the pictures set in some story texts are, for a page or a file. Only the author's own
+ * shelf is looked at, so an id in the text that's someone else's picture (or will be, once
+ * uploaded) never shows. A picture taken off the shelf isn't there, and shows as nothing.
+ */
+export async function picturesFor(userId: string, texts: string[]): Promise<PictureSources> {
+	const wanted = [...new Set(texts.flatMap((text) => picturesIn(text).map((p) => p.art)))];
+	const sources: PictureSources = {};
+	if (!wanted.length) return sources;
+	const rows = await db
+		.select({
+			id: art.id,
+			url: art.url,
+			smallUrl: art.smallUrl,
+			width: art.width,
+			height: art.height
+		})
+		.from(art)
+		.where(and(eq(art.userId, userId), inArray(art.id, wanted)));
+	for (const { id, ...source } of rows) sources[id] = source;
+	return sources;
+}
+
+/**
+ * Story text as it may be stored: a picture that's another writer's is taken out, and one on the
+ * writer's own shelf takes its size from the file. One taken off the shelf stays, for the editor
+ * to show as gone until the writer removes it; pages look pictures up on the author's shelf
+ * alone (`picturesFor`), so it shows nothing to readers.
+ */
+export async function ownedPictures(
+	database: Pick<typeof db, 'select'>,
+	userId: string,
+	content: string
+) {
+	const pictures = picturesIn(content);
+	if (!pictures.length) return content;
+	const rows = await database
+		.select({ id: art.id, userId: art.userId, width: art.width, height: art.height })
+		.from(art)
+		.where(inArray(art.id, [...new Set(pictures.map((picture) => picture.art))]));
+	const found = new Map(rows.map((row) => [row.id, row]));
+	return mapPictures(content, (picture) => {
+		const row = found.get(picture.art);
+		if (!row) return picture;
+		if (row.userId !== userId) return null;
+		return { ...picture, width: row.width, height: row.height };
+	});
+}
+
+/** Where a picture on a writer's shelf is set in their story text: each chapter and part. */
+export async function pictureUses(userId: string, id: number): Promise<PictureUse[]> {
+	if (!Number.isSafeInteger(id)) return [];
+	const rows = await db
+		.select({
+			chapterId: storyText.chapterId,
+			partId: part.id,
+			content: storyText.content,
+			chapterTitle: chapter.title,
+			partTitle: part.title,
+			bookTitle: book.title
+		})
+		.from(storyText)
+		.leftJoin(chapter, eq(chapter.id, storyText.chapterId))
+		.innerJoin(part, eq(part.id, sql`coalesce(${chapter.partId}, ${storyText.partId})`))
+		.innerJoin(book, eq(book.id, part.bookId))
+		.where(and(eq(book.userId, userId), sql`${storyText.content} like ${`%"art":${id},%`}`))
+		.orderBy(book.title, part.position, chapter.position);
+	return rows
+		.filter((row) => picturesIn(row.content).some((picture) => picture.art === id))
+		.map((row) =>
+			row.chapterId !== null
+				? {
+						target: 'chapter',
+						id: row.chapterId,
+						title: row.chapterTitle ?? '',
+						book: row.bookTitle
+					}
+				: { target: 'part', id: row.partId, title: row.partTitle, book: row.bookTitle }
+		);
 }

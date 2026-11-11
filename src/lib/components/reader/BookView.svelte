@@ -9,7 +9,7 @@
 		type ReaderPrefs,
 		type ReadingPosition
 	} from '$lib/reading';
-	import { footnotesIn, textWithNotes } from '$lib/rich';
+	import { footnotesIn, hasContent } from '$lib/rich';
 	import { nextBookHref, seriesHref } from '$lib/series';
 	import RichText from '$lib/components/rich/RichText.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
@@ -610,8 +610,8 @@
 			{/if}
 		</header>
 	{/if}
-	{#if textWithNotes(text).trim()}
-		<RichText value={text} kind="story" class="prose" />
+	{#if hasContent(text, data.pictures)}
+		<RichText value={text} kind="story" class="prose" pictures={data.pictures} />
 	{:else}
 		<p class="no-text">
 			No story text yet.
@@ -1137,6 +1137,31 @@
 
 	.flow :global(.bb-prose :is(h4, h5, h6)) {
 		break-after: avoid;
+	}
+
+	/* A picture is never split, and never taller than a page, its caption and margins included. A
+	   picture with a page to itself starts and ends one, in the middle of it. */
+	.flow :global(.bb-picture) {
+		--picture-most: calc(var(--ch) - 3.4em);
+	}
+
+	.flow :global(.bb-picture:has(figcaption)) {
+		--picture-most: calc(var(--ch) - 8.4em);
+	}
+
+	.flow :global(.bb-picture-page) {
+		--picture-most: calc(var(--ch) - 1em);
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		height: var(--ch);
+		margin: 0;
+		break-before: column;
+		break-after: column;
+	}
+
+	.flow :global(.bb-picture-page:has(figcaption)) {
+		--picture-most: calc(var(--ch) - 6em);
 	}
 
 	/* A flow with footnotes: one long column, shown a window at a time (see book-layout.ts). The

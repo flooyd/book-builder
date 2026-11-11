@@ -1,8 +1,17 @@
-import type { CoverArt } from '$lib/art';
+import { looksLike, type CoverArt } from '$lib/art';
 import { chapterHeading, partHeading, type Heading } from '$lib/headings';
 import { bookOutline, type OutlinePart } from '$lib/library';
 import { storyWords } from '$lib/reading';
-import { capOf, parse, textWithNotes, type DropCap, type RichNode } from '$lib/rich';
+import {
+	capOf,
+	hasContent,
+	parse,
+	picturesIn,
+	type DropCap,
+	type PictureSources,
+	type RichNode
+} from '$lib/rich';
+import { readPicture } from '$lib/server/art-store';
 import type { ReadableBook } from '$lib/server/reading';
 
 /**
@@ -40,6 +49,8 @@ export type Manuscript = {
 	/** Set when one part is exported rather than the book, whose title page it then opens. */
 	part: (Heading & { description: string; name: string }) | null;
 	sections: Section[];
+	/** Where the pictures set in the text are, from the author's shelf. */
+	pictures: PictureSources;
 };
 
 type Entry = OutlinePart<ReadableBook['parts'][number], ReadableBook['chapters'][number]>;
@@ -75,7 +86,8 @@ const front = (data: ReadableBook) => ({
 	title: data.book.title,
 	author: data.author,
 	blurb: data.book.description,
-	cover: data.book.cover
+	cover: data.book.cover,
+	pictures: data.pictures
 });
 
 const outlineOf = (data: ReadableBook) => bookOutline(data.book.id, data.parts, data.chapters);
@@ -114,7 +126,57 @@ export function partManuscript(data: ReadableBook, partId: number): Manuscript |
 }
 
 export const hasStoryText = (manuscript: Manuscript) =>
-	manuscript.sections.some((section) => textWithNotes(section.text).trim());
+	manuscript.sections.some((section) => hasContent(section.text, manuscript.pictures));
+
+/** A picture's file, read from the shelf for a file to draw. */
+export type PictureFile = {
+	bytes: Buffer;
+	type: 'jpg' | 'png';
+	width: number;
+	height: number;
+};
+
+/** How many pictures are read from storage at once. */
+const READ_AT_ONCE = 4;
+
+/**
+ * The files of the pictures set in the text, by their ids on the shelf, read before setting
+ * starts. One that can't be read, or isn't a JPEG or a PNG after all, is left out, and the file
+ * shows nothing there, as reading mode does for a picture taken off the shelf.
+ */
+export async function pictureFiles(manuscript: Manuscript) {
+	const ids = [
+		...new Set(
+			manuscript.sections.flatMap((section) =>
+				picturesIn(section.text).map((picture) => picture.art)
+			)
+		)
+	].filter((id) => manuscript.pictures[id]);
+	const files = new Map<number, PictureFile>();
+	for (let from = 0; from < ids.length; from += READ_AT_ONCE) {
+		await Promise.all(
+			ids.slice(from, from + READ_AT_ONCE).map(async (id) => {
+				const source = manuscript.pictures[id];
+				const bytes = await readPicture(source.url).catch(() => null);
+				if (!bytes) return;
+				const type = looksLike('image/png', bytes)
+					? 'png'
+					: looksLike('image/jpeg', bytes)
+						? 'jpg'
+						: null;
+				if (type) {
+					files.set(id, {
+						bytes: Buffer.from(bytes),
+						type,
+						width: source.width,
+						height: source.height
+					});
+				}
+			})
+		);
+	}
+	return files;
+}
 
 /** How many words of story text it holds. */
 export const wordsOf = (manuscript: Manuscript) =>

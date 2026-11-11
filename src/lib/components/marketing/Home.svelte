@@ -395,6 +395,10 @@
 						raised or boxed first letter</span
 					>
 					<span class="check"
+						><span class="check-dot"><Icon name="check" size={13} strokeWidth={3} /></span>Pictures
+						from your art shelf, with captions</span
+					>
+					<span class="check"
 						><span class="check-dot"><Icon name="check" size={13} strokeWidth={3} /></span>Reading
 						mode, with a link to share</span
 					>
@@ -430,8 +434,9 @@
 							<span class="tool-icon"><Icon name="highlighter" size={15} /></span>
 							<span class="tool-sep"></span>
 							<span class="tool-icon on"><Icon name="align-left" size={15} /></span>
-							<span class="tool-icon"><Icon name="scene-break" size={16} /></span>
 							<span class="tool-glyph cap">A<span class="cap-lines"></span></span>
+							<span class="tool-sep"></span>
+							<span class="tool-insert"><Icon name="plus" size={14} />Insert</span>
 						</div>
 						<!-- Set with the editor's own styles (prose.css), first letter and all. -->
 						<div
@@ -445,6 +450,51 @@
 								signal had gone quiet, and Captain Juno Halley set down her coffee and
 								<mark style="background-color: var(--mark-yellow)">looked into the dark</mark>.
 							</p>
+							<!-- A small picture in the text, as the editor sets one from the art shelf (the
+							     .bb-picture styles in prose.css), drawn here rather than loaded. -->
+							<figure class="bb-picture bb-picture-small" style="--ratio: 1.6">
+								<svg
+									viewBox="0 0 320 200"
+									role="img"
+									aria-label="A hand-drawn chart of dead stars, with a dashed route to a circled star marked “sing me home”."
+								>
+									<g class="chart-rings">
+										<circle cx="150" cy="112" r="58" />
+										<circle cx="150" cy="112" r="112" />
+										<path d="M150 0v200M20 112h290M68 30l164 164M232 30 68 194" />
+									</g>
+									<g class="chart-lines">
+										<path d="M44 58 78 40l38 14 22-26M196 150l34-18 22 22 34-10M108 160l-26 14" />
+									</g>
+									<path class="chart-route" d="M60 168C96 150 104 112 150 108s76-36 118-70" />
+									<g class="chart-stars">
+										<circle cx="44" cy="58" r="2.4" />
+										<circle cx="78" cy="40" r="1.8" />
+										<circle cx="116" cy="54" r="2.8" />
+										<circle cx="138" cy="28" r="1.6" />
+										<circle cx="196" cy="150" r="2.2" />
+										<circle cx="230" cy="132" r="1.7" />
+										<circle cx="252" cy="154" r="2.6" />
+										<circle cx="286" cy="144" r="1.6" />
+										<circle cx="108" cy="160" r="1.9" />
+										<circle cx="82" cy="174" r="1.5" />
+										<circle cx="60" cy="168" r="2.6" />
+										<circle cx="150" cy="108" r="2.2" />
+										<circle cx="202" cy="72" r="1.5" />
+										<circle cx="182" cy="40" r="1.4" />
+										<circle cx="34" cy="120" r="1.4" />
+									</g>
+									<g class="chart-dead">
+										<circle cx="104" cy="122" r="4" />
+										<circle cx="214" cy="96" r="4" />
+										<circle cx="284" cy="98" r="3.4" />
+									</g>
+									<circle class="chart-home" cx="268" cy="38" r="9" />
+									<circle class="chart-home-star" cx="268" cy="38" r="2.8" />
+									<text class="chart-note" x="254" y="24" text-anchor="end">sing me home</text>
+								</svg>
+								<figcaption>The map of dead stars, as Ade drew it.</figcaption>
+							</figure>
 							<p><em>“That isn't a distress call,”</em> she said, though no one had asked her.</p>
 							<hr />
 							<p>
@@ -2339,6 +2389,74 @@
 		font-family: var(--font-display);
 		font-size: 19px;
 		color: var(--bb-sky);
+	}
+
+	.tool-insert {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		height: 28px;
+		padding: 0 9px 0 7px;
+		border-radius: 7px;
+		font-size: 12.5px;
+		font-weight: 600;
+	}
+
+	/* The sample page's picture: sized and set by prose.css's .bb-picture, as a real one is, and on
+	   paper in both themes. The chart is ink on that paper. */
+	.preview-text .bb-picture svg {
+		display: block;
+		width: var(--picture-width);
+		height: auto;
+		aspect-ratio: var(--ratio);
+		margin: 0 auto;
+		border-radius: 2px;
+		background: var(--bb-paper);
+	}
+
+	.chart-rings {
+		fill: none;
+		stroke: var(--bb-paper-line);
+		stroke-width: 1;
+	}
+
+	.chart-lines {
+		fill: none;
+		stroke: var(--bb-paper-muted);
+		stroke-width: 0.9;
+		opacity: 0.7;
+	}
+
+	.chart-route {
+		fill: none;
+		stroke: #a8323e;
+		stroke-width: 1.6;
+		stroke-dasharray: 5 4;
+		stroke-linecap: round;
+	}
+
+	.chart-stars,
+	.chart-home-star {
+		fill: var(--bb-paper-ink);
+	}
+
+	.chart-dead {
+		fill: none;
+		stroke: var(--bb-paper-ink);
+		stroke-width: 1.1;
+	}
+
+	.chart-home {
+		fill: none;
+		stroke: #a8323e;
+		stroke-width: 1.4;
+	}
+
+	.chart-note {
+		fill: #a8323e;
+		font-family: var(--font-read);
+		font-size: 14px;
+		font-style: italic;
 	}
 
 	.cap-lines {

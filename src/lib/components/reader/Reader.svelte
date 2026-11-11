@@ -14,7 +14,7 @@
 		type ReadingPosition,
 		type ReadingSection
 	} from '$lib/reading';
-	import { plainText, textWithNotes } from '$lib/rich';
+	import { hasContent, plainText } from '$lib/rich';
 	import { nextBookHref, seriesHref } from '$lib/series';
 	import BookCover from '$lib/components/ui/BookCover.svelte';
 	import RichText from '$lib/components/rich/RichText.svelte';
@@ -350,9 +350,9 @@
 
 {#snippet prose(key: string, editHref: string)}
 	{@const text = data.texts[key] ?? ''}
-	{#if textWithNotes(text).trim()}
+	{#if hasContent(text, data.pictures)}
 		<!-- notes: the section's key, so its footnotes' links are its own on this one long page. -->
-		<RichText value={text} kind="story" class="prose" notes={key} />
+		<RichText value={text} kind="story" class="prose" notes={key} pictures={data.pictures} />
 	{:else}
 		<p class="no-text">
 			No story text yet.

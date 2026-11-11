@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { capOf, capPresentation, toHTML, type RichKind } from '$lib/rich';
+	import { capOf, capPresentation, toHTML, type PictureSources, type RichKind } from '$lib/rich';
 
 	// Shows a stored value: story text as typeset blocks (with its first letter), a description as
 	// inline text. toHTML only emits allow-listed markup, so {@html} is safe here.
@@ -8,6 +8,7 @@
 		kind = 'description',
 		italic = false,
 		notes,
+		pictures,
 		class: className = ''
 	}: {
 		value: string;
@@ -19,10 +20,12 @@
 		 * so each number links to its note and back. Left out, the numbers are only numbers.
 		 */
 		notes?: string;
+		/** Story text: where its pictures are. One that isn't here isn't shown. */
+		pictures?: PictureSources;
 		class?: string;
 	} = $props();
 
-	const html = $derived(toHTML(value, kind, notes));
+	const html = $derived(toHTML(value, kind, notes, pictures));
 	const cap = $derived(kind === 'story' ? capPresentation(capOf(value)) : null);
 </script>
 

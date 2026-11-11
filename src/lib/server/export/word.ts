@@ -8,6 +8,7 @@ import {
 	FrameWrap,
 	Header,
 	HeadingLevel,
+	ImageRun,
 	LevelFormat,
 	LineRuleType,
 	Packer,
@@ -25,6 +26,7 @@ import {
 	contentsOf,
 	descriptionLines,
 	noteParagraphs,
+	pictureFiles,
 	runsOf,
 	storyOf,
 	wordsOf,
@@ -32,6 +34,7 @@ import {
 	type FirstLetter,
 	type Inline,
 	type Manuscript,
+	type PictureFile,
 	type Run,
 	type Section
 } from './manuscript';
@@ -57,6 +60,9 @@ const LINE = 320;
 const NOTE_SIZE = 19;
 const INDENT = 432;
 const INCH = 1440;
+/** The text block in pixels at 96 to the inch, as docx sizes pictures: 6.5 × 9 inches. */
+const TEXT_PX = 6.5 * 96;
+const PAGE_PX = 9 * 96;
 
 const INK = {
 	text: '24232B',
@@ -204,6 +210,8 @@ class Blocks {
 	starts: Record<number, true> = { 1: true };
 	/** The footnotes of the section being written, note 1 first. */
 	notes: string[] = [];
+	/** The pictures set in the text, read from the shelf first (pictureFiles). */
+	pictures = new Map<number, PictureFile>();
 
 	#paragraph(node: RichNode, context: Context, indented: boolean): IParagraphOptions {
 		const { quote, list } = context;
@@ -256,7 +264,9 @@ class Blocks {
 		const blocks: IParagraphOptions[] = [];
 		let previous = '';
 		let cap = context.cap;
+		let breakNext = false;
 		for (const node of nodes) {
+			const start = blocks.length;
 			if (node.type === 'paragraph') {
 				const indented = previous === 'paragraph' && !context.list;
 				const paragraph = this.#paragraph(node, context, indented);
@@ -278,10 +288,70 @@ class Blocks {
 				blocks.push(...this.#listBlocks(node, context));
 			} else if (node.type === 'horizontalRule') {
 				blocks.push({ style: 'SceneBreak', children: [new TextRun('* * *')] });
+			} else if (node.type === 'picture') {
+				const picture = this.#picture(node);
+				if (picture.length && node.attrs?.size === 'page') {
+					picture[0] = { ...picture[0], pageBreakBefore: true };
+					// Nothing can keep with a picture that starts a page: Word lets go of a scene break's
+					// or a heading's keep with next there, and saying so keeps the contents' page
+					// numbers, worked out before Word sees the file, in step with it.
+					const before = blocks.length - 1;
+					if (before >= 0) blocks[before] = { ...blocks[before], keepNext: false };
+					breakNext = true;
+				} else if (picture.length) breakNext = false;
+				blocks.push(...picture);
+				previous = picture.length ? node.type : previous;
+				continue;
+			}
+			// After a picture with a page to itself, the text goes on on the next page.
+			if (breakNext && blocks.length > start) {
+				blocks[start] = { ...blocks[start], pageBreakBefore: true };
+				breakNext = false;
 			}
 			previous = node.type;
 		}
 		return blocks;
+	}
+
+	/**
+	 * A picture from the shelf, as reading mode sets it: as wide as the text, smaller, or on a page
+	 * of its own, with its caption under it in Word's own Caption style. Nothing if its file isn't
+	 * there, as on the page.
+	 */
+	#picture(node: RichNode): IParagraphOptions[] {
+		const file = this.pictures.get(Number(node.attrs?.art));
+		if (!file) return [];
+		const own = node.attrs?.size === 'page';
+		const lines = descriptionLines(String(node.attrs?.caption ?? ''));
+		const ratio = file.width / file.height;
+		let width = node.attrs?.size === 'small' ? TEXT_PX * 0.6 : TEXT_PX;
+		let height = width / ratio;
+		const tallest = own ? PAGE_PX * 0.86 : PAGE_PX * 0.66;
+		if (height > tallest) {
+			height = tallest;
+			width = height * ratio;
+		}
+		const description = node.attrs?.decorative === true ? '' : String(node.attrs?.alt ?? '');
+		return [
+			{
+				style: 'Picture',
+				keepNext: lines.length > 0,
+				...(own && { spacing: { before: INCH / 2 } }),
+				children: [
+					new ImageRun({
+						type: file.type,
+						data: file.bytes,
+						transformation: { width: Math.round(width), height: Math.round(height) },
+						altText: { name: 'Picture', description, title: '' }
+					})
+				]
+			},
+			...lines.map((line, index) => ({
+				style: 'Caption',
+				...(index < lines.length - 1 && { keepNext: true }),
+				children: childrenOf(line, 19)
+			}))
+		];
 	}
 }
 
@@ -476,6 +546,28 @@ function styles() {
 				}
 			},
 			{
+				id: 'Picture',
+				name: 'Picture',
+				basedOn: 'Normal',
+				next: FIRST,
+				quickFormat: true,
+				paragraph: {
+					alignment: AlignmentType.CENTER,
+					spacing: { before: 240, after: 240, line: 240, lineRule: LineRuleType.AUTO }
+				}
+			},
+			{
+				// Word's own Caption style, so its tools for captions know these.
+				id: 'Caption',
+				name: 'caption',
+				basedOn: 'Normal',
+				next: FIRST,
+				quickFormat: true,
+				// Not italic itself: the runs are, with emphasis turned upright, as on the page.
+				run: { size: 19, color: INK.muted },
+				paragraph: { alignment: AlignmentType.CENTER, spacing: { before: 0, after: 240 } }
+			},
+			{
 				id: 'Description',
 				name: 'Book Description',
 				basedOn: 'Normal',
@@ -561,6 +653,7 @@ const MOST_WORDS_TO_NUMBER = 250_000;
 /** The manuscript as a .docx file. */
 export async function wordOf(manuscript: Manuscript) {
 	const blocks = new Blocks();
+	blocks.pictures = await pictureFiles(manuscript);
 	const body = manuscript.sections.flatMap((section) => sectionBlocks(section, blocks));
 	const contents = contentsOf(manuscript);
 	const name = manuscript.part ? `${manuscript.part.name} · ${manuscript.title}` : manuscript.title;

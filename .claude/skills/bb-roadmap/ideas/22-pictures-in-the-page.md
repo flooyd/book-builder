@@ -1,91 +1,141 @@
 # Idea 22: pictures in the page
 
-**A plan, written 2026-11-09. Nothing here is built.** It needs the uploads in idea 18 first. The
-traps below were found by reading the code that day, so check they still hold.
+**The record. Shipped 2026-11-10**, with the Insert menu (24a), on top of the art shelf (18). How
+the node works day to day is in the `bb-rich-text` skill, the shelf's side in `bb-art`, and the
+files' side in `bb-export`. This file is why it's built the way it is, and what was left out.
 
 ## What the user asked for
 
 "I want the editor to be more sophisticated and allow images in page, footnotes, etc."
-(2026-11-09)
+(2026-11-09), then "I want you to work on 22 and 24a" (2026-11-10). Asked the open questions,
+the user chose, on 2026-11-10:
+
+- **Exports stream from the server**, rather than being made in the browser.
+- **Deleting a picture that's set in the text warns, then deletes.** The dialog names the
+  chapters. Readers see nothing where it was, and the editor shows a "taken off your art shelf"
+  box with Take it out.
+- **"/" opens the Insert list**, only on an empty line; Esc or typing on closes it.
+- **Captions count toward word counts and goals**, like footnotes. Insights, word maps, names and
+  casts read the story alone.
 
 ## What it is
 
-A picture set in story text, with a caption if the writer wants one: as wide as the text, smaller
-and centred, or with a page to itself (a map, a plate). It has to show in the editor and focus
-mode, both views of reading mode, share links, version history, the PDF and the Word file. A
-picture that only the editor can show isn't finished.
+A picture from the writer's art shelf, a block between the story's top-level blocks:
+`{"type":"picture","attrs":{"art":12,"width":1800,"height":1200,"size":"wide","alt":"…",
+"decorative":false,"caption":"…"}}`.
 
-Adding it follows "Adding a kind of node or mark" in the `bb-rich-text` skill, and the two export
-writers are covered in `bb-export`. Footnotes (23) went down that list first: read "Things that
-tripped it up" in `23-footnotes.md`, since most of them (an editor inside the editor, what counts
-as text, the PDF's foot) will meet a picture too. What's below is what's particular to pictures.
+- **Sizes:** wide (the measure), small (60%, centred) and a page to itself (the book view and
+  both files give it a page; scrolling, it's a wide picture with more space round it).
+- **A description** (`alt`), filled from the shelf's description when it's put in, and "Only
+  decoration", which empties the alt so a screen reader passes over it. The editor tags a picture
+  with neither: "No description yet".
+- **A caption**, a description value: italic, with its own small toolbar in the box.
+- **Only between top-level blocks.** Never in a quote, a list, a note or a description. The editor's
+  schema says so (`group: 'figure'`, the story document's content is `(block | figure)+`) and the
+  cleaner agrees (`depth === 0`, `kind === 'story'`).
 
-## The node
+## Where a picture comes from
 
-A block of its own, written like `mention.ts` is: the document holds the picture's id on the art
-shelf, its width and height, how big to set it, a description for screen readers, and the
-caption.
+The plan's first rule held: **the document holds an id, never an address.** A page is told where
+the files are by the server, looked up on the author's own shelf (`picturesFor`), and
+`pictureHTML` checks each address is our own stand-in's or https before writing it. So a document
+can't make a reader's browser load anything from another site, and an id that's someone else's
+picture shows nothing. The owner's own pages use their shelf in the browser (`artStore`, or
+`shelfSources` in version history). `rich.ts` still imports nothing from the app beyond
+`$lib/bible` and now `$lib/art` (which imports nothing), so it stays testable on its own.
 
-- **Nothing from anywhere else.** The cleaner must only keep a picture that points into our own
-  store, and `toHTML` must build the address itself from what the node holds. A document that
-  could name any address would let a shared book load things from any site, and tell that site
-  about every reader.
-- **Ownership on save.** Drop a picture that isn't the writer's, the way `ownedMentions` drops
-  links to entries they don't own.
-- **Keep `rich.ts` free of the app.** It imports nothing but `$lib/bible`, which is why it can be
-  tested on its own and run on the server and in the browser. Hand it the store's address; don't
-  import `$env` into it.
-- **`@tiptap/extension-image` exists at 3.32.0** (MIT), but it keeps a `src`. Our own node fits
-  the rule above better. `@tiptap/extension-file-handler` (MIT, also at 3.32.0) takes files that
-  are dropped or pasted. Pin whatever is added with the rest.
+- **On save** (`ownedPictures`, in the save's transaction): another writer's picture is taken out,
+  and the writer's own takes its width and height from the file. One that's been deleted stays,
+  so the editor can show where it was.
+- **For readers** (`readableBook`): a picture that isn't on the author's shelf any more is taken out
+  of the text, caption and all, before the page gets it.
+- **What it costs.** Readers' browsers load the files straight from Blob, the small copy or the
+  whole picture by how wide it's drawn (`srcset`), so reading adds no work to our server. Loading
+  a book to read runs one more query, and only when its text has pictures; so does a save. The
+  delete dialog runs one query over the writer's story text when it opens. Exports read every
+  picture's file on the server, four at a time, only when a writer asks for one.
 
-## Traps in the code today
+## Each surface
 
-1. **A chapter that's only a picture counts as empty, and is thrown away.** `isEmpty` in `rich.ts`
-   looks for words or a scene break, so `serialize` and `cleanValue` store `''`. (A scratch test
-   on 2026-11-09 showed it.) The same question is asked three more times with
-   `plainText(text).trim()`: in `reader/Reader.svelte`, in `reader/BookView.svelte` and in
-   `hasStoryText` in the export. Give `rich.ts` one answer to "is there anything here?" and use it
-   in all four.
-2. **Anything unknown vanishes without a word.** `cleanBlocks` drops a node it doesn't know, and
-   so do `#blocks` in `pdf.ts` and `Blocks.of` in `word.ts`. Miss one and the picture is simply
-   not there, with no error to find.
-3. **An exported file can outgrow what a function may send.** Vercel caps a function's response at
-   4.5 MB unless it's streamed, and `exportResponse` sends the whole file at once. How close a
-   long book of text already comes hasn't been measured. Pictures will pass it. Either stream the
-   file, or make the file in the browser (PDFKit and `docx` both run there, and it would take the
-   work off the server altogether, though `fonts.ts` would have to load its typefaces another way
-   and the browser would fetch them at export time). Streaming is the small change. Settle it
-   with the user when this starts.
-4. **The book view counts pages by measuring.** Each chapter is set in CSS columns one page wide,
-   in a hidden copy, and the number of columns is the number of pages (`book-layout.ts`). A
-   picture that takes up no room until it loads changes that count afterwards and moves every
-   reading position. So the box must be kept from the start (that's what the stored width and
-   height are for), a picture must never break across columns or be taller than a page, and a
-   picture with a page to itself starts and ends a column.
-5. **Line art disappears at night.** Black ink on a clear ground, over navy. Set every picture on
-   paper, the way a page of the book is (`data-scheme="light"`).
-6. **Pasting.** `cleanPastedHTML` keeps the structure of what's pasted. A picture pasted from
-   another site must not stay as a link to that site. Take a pasted or dropped file through the
-   upload, and drop a pasted address with a sentence saying why.
-7. **Words.** Decide whether a caption counts toward word counts and goals, and whether Insights
-   and the word maps read it. `plainText` is what they all read.
-8. **Version history compares words.** Adding or removing a picture would show as no change. And
-   a version may point at a picture that has since been deleted (see idea 18).
-9. **A description for screen readers** on every picture, asked for when it's added, with a way to
-   say it's only decoration.
+- **The editor** (`rich/picture.ts`, `PictureBox.svelte`): click a picture and its settings open
+  beside it without taking focus from the text; Enter goes into its caption; Esc or Done puts them
+  away with the caret just after it; typing with it selected starts a paragraph after it;
+  Backspace and Delete take it out. Change picture keeps its size and caption. Files dropped or
+  pasted go up to the shelf and in; a picture pasted from another page doesn't come in, and a
+  notice says why.
+- **Focus mode**: the same editor, with the box, the shelf and the lists in the top layer over it.
+- **Reading mode, scrolling**: `toHTML` with the server's `pictures`. Its box has its shape before
+  the file arrives (`--ratio`, and `width`/`height` on the `img`), and it sits on paper, so black
+  line art reads at night.
+- **Reading mode, the book view**: a picture is never split across pages and never taller than one
+  (`--picture-most`, set from the page height, less room for a caption). A page-to-itself picture
+  is a column of its own, in the middle of it (`break-before`/`break-after: column`). A chapter
+  with footnotes is cut into pages by the app, so `flowLines` reads a figure as one block and
+  marks a page picture `alone`, which `sliceFlow` gives a page.
+- **Share links**: as reading mode, signed out.
+- **Version history**: "As it reads" draws the version's pictures from the shelf; the comparison
+  reads each picture as a `[Picture: caption]` line, so one added, moved or taken out shows.
+- **PDF**: wide or small on the measure, at most 0.72 of the text block high with its caption; a
+  page picture on a page of its own, in the middle. A heading or a scene break before a picture
+  keeps room for the whole of it.
+- **Word**: an `ImageRun` in a `Picture` style, the caption in Word's own `Caption` style, alt text
+  from the description. A page picture has a page break before it and before what follows.
 
-## In the exported files
+## Things that tripped it up
 
-- **PDF.** A branch in `#blocks`: make room with `ensure`, draw with PDFKit's `image` (JPEG or PNG,
-  which is all idea 18 stores), and set the caption with `#setBlock`. Fetch every picture's bytes
-  before setting starts, a few at a time. The export has 60 seconds (`maxDuration` in its routes).
-- **Word.** An `ImageRun` with its size, and a caption style beside the others. Then open it in
-  Word (`word-check.ps1` in `bb-verify`): the contents' page numbers come from an estimate that
-  has never seen a picture.
+1. **A chapter holding only a picture counted as empty** (trap 1 in the plan). `rich.ts` now has
+   one answer, `hasContent`, used by both reading views and the export, and `isEmpty` counts a
+   picture.
+2. **An empty paragraph is a blank line to readers** (`<p><br></p>`). Putting one after each
+   picture, so the caret had somewhere to go, left gaps on the page. No paragraph comes with a
+   picture now: where no text follows, the caret is ProseMirror's gap cursor between blocks, and
+   typing there starts a paragraph. Its default look is a black line that night hides, so
+   `RichEditor` draws it in the caret's colour.
+3. **Esc went to the wrong thing, four ways.** The editor's own Esc (blur, and close focus mode)
+   ran before the @ and / lists' Esc, because Tiptap runs a later-listed extension's keys first
+   at equal priority: `EscapeKey` now has priority 50. Esc in the picture box's buttons did
+   nothing: the box listens for it on the panel. Esc with a picture selected blurred the editor:
+   the node has its own Escape, which puts the box away and keeps the caret. And Esc with a
+   toolbar menu open (Insert, the colours) reached the editor, because a toolbar menu keeps the
+   caret in the text, so it closed focus mode: `EscapeKey` now closes an open `[data-menu]` and
+   does nothing else. Test Esc from every place it can be pressed.
+4. **A deleted picture's caption reached readers.** It drew nothing, but its words were in the
+   page's data. `readableBook` takes the whole node out.
+5. **The PDF left a heading or a scene break at the foot of a page** with its picture overleaf, and
+   once a scene break alone on a page. `#keepWith` makes room for the picture that follows.
+6. **Word's contents went one page out.** Word lets go of a keep with next before a page break;
+   `docx`'s page-number estimate doesn't. The block before a page picture says `keepNext: false`.
+   Only opening the file in real Word (`word-check.ps1`) showed it.
+7. **Version history's "As it reads" drew no pictures**: it had no sources. `shelfSources`.
+8. **The caption box showed no placeholder until clicked**: an empty value had no paragraph to put
+   it in. `RichEditor`'s `contentOf` opens an empty value as one empty paragraph.
+9. **Svelte trims spaces at the edge of a tag**, so "Picture · Upload" lost its spaces. `&nbsp;`
+   holds them (the linter refuses `{' · '}`).
+10. **Testing on a phone width**: a script that taps and types in the same instant types before
+    ProseMirror has read where the tap put the caret. Pause about 200 ms after a tap.
 
-## Leave out at first
+## Checked, 2026-11-10
 
-Text that wraps round a picture, pictures side by side, and editing a picture in place. (The
-PDF's line breaker could do wrapping one day: `#lines` already takes a different width for each
-line, which is how a first letter sits beside its lines.)
+On the throwaway database and the stand-in store: the Insert menu and "/" (opening, closing,
+arrowing, Esc, mid-line), choosing and uploading from the shelf picker, the box (sizes, caption
+with italic, description, decoration), the gap cursor and typing there, undo, save and reload;
+both reading views at 1440 in the dark, a share link signed out on a phone in the light, focus
+mode at 1440 in the light, the editor at 390 in both themes (no sideways scroll, no console
+errors); version history; hostile saves through the real API (an address and a script added to a
+picture's attributes, another writer's id, a missing one, a wrong width and height, a size that
+isn't one, a picture inside a quote); the PDF on a contact sheet and the Word file in real Word, with
+contents matching; and deleting a picture set in two chapters.
+
+## Left out
+
+- Text wrapping round a picture, and pictures side by side. (The PDF's line breaker could wrap one
+  day: `#lines` already takes a width for each line.)
+- Cropping, or editing a picture in place. Drawing over one is the studio's (25d).
+- Pictures inside quotes, lists, footnotes' notes and descriptions.
+- Word's "decorative" mark: a decorative picture has empty alt text instead, which `docx` can't
+  mark as decorative.
+- A page-to-itself picture centred on its page in Word: it sits half an inch below the top margin.
+  The PDF centres it.
+- Version history's word tallies count the word "Picture" from a picture's line.
+- Old versions keep a picture's id after it's deleted from the shelf; they show nothing there.
+- A picture's own share-link preview (an `og:image`), with the cover's, is on 18's row.

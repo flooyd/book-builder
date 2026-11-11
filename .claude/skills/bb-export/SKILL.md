@@ -1,6 +1,6 @@
 ---
 name: bb-export
-description: How Book Builder turns a book or a part into a PDF or a Word file, covering the manuscript both files are built from, the PDF typesetter in pdf.ts (page size, line breaking, hyphenation, first letters, lines kept together, running heads, contents, the cover), the typefaces it carries and what happens to characters they can't draw, the Word writer's styles and page-number estimate, the export's own Vercel function and its limits, and how to check a file. Use this whenever a task touches export, download, PDF, Word, docx, print or EPUB, the files in src/lib/server/export, or adds anything to story text (a block, a mark, a colour, a typeface, a picture, a footnote) that an exported file must show too.
+description: How Book Builder turns a book or a part into a PDF or a Word file, covering the manuscript both files are built from, the PDF typesetter in pdf.ts (page size, line breaking, hyphenation, first letters, lines kept together, running heads, contents, the cover, pictures in the text), the typefaces it carries and what happens to characters they can't draw, the Word writer's styles and page-number estimate, the export's own Vercel function and its limits, and how to check a file. Use this whenever a task touches export, download, PDF, Word, docx, print or EPUB, the files in src/lib/server/export, or adds anything to story text (a block, a mark, a colour, a typeface, a picture, a footnote) that an exported file must show too.
 ---
 
 # Book Builder: PDF and Word export
@@ -9,7 +9,7 @@ Everything is in `src/lib/server/export/`, and it only runs on the server.
 
 | File            | What it does                                                                                              |
 | --------------- | --------------------------------------------------------------------------------------------------------- |
-| `index.ts`      | `requestedFormat` and `exportResponse`: picks the writer, names the file, sends it.                       |
+| `index.ts`      | `requestedFormat` and `exportResponse`: picks the writer, names the file, streams it.                     |
 | `manuscript.ts` | What goes into a file, whichever kind: sections in reading order, and formatted text as runs.             |
 | `pdf.ts`        | A 6 × 9 inch book, set by our own typesetter and drawn with PDFKit.                                       |
 | `fonts.ts`      | The typefaces the PDF is set in, and which one draws each character.                                      |
@@ -25,11 +25,12 @@ Everything is in `src/lib/server/export/`, and it only runs on the server.
    `docx`. It fetches, not links, so the button can say "Making it…" and an error is a sentence.
 2. The route checks the owner and loads the book with `readableBook`. Only the owner can export.
 3. `bookManuscript` or `partManuscript` turns that into a `Manuscript`.
-4. `pdfOf` or `wordOf` returns `{ bytes, missing }`, and `exportResponse` sends the bytes.
+4. `pdfOf` or `wordOf` reads the pictures' files (`pictureFiles`), sets the file and returns
+   `{ bytes, missing }`, and `exportResponse` streams the bytes out.
 
 **A file holds what reading mode shows and nothing else.** That's why it starts from
-`readableBook`: hidden titles and descriptions arrive blank, and mentions are already plain
-words. Never load the book another way for an export.
+`readableBook`: hidden titles and descriptions arrive blank, mentions are already plain words,
+and a picture taken off the shelf is already gone. Never load the book another way for an export.
 
 ## The manuscript
 
@@ -74,9 +75,19 @@ setting is ours, because a book needs what PDFKit's own text layout doesn't do.
 - **`ensure(height)` and `gap(height)`.** Call `ensure` before anything that mustn't be split from
   what follows (a heading, a scene break): it turns the page unless that much fits. Use `gap` for
   space between blocks: it adds nothing at the top of a page.
-- **Blocks.** `#blocks` walks the story's nodes: paragraph, heading, blockquote, the two lists and
-  the scene break (`ornament`). **A node it doesn't know is skipped without an error.** A
-  paragraph after a paragraph is indented; after anything else it starts flush.
+- **Blocks.** `#blocks` walks the story's nodes: paragraph, heading, blockquote, the two lists,
+  the scene break (`ornament`) and pictures. **A node it doesn't know is skipped without an
+  error.** A paragraph after a paragraph is indented; after anything else it starts flush.
+- **Kept with what follows.** A heading or a scene break makes sure there's room after it
+  (`#keepWith`): two lines of text, or the whole of a picture with its caption when one follows,
+  so neither is left at the foot of a page with its picture overleaf. Before a picture with a
+  page to itself it keeps nothing, since that picture starts a page anyway.
+- **Pictures** (`#pictureLayout`, `#picture`): wide is the measure, small 0.6 of it, and neither
+  is taller than 0.72 of the text block, its caption included; the caption is 9.5 on 13, centred,
+  in the muted ink, set by `#lines` like any text. A picture with a page to itself starts a new
+  page (unless the page is still empty), sits in the middle of it, and what follows starts the
+  next. Each file is opened by PDFKit once (`#opened`) however often it's set. A file that isn't
+  there, or whose first bytes aren't a JPEG's or a PNG's, is left out, as on the page.
 - **The first letter.** `#opening` sets the first paragraph round it, sized from the face's real
   capital height so it spans its lines exactly. A raised letter is just large text.
 - **Raised runs.** `#draw` lifts a run with `raise` by `RISE` (0.36 of the text's size), its
@@ -141,9 +152,17 @@ Book Text or Heading 2 in Word changes the whole book.
   paragraph for each of the note's. Word numbers and places them. The file is one section, so
   Word numbers them straight through the book, not by chapter. `docx` sets the number first in
   the note with nothing after it, so `footnote()` adds the space Word's own notes have.
+- **Pictures** are `ImageRun`s in a `Picture` paragraph style (centred), sized in pixels against
+  the 6.5 × 9 inch text block: wide is its width, small 0.6, at most 0.66 of the page high (0.86
+  for a page to itself). The description is the picture's alt text (empty when it's only
+  decoration), and the caption is in Word's own `Caption` style, its runs italic with emphasis
+  upright. A picture with a page to itself has `pageBreakBefore`, and so does the paragraph after
+  it. The block before it gets an explicit `keepNext: false`: Word drops a keep with next before
+  a page break, but the page-number estimate doesn't, and the contents went one page out until
+  it was said.
 - **The contents' page numbers** come from `estimatePageNumbersWith`, which takes about 8 seconds
   per 100,000 words. Over 250,000 words it's skipped, and Word offers to fill the numbers in when
-  the file opens.
+  the file opens. Check them in real Word after any change to what's set (`word-check.ps1`).
 
 ## Adding something to story text
 
@@ -158,17 +177,25 @@ Start with "Adding a kind of node or mark" in the `bb-rich-text` skill. For the 
 4. **Check both files** (below). Neither writer complains about a node it doesn't know, so only
    looking at the result shows whether it arrived.
 
-Not there yet, and needed by ideas on the roadmap: nothing draws a picture, and a `Run` can be
-raised (footnotes) but not lowered (subscript).
+Not there yet, and needed by ideas on the roadmap: a `Run` can be raised (footnotes) but not
+lowered (subscript).
+
+**Something with a file of its own** (a picture) is read before setting starts: `pictureFiles` in
+`manuscript.ts` reads every picture the manuscript sets, four at a time, with `readPicture`, and
+checks each one's first bytes. Both writers take the result as `pictures`, by id.
 
 ## The function and its limits
 
 - **Its own function.** `export const config = { maxDuration: 60 }` in each route gives the export
   a Vercel function to itself. That keeps the typefaces and the typesetting out of the function
   that serves every page.
-- **4.5 MB.** Vercel won't let a function send back more than that unless the response is
-  streamed (checked 2026-11-09), and `exportResponse` sends the whole file at once. Stream it
-  before anything makes files much bigger, pictures above all.
+- **Streamed.** Vercel won't let a function send back more than 4.5 MB unless the response is
+  streamed (checked 2026-11-09), and pictures make files bigger than that, so `exportResponse`
+  sends the finished file 256 KB at a time (`streamOf`). The file is still made whole in memory
+  first: PDFKit and `docx` both finish before anything goes out. The user chose this over making
+  the files in the browser (2026-11-10). What it costs: the export's function runs longer and holds
+  more in memory for each picture it reads and sets (not measured on Vercel yet), only when a
+  writer clicks an export button, and never while anyone reads.
 - **Packages.** PDFKit's dependencies clash with Better Auth's, which is why `vite.config.ts` has
   `ssr.noExternal`. Read "Adding a package" in the `bb-stack` skill before adding another.
 
@@ -184,4 +211,5 @@ should have stayed out, and after a change to server packages run the built func
 
 EPUB, a cover in the Word file, and scripts beyond Latin, Greek, Cyrillic and Vietnamese in the
 PDF. They're on idea 2's row in the `bb-roadmap` skill. Endnotes, and footnotes numbered by
-chapter in Word, are on idea 23's.
+chapter in Word, are on idea 23's. Word's "decorative" mark on a picture, and a page-to-itself
+picture centred on its page in Word (it sits half an inch from the top), are on idea 22's.

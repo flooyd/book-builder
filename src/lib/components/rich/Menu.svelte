@@ -40,6 +40,7 @@
 	bind:this={panel}
 	{id}
 	class="menu"
+	data-menu
 	popover="auto"
 	role="dialog"
 	aria-label={label}

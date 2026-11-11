@@ -15,6 +15,7 @@
 		type RichKind
 	} from '$lib/rich';
 	import Icon, { type IconName } from '$lib/components/ui/Icon.svelte';
+	import { INSERT_KEYS, insertItems, runInsert } from './insert';
 	import Menu from './Menu.svelte';
 
 	// Formatting controls for a RichEditor. Story text gets everything; descriptions get the
@@ -36,17 +37,6 @@
 	const story = $derived(kind === 'story');
 
 	const ALIGNS = ['left', 'center', 'right', 'justify'] as const;
-
-	/** Type the @ for the writer, on a word of its own, which opens the mention menu. */
-	function startMention() {
-		const { from } = editor.state.selection;
-		const before = editor.state.doc.textBetween(Math.max(0, from - 1), from, '\n', '\ufffc');
-		editor
-			.chain()
-			.focus()
-			.insertContent(before && !/\s/.test(before) ? ' @' : '@')
-			.run();
-	}
 
 	const now = $derived.by(() => {
 		void version;
@@ -354,15 +344,6 @@
 				onclick={() => setBlock(now.block === 'quote' ? 'p' : 'quote')}
 				><Icon name="quote" size={17} /></button
 			>
-			<button
-				type="button"
-				class="tool"
-				aria-label="Scene break"
-				title="Scene break"
-				onpointerdown={keep}
-				onclick={() => chain().setHorizontalRule().run()}
-				><Icon name="scene-break" size={18} /></button
-			>
 		</div>
 
 		<div class="group">
@@ -447,25 +428,41 @@
 	{/if}
 
 	<div class="group">
-		{#if mentions}
-			<button
-				type="button"
-				class="tool"
-				aria-label="Mention a character, place or system"
-				title="Mention a character, place or system (@)"
-				onpointerdown={keep}
-				onclick={startMention}><Icon name="at-sign" size={17} /></button
-			>
-		{/if}
 		{#if story}
+			<!-- What goes into the text, in one place; typing / on an empty line opens the same list. -->
 			<button
 				type="button"
-				class="tool"
-				aria-label="Add a footnote"
-				title="Add a footnote (Ctrl+Alt+F)"
-				onpointerdown={keep}
-				onclick={() => editor.commands.insertFootnote()}><Icon name="footnote" size={17} /></button
+				class="tool insert"
+				popovertarget="{uid}-insert"
+				title="Insert a picture, footnote, scene break{mentions
+					? ' or mention'
+					: ''} (or type / on an empty line)"
+				onpointerdown={keep}><Icon name="plus" size={17} /><span>Insert</span></button
 			>
+			<Menu id="{uid}-insert" label="Insert" width={300}>
+				{#snippet children(close)}
+					<ul class="inserts">
+						{#each insertItems(mentions) as item (item.id)}
+							<li>
+								<button
+									type="button"
+									class="insert-row"
+									onpointerdown={keep}
+									onclick={() => {
+										close();
+										runInsert(editor, item.id);
+									}}
+								>
+									<Icon name={item.icon} size={17} />
+									<span class="insert-name">{item.label}</span>
+									<span class="insert-note">{item.note}</span>
+									{#if INSERT_KEYS[item.id]}<kbd>{INSERT_KEYS[item.id]}</kbd>{/if}
+								</button>
+							</li>
+						{/each}
+					</ul>
+				{/snippet}
+			</Menu>
 		{/if}
 		<button
 			type="button"
@@ -529,6 +526,75 @@
 
 	.tool:disabled {
 		opacity: 0.4;
+	}
+
+	.tool.insert {
+		display: flex;
+		gap: 6px;
+		padding: 0 10px 0 8px;
+		font: 600 13.5px var(--font-ui);
+	}
+
+	/* The Insert menu (rendered inside Menu, styled from here). */
+	.inserts {
+		display: grid;
+		gap: 2px;
+		margin: -8px;
+		padding: 0;
+		list-style: none;
+	}
+
+	.insert-row {
+		display: grid;
+		grid-template-columns: 20px minmax(0, 1fr) auto;
+		align-items: center;
+		column-gap: 10px;
+		width: 100%;
+		min-height: 50px;
+		padding: 6px 10px;
+		border: none;
+		border-radius: 9px;
+		background: transparent;
+		color: var(--bb-text-2);
+		font: 15px / 1.35 var(--font-ui);
+		text-align: left;
+	}
+
+	.insert-row:hover,
+	.insert-row:focus-visible {
+		background: var(--bb-raised);
+		color: var(--bb-text-strong);
+	}
+
+	.insert-row :global(svg) {
+		grid-row: 1 / span 2;
+	}
+
+	.insert-name {
+		font-weight: 600;
+		color: var(--bb-text);
+	}
+
+	.insert-note {
+		grid-column: 2;
+		font-size: 12.5px;
+		color: var(--bb-text-3);
+	}
+
+	.insert-row kbd {
+		grid-column: 3;
+		grid-row: 1 / span 2;
+		padding: 2px 6px;
+		border: 1px solid var(--bb-line-soft);
+		border-radius: 6px;
+		font: 600 11px var(--font-ui);
+		color: var(--bb-text-3);
+	}
+
+	@media (hover: none) {
+		.insert-row kbd {
+			display: none;
+		}
 	}
 
 	.glyph {

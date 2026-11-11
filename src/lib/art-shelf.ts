@@ -1,5 +1,5 @@
 import { get } from 'svelte/store';
-import type { ArtPicture } from '$lib/art';
+import type { ArtPicture, PictureUse } from '$lib/art';
 import {
 	prepareFile,
 	savePicture,
@@ -55,6 +55,13 @@ export async function describePicture(
 	changes: { title?: string; description?: string }
 ) {
 	return keep(await sendJSON<ArtPicture>('PUT', `/api/art/${id}`, changes));
+}
+
+/** The chapters and parts a picture is set in, for the dialog before it's deleted. */
+export async function picturePlaces(id: number) {
+	const response = await fetch(`/api/art/${id}/uses`);
+	if (!response.ok) throw new Error('Couldn’t check where the picture is used.');
+	return ((await response.json()) as { uses: PictureUse[] }).uses;
 }
 
 /** Take a picture off the shelf; any cover it was on is drawn from the title again. */
